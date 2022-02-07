@@ -1,0 +1,7 @@
+#phixmanBackend
+
+#prevent node modules from being pushed on git
+node_modules
+
+# ignore .env file
+.env
