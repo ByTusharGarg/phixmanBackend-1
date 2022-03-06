@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { partnerStatusTypes } = require("../enums/types");
 const Schema = mongoose.Schema;
 const Partner = mongoose.model(
   "Partner",
@@ -22,7 +23,7 @@ const Partner = mongoose.model(
       },
       status: {
         type: String,
-        enum: ["active", "inactive"],
+        enum: partnerStatusTypes,
       },
     },
     helpers: [String],

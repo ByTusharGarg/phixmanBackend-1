@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { genderTypes, userStatusTypes } = require("../enums/types");
 const Schema = mongoose.Schema;
 const Customer = mongoose.model(
   "Customer",
@@ -11,20 +12,24 @@ const Customer = mongoose.model(
     phone: { type: String, required: true },
     Password: { type: String },
     image: { type: String },
-    gender: { type: String, enum: ["male", "female", "non-binary"] },
+    gender: { type: String, enum: genderTypes },
     otp: {
       code: {
         type: String,
       },
       status: {
         type: String,
-        enum: ["active", "inactive"],
+        enum: userStatusTypes,
       },
     },
-    street: String,
-    city: String,
-    pin: String,
-    state: String,
+    address: [
+      {
+        street: String,
+        city: String,
+        pin: String,
+        state: String,
+      },
+    ],
     isActive: { type: Boolean, required: true, default: true },
     isVerified: { type: Boolean, required: true, default: false },
     isPublished: { type: Boolean, required: true, default: true },

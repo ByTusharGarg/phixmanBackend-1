@@ -77,19 +77,26 @@ const updateUserValidator = [
  *                       value:
  *                         type: object
  *                         description: the value received for the parameter
- *                         example: undefined
  *                       msg:
  *                         type: string
  *                         description: a message describing the validation error
- *                         example: Asset alias must be provided
  *                       param:
  *                         type: string
  *                         description: the parameter for which the validation error occurred
- *                         example: alias
  *                       location:
  *                         type: string
  *                         description: the location at which the validation error occurred (e.g. query, body)
- *                         example: body
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
  */
 router.post(
   "/SendOTP",
@@ -170,19 +177,26 @@ router.post(
  *                       value:
  *                         type: object
  *                         description: the value received for the parameter
- *                         example: undefined
  *                       msg:
  *                         type: string
  *                         description: a message describing the validation error
- *                         example: Asset alias must be provided
  *                       param:
  *                         type: string
  *                         description: the parameter for which the validation error occurred
- *                         example: alias
  *                       location:
  *                         type: string
  *                         description: the location at which the validation error occurred (e.g. query, body)
- *                         example: body
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
  */
 router.post(
   "/VerifyOTP",
@@ -223,7 +237,7 @@ router.use(checkCustomer);
 
 /**
  * @openapi
- * /customer/:
+ * /customer:
  *  patch:
  *    summary: used to update user data.
  *    tags:
@@ -284,19 +298,26 @@ router.use(checkCustomer);
  *                       value:
  *                         type: object
  *                         description: the value received for the parameter
- *                         example: undefined
  *                       msg:
  *                         type: string
  *                         description: a message describing the validation error
- *                         example: Asset alias must be provided
  *                       param:
  *                         type: string
  *                         description: the parameter for which the validation error occurred
- *                         example: alias
  *                       location:
  *                         type: string
  *                         description: the location at which the validation error occurred (e.g. query, body)
- *                         example: body
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
  *    security:
  *    - bearerAuth: []
  */

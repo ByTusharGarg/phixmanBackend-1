@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { storeStatusTypes } = require("../enums/types");
 const Schema = mongoose.Schema;
 const Store = mongoose.model(
   "Store",
@@ -17,7 +18,7 @@ const Store = mongoose.model(
       },
       status: {
         type: String,
-        enum: ["active", "inactive"],
+        enum: storeStatusTypes,
       },
     },
     isActive: { type: Boolean, required: true, default: true },

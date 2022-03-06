@@ -1,4 +1,9 @@
 const mongoose = require("mongoose");
+const {
+  orderStatusTypes,
+  orderTypes,
+  paymentModeTypes,
+} = require("../enums/types");
 const Schema = mongoose.Schema;
 const Order = mongoose.model(
   "Order",
@@ -6,11 +11,11 @@ const Order = mongoose.model(
     Partner: { type: Schema.Types.ObjectId, required: true, ref: "Partner" },
     Customer: { type: Schema.Types.ObjectId, required: true, ref: "Customer" },
     OrderId: { type: Number, required: true },
-    OrderType: { type: String, required: true, enum: ["InStore", "Home"] },
+    OrderType: { type: String, required: true, enum: orderTypes },
     Status: {
       type: String,
       required: true,
-      enum: ["Waiting", "confirmed", "InRepair", "completed"],
+      enum: orderStatusTypes,
     },
     OrderDetails: {
       Amount: { type: Number, required: true },
@@ -23,7 +28,7 @@ const Order = mongoose.model(
       ],
     },
     Date: { type: Date, required: true },
-    PaymentMode: { type: String, required: true, enum: [undefined] },
+    PaymentMode: { type: String, required: true, enum: paymentModeTypes },
     Address: { type: String },
     PinCode: { type: String },
     PickUpRequired: { type: Boolean, required: true },

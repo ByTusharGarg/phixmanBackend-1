@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Admin = mongoose.model(
-  "Admins",
+  "Admin",
   new mongoose.Schema({
     Sno: Number,
     Name: String,
