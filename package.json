@@ -4,7 +4,7 @@
   "description": "contains dependencies of phixman backend server",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon ."
+    "start": "node ."
   },
   "author": "Tushar Garg",
   "license": "MIT",
