@@ -28,6 +28,10 @@ const Customer = mongoose.model(
         city: String,
         pin: String,
         state: String,
+        cood: {
+          lattitude: String,
+          longitude: String,
+        },
       },
     ],
     isActive: { type: Boolean, required: true, default: true },

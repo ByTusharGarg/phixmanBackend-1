@@ -257,14 +257,6 @@ router.use(checkCustomer);
  *                gender:
  *                  type: string
  *                  enum: ["male", "female", "non-binary"]
- *                street:
- *                  type: string
- *                state:
- *                  type: string
- *                city:
- *                  type: string
- *                pin:
- *                  type: string
  *          encoding:
  *              image:
  *                  contentType: image/png, image/jpeg, image/jpg, image/gif
@@ -307,6 +299,16 @@ router.use(checkCustomer);
  *                       location:
  *                         type: string
  *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
  *      500:
  *          description: if internal server error occured while performing request.
  *          content:
@@ -356,4 +358,146 @@ router.patch(
     }
   }
 );
+
+/**
+ * @openapi
+ * /customer:
+ *  get:
+ *    summary: gets user details.
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      200:
+ *          description: if successfully found user
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               description: customer details
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/", async (req, res) => {
+  console.log(req?.Customer);
+  return res.status(200).json(req?.Customer);
+});
+
+/**
+ * @openapi
+ * /customer/address:
+ *  get:
+ *    summary: gets all the saved addresses for the user.
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      200:
+ *          description: if successfully found user
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               description: customer details
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/address", async (req, res) => {
+  return res.status(200).json(req?.Customer?.address);
+});
+
+/**
+ * @openapi
+ * /customer/address:
+ *  post:
+ *    summary: successfully added new address for the user.
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      200:
+ *          description: if successfully found user
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               description: customer details
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/address", async (req, res) => {
+  try {
+    await Customer.findByIdAndUpdate(
+      req.Customer._id,
+      {
+        $push: { address: req?.body?.address },
+      },
+      { new: true }
+    );
+    return res.status(200).json({ message: "address added" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 module.exports = router;
