@@ -8,12 +8,12 @@ const registerAdmin = async (req, res) => {
   req.body.email = trim(req?.body?.email).toLowerCase();
   req.body.pswd = trim(req?.body?.pswd);
   if (!isEmail(req?.body?.email)) {
-    return res.json({
+    return res.status(404).json({
       message: "InValid Email",
     });
   }
   if (!isStrong(req?.body?.pswd)) {
-    return res.json({
+    return res.status(404).json({
       message: "Password is not Strong Enough",
     });
   }
@@ -35,11 +35,11 @@ const registerAdmin = async (req, res) => {
       password: hashpassword(req?.body?.pswd),
     });
     //send activation mail here
-    return res.json({
+    return res.status(201).json({
       message: "Admin Created",
     });
   } catch (error) {
-    return res.json({
+    return res.status(500).json({
       message: "Try again later !!!",
     });
   }
@@ -64,13 +64,13 @@ const adminLogin = (req, res) => {
               expiresIn: "24h", // expires in 24 hours
             }
           );
-          return res.json({
+          return res.status(200).json({
             success: true,
             message: "Authentication successful!",
             token: token,
           });
         } else {
-          return res.json({
+          return res.status(401).json({
             success: false,
             message: "Invalid Credentials",
           });
@@ -100,7 +100,7 @@ const checkAdmin = (req, res, next) => {
               req.admin = admin;
               next();
             } else {
-              return res.json({
+              return res.status(401).json({
                 success: false,
                 message: "Unauthenticated Access",
               });
@@ -108,14 +108,14 @@ const checkAdmin = (req, res, next) => {
           }
         );
       } else {
-        return res.json({
+        return res.status(401).json({
           success: false,
           message: "Unauthenticated Access",
         });
       }
     });
   } else {
-    return res.json({
+    return res.status(404).json({
       success: false,
       message: "Auth token is not supplied",
     });

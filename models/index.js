@@ -1,7 +1,8 @@
-const Customer = require("./Customer");
 const Admin = require("../models/Admin");
 const Brand = require("./Brand");
+const Coupon = require("./Coupon");
 const Counters = require("../models/Counters");
+const Customer = require("./Customer");
 const Invoice = require("./Invoice");
 const Order = require("./Order");
 const Partner = require("./Partner");
@@ -15,6 +16,7 @@ module.exports = {
   Admin,
   Brand,
   Counters,
+  Coupon,
   Customer,
   Invoice,
   Order,

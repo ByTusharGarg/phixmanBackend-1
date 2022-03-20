@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Customer } = require("../models");
+const { Customer, Order } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword } = require("../libs/passwordLib");
@@ -495,6 +495,68 @@ router.post("/address", async (req, res) => {
       { new: true }
     );
     return res.status(200).json({ message: "address added" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /customer/getOrders:
+ *  get:
+ *    summary: used to list all orders of user.
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/getOrders", async (req, res) => {
+  try {
+    const orders = await Order.find({ Customer: req.Customer._id });
+    return res.status(200).json(orders);
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /customer/getCoupons:
+ *  get:
+ *    summary: used to list all active Coupons.
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+ router.get("/getCoupons", async (req, res) => {
+  try {
+    const coupons = await Coupon.find({}, { otp: 0 });
+    return res.status(200).json(coupons);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
