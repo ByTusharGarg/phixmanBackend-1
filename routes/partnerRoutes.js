@@ -108,7 +108,7 @@ router.post(
             status: "active",
           },
         },
-        { new: true }
+        { upsert: true, new: true }
       );
       //send otp to user
       sendOtp(partner.phone, otp);
@@ -116,6 +116,7 @@ router.post(
         .status(200)
         .json({ message: "OTP has been sent successfully" });
     } catch (error) {
+      console.log(error);
       return res
         .status(500)
         .json({ message: "Error encountered while trying to send otp" });

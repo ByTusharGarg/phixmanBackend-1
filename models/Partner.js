@@ -14,7 +14,7 @@ const Partner = mongoose.model(
     phone: { type: String, required: true },
     email: {
       type: String,
-      unique: true,
+      // unique: true,
     },
     password: { type: String },
     otp: {

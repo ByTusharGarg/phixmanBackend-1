@@ -13,6 +13,7 @@ const path = require("path");
 const helmet = require("helmet");
 const router = require("./routes/router");
 const connect = require("./connect");
+const https = require("https");
 
 // Configure Express app.
 const app = Express();
@@ -99,6 +100,7 @@ app.use("/customer", router.customerRoutes);
 app.use("/partner", router.partnerRoutes);
 app.use("/admin", router.adminRoutes);
 
+// const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {
   if (err) {
     console.log(err);

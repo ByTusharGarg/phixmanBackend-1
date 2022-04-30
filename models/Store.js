@@ -8,7 +8,7 @@ const Store = mongoose.model(
     Name: String,
     email: {
       type: String,
-      unique: true,
+      // unique: true,
     },
     phone: { type: String, required: true, unique: true },
     password: String,
