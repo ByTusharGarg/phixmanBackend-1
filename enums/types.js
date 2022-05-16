@@ -4,7 +4,7 @@ const partnerTypes = ["store", "individual"];
 const partnerStatusTypes = ["active", "inactive"];
 const storeStatusTypes = ["active", "inactive"];
 const orderTypes = ["InStore", "Home"];
-const orderStatusTypes = ["Waiting", "confirmed", "InRepair", "completed"];
+const orderStatusTypes = ["Requested", "Accepted", "InRepair", "completed"];
 const serviceTypes = [];
 const paymentModeTypes = ["cod"];
 

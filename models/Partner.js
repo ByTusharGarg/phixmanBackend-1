@@ -8,7 +8,7 @@ const Schema = mongoose.Schema;
 const Partner = mongoose.model(
   "Partner",
   new Schema({
-    Sno: Number,
+    Sno: String,
     Name: String,
     Dob: String,
     Type: {

@@ -8,30 +8,38 @@ const Schema = mongoose.Schema;
 const Order = mongoose.model(
   "Order",
   new Schema({
-    Partner: { type: Schema.Types.ObjectId, required: true, ref: "Partner" },
-    Customer: { type: Schema.Types.ObjectId, required: true, ref: "Customer" },
-    OrderId: { type: Number, required: true },
-    OrderType: { type: String, required: true, enum: orderTypes },
+    Partner: { type: Schema.Types.ObjectId, ref: "Partner" },
+    Customer: { type: Schema.Types.ObjectId, ref: "Customer" },
+    OrderId: { type: String },
+    OrderType: { type: String, enum: orderTypes },
     Status: {
       type: String,
-      required: true,
       enum: orderStatusTypes,
     },
     OrderDetails: {
-      Amount: { type: Number, required: true },
+      Amount: { type: Number },
       Items: [
         {
-          Product: { type: String, required: true },
-          Service: { type: String, required: true },
-          Cost: { type: Number, required: true },
+          Product: { type: String },
+          Service: { type: String },
+          Cost: { type: Number },
         },
       ],
     },
-    Date: { type: Date, required: true },
-    PaymentMode: { type: String, required: true, enum: paymentModeTypes },
-    Address: { type: String },
-    PinCode: { type: String },
-    PickUpRequired: { type: Boolean, required: true },
+    Date: { type: Date, default: Date.now },
+    PaymentMode: { type: String, enum: paymentModeTypes },
+    address: {
+      street: String,
+      city: String,
+      pin: String,
+      state: String,
+      country: String,
+      cood: {
+        lattitude: String,
+        longitude: String,
+      },
+    },
+    PickUpRequired: { type: Boolean },
   })
 );
 

@@ -99,6 +99,7 @@ app.use("/", router.indexRoutes);
 app.use("/customer", router.customerRoutes);
 app.use("/partner", router.partnerRoutes);
 app.use("/admin", router.adminRoutes);
+app.use("/Order", router?.orderRoutes);
 
 // const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {

@@ -67,7 +67,7 @@ router.post("/Register", AdminAuth.registerAdmin);
  */
 router.post("/Login", AdminAuth.adminLogin);
 
-router.use(AdminAuth.checkAdmin);
+// router.use(AdminAuth.checkAdmin);
 
 /**
  * @openapi
@@ -212,7 +212,46 @@ router.get("/getCoupons", async (req, res) => {
  */
 router.get("/getOrders", async (req, res) => {
   try {
-    const orders = await Order.find({}, { otp: 0 });
+    const orders = await Order.find({});
+    return res.status(200).json(orders);
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/Order:
+ *  post:
+ *    summary: used to login on admin portal.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                username:
+ *                  type: string
+ *                password:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/Order", async (req, res) => {
+  try {
+    const orders = await Order.find({});
     return res.status(200).json(orders);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
