@@ -1,6 +1,6 @@
 const { param } = require("express-validator");
 const { rejectBadRequests } = require("../middleware");
-const { ProductType } = require("../models");
+const { ProductType, Brand, Coupon, Product } = require("../models");
 const router = require("express").Router();
 
 const getServiceParamValidators = [
@@ -26,7 +26,7 @@ router.get("/", (_, res) => {
  *    - Index Routes
  *    responses:
  *      200:
- *          description: if successfully fetch all product types.
+ *          description: if successfully fetch all product types or categories.
  *          content:
  *            application/json:
  *             schema:
@@ -92,10 +92,12 @@ router.get("/products", rejectBadRequests, async (req, res) => {
           icon: prod.icon,
           key: prod.key,
           video: prod.video,
+          modelRequired: prod.servedAt === "store" ? true : false,
         };
       })
     );
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
@@ -188,6 +190,7 @@ router.get(
             icon: prod.icon,
             key: prod.key,
             video: prod.video,
+            modelRequired: prod.servedAt === "store" ? true : false,
           };
         })
       );
@@ -196,6 +199,36 @@ router.get(
     }
   }
 );
+
+/**
+ * @openapi
+ * /Brands:
+ *  get:
+ *    summary: used to get list of brands.
+ *    tags:
+ *    - Index Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/Brands", async (req, res) => {
+  try {
+    const brands = await Brand.find({});
+    return res.status(200).json(brands);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 /**
  * @openapi
@@ -216,13 +249,40 @@ router.get(
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
 router.get("/Offers", async (req, res) => {
   try {
-    const coupons = await Coupon.find({}, { otp: 0 });
+    const coupons = await Coupon.find({});
     return res.status(200).json(coupons);
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /devices:
+ *  get:
+ *    summary: used to get list of brands.
+ *    tags:
+ *    - Index Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/devices", async (req, res) => {
+  try {
+    const devices = await Product.find({});
+    return res.status(200).json(devices);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }

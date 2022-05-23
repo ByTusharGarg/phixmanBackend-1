@@ -1,6 +1,8 @@
 require("dotenv").config();
 const seeder = require("mongoose-seed");
 const adminSeeders = require("./adminSeeders");
+const brandSeeders = require("./brandSeeders");
+const productSeeders = require("./productSeeders");
 const productTypeSeeder = require("./productTypeSeeder");
 
 // Connect to MongoDB via Mongoose
@@ -14,17 +16,25 @@ seeder.connect(
   },
   function () {
     // Load Mongoose models
-    seeder.loadModels(["./models/ProductType.js", "./models/Admin.js"]);
+    seeder.loadModels([
+      "./models/ProductType.js",
+      "./models/Admin.js",
+      "./models/Brand.js",
+      "./models/Product.js",
+    ]);
 
     // Clear specified collections
-    seeder.clearModels(["ProductType", "Admin"], function () {
-      // Callback to populate DB once collections have been cleared
-      seeder.populateModels(data, function () {
-        seeder.disconnect();
-      });
-    });
+    seeder.clearModels(
+      ["ProductType", "Admin", "Brand", "Product"],
+      function () {
+        // Callback to populate DB once collections have been cleared
+        seeder.populateModels(data, function () {
+          seeder.disconnect();
+        });
+      }
+    );
   }
 );
 
 // Data array containing seed data - documents organized by Model
-const data = [productTypeSeeder, adminSeeders];
+const data = [productTypeSeeder, adminSeeders, brandSeeders, productSeeders];
