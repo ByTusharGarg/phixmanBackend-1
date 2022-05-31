@@ -1,6 +1,7 @@
 const { orderStatusTypes } = require("../enums/types");
 const { Order, Counters } = require("../models");
 const router = require("express").Router();
+
 /**
  * @openapi
  * /Order/Bulk:
@@ -94,7 +95,6 @@ router.post("/", async (req, res) => {
     );
     if (!counterValue) {
       counterValue = await Counters.create({ name: "orders" });
-      // console.log(counterValue)
     }
     const order = await Order.create({
       ...req?.body,
@@ -104,6 +104,53 @@ router.post("/", async (req, res) => {
       address: req?.body?.address,
     });
     return res.status(200).json(order);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /Order/:status:
+ *  post:
+ *    summary: used to get order by status.
+ *    tags:
+ *    - Order Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/status/:status", async (req, res) => {
+  let { status } = req.params;
+
+  if (status !== 'all' && !orderStatusTypes.includes(status)) {
+    return res.status(400).json({ message: "Invalid status" });
+  }
+
+  let query = {};
+
+  if (status === 'all') {
+    query = {}
+  } else {
+    query = { Status: status }
+  }
+
+  try {
+    const orders = await Order.find(query);
+    return res.status(200).json(orders);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
