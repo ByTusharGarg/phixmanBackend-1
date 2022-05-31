@@ -113,7 +113,7 @@ router.post("/", async (req, res) => {
 
 /**
  * @openapi
- * /Order/:status:
+ * /Order/{status}:
  *  post:
  *    summary: used to get order by status.
  *    tags:
