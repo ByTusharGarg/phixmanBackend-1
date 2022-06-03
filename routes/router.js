@@ -3,6 +3,7 @@ const adminRoutes = require("./adminRoutes");
 const customerRoutes = require("./customerRoutes");
 const partnerRoutes = require("./partnerRoutes");
 const orderRoutes = require("./orderRoutes");
+const walletRoutes = require("./walletRoute");
 
 module.exports = {
   indexRoutes,
@@ -10,4 +11,5 @@ module.exports = {
   customerRoutes,
   partnerRoutes,
   orderRoutes,
+  walletRoutes
 };

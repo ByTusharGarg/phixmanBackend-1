@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Partner } = require("../models");
+const { Partner, Wallet } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 
 const sendOtpBodyValidator = [
@@ -217,6 +217,12 @@ router.post(
       if (partner === null) {
         return res.status(401).json({ message: "Invalid OTP" });
       }
+      const isWalletExixts = await Wallet.findOne(partner._id);
+
+      if (!isWalletExixts) {
+        await Wallet.create({ partnerId: partner?._id })
+      }
+
       return res.status(200).json({
         message: "OTP verified successfully",
         uid: partner._id,

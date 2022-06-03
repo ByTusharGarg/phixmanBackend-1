@@ -7,6 +7,8 @@ const orderTypes = ["InStore", "Home"];
 const orderStatusTypes = ["Requested", "Accepted", "InRepair", "completed"];
 const serviceTypes = [];
 const paymentModeTypes = ["cod"];
+const transsactionTypes = ["debit", "credit"];
+const transsactionStatus = ["successful", "pending", "failed"];
 
 module.exports = {
   genderTypes,
@@ -18,4 +20,6 @@ module.exports = {
   orderStatusTypes,
   serviceTypes,
   paymentModeTypes,
+  transsactionTypes,
+  transsactionStatus
 };

@@ -100,6 +100,8 @@ app.use("/customer", router.customerRoutes);
 app.use("/partner", router.partnerRoutes);
 app.use("/admin", router.adminRoutes);
 app.use("/Order", router?.orderRoutes);
+app.use("/wallet", router?.walletRoutes);
+
 
 // const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {
