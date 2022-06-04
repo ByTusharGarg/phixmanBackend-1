@@ -20,10 +20,11 @@ const validateWallletBodyValidator = [
 const validateUserWallet = async (id) => {
     try {
         // check if user have a wallet, else create wallet
-        const userWallet = await Wallet.findOne({ partnerId: id });
+        let userWallet = null;
+        userWallet = await Wallet.findOne({ partnerId: id });
         // If user wallet doesn't exist
         if (!userWallet) {
-            throw new Error("doesn't exist")
+            userWallet = await Wallet.create({ partnerId: id }) 
         }
         return userWallet;
     } catch (error) {
@@ -33,7 +34,7 @@ const validateUserWallet = async (id) => {
 
 
 
-const createWalletTransaction = async (partnerId, walletId, balance, title, transsactionType, status, reason) => {
+const createWalletTransaction = async (partnerId, walletId, amount, title, transsactionType, status, reason) => {
 
     if (!transsactionTypes.includes(transsactionType)) {
         throw new Error('Invalid transsactionType')
@@ -45,7 +46,7 @@ const createWalletTransaction = async (partnerId, walletId, balance, title, tran
     try {
         // create wallet transaction
         const walletTransaction = new WalletTransaction({
-            balance,
+            amount,
             partnerId,
             walletId,
             title,
@@ -91,7 +92,7 @@ const updateWallet = async (partnerId, amount, transsactionType, currentWallet) 
  *  post:
  *    summary: you can Make transaction in your wallet
  *    tags:
- *    - partner Routes
+ *    - wallet Routes
  *    requestBody:
  *      content:
  *        application/json:
@@ -215,5 +216,86 @@ router.post("/transaction", validateWallletBodyValidator, rejectBadRequests, asy
 });
 
 
+/**
+ * @openapi
+ * /wallet/transaction/{partnerId}:
+ *  get:
+ *    summary: fetch all wallet transaction in assending order by date
+ *    tags:
+ *    - wallet Routes
+ *    parameters:
+ *      - in: path
+ *        name: partnerId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get('/transaction/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const data = await WalletTransaction.find({ partnerId: id }).sort({ createdAt: -1 });
+        return res.status(200).json({ message: "Transsaction list", data })
+    } catch (error) {
+        return res
+            .status(500)
+            .json({ message: "Error encountered while trying to fetch transaction." });
+    }
+})
+
+/**
+ * @openapi
+ * /wallet/{partnerId}:
+ *  get:
+ *    summary: used to get wallet of partner
+ *    tags:
+ *    - wallet Routes
+ *    parameters:
+ *      - in: path
+ *        name: partnerId
+ *        required: true
+ *        schema:
+ *           type: string
+ *
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const data = await Wallet.findOne({ partnerId: id })
+        return res.status(200).json({ message: "wallet state", data });
+    } catch (error) {
+        return res
+            .status(500)
+            .json({ message: "Error encountered while trying to fetching wallet" });
+    }
+})
 
 module.exports = router;

@@ -113,11 +113,18 @@ router.post("/", async (req, res) => {
 
 /**
  * @openapi
- * /Order/{status}:
- *  post:
+ * /Order/status/{status}:
+ *  get:
  *    summary: used to get order by status.
  *    tags:
  *    - Order Routes
+ *    parameters:
+ *      - in: path
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["Requested", "Accepted", "InRepair", "completed"]
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.

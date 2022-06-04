@@ -10,7 +10,7 @@ const wallletSchema = mongoose.Schema({
         type:Boolean,
         default:true
     }
-}, { timestamp: true });
+}, { timestamps: true });
 
 const Coupon = mongoose.model("Wallet", wallletSchema);
 

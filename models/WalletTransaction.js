@@ -4,7 +4,7 @@ const { transsactionTypes, transsactionStatus } = require('../enums/types');
 const transsactionSchema = mongoose.Schema({
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: [true, "partnerId is required"] },
     walletId: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet", required: [true, "walletId is required"] },
-    amount: { type: Number },
+    amount: { type: Number,required: true},
     title: { type: String,default:'' },
     reason: { type: String,default:'' },
     transsactionType: { type: String, enum: transsactionTypes },
@@ -17,7 +17,7 @@ const transsactionSchema = mongoose.Schema({
         required: [true, "payment status is required"],
         enum: transsactionStatus,
     },
-}, { timestamp: true });
+}, { timestamps: true });
 
 const Coupon = mongoose.model("Transaction", transsactionSchema);
 
