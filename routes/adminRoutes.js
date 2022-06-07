@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const { AdminAuth } = require("../middleware");
-const { Admin, Customer, Coupon, Order } = require("../models");
+const { Admin, Customer, Coupon, Order, WalletTransaction } = require("../models");
 /**
  * @openapi
  * /admin/Register:
@@ -257,5 +257,78 @@ router.post("/Order", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
+/**
+ * @openapi
+ * /admin/getpartnertransaction?partnerid={partnerid}&start={start}&end={end}:
+ *  get:
+ *    summary: used to get all partnets transaction.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: partnerid
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: start
+ *        required: false
+ *        placeholder: yyyy-mm-dd
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: end
+ *        required: false
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.get("/getpartnertransaction", async (req, res) => {
+  const { partnerid, start, end } = req.query;
+
+  let query = {};
+
+  if (partnerid) {
+    console.log(partnerid);
+    query['partnerId'] = partnerid;
+  }
+
+
+  if (start && !end) {
+    return res.status(400).json({
+      message: 'Please ensure you pick two dates'
+    })
+  }
+
+  if (start && end) {
+    query['createdAt'] = {
+      $gte: new Date(new Date(start).setHours(00, 00, 00)),
+      $lt: new Date(new Date(end).setHours(23, 59, 59))
+    }
+  }
+
+  try {
+    const orders = await WalletTransaction.find(query).sort({ createdAt: -1 });
+    return res.status(200).json(orders);
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
 
 module.exports = router;
