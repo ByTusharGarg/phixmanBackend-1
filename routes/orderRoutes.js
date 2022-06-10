@@ -113,7 +113,7 @@ router.post("/", async (req, res) => {
 
 /**
  * @openapi
- * /Order/status/{status}:
+ * /Order/status/{status}/{partnerid}:
  *  get:
  *    summary: used to get order by status.
  *    tags:
@@ -125,6 +125,11 @@ router.post("/", async (req, res) => {
  *        schema:
  *           type: string
  *           enum: ["Requested", "Accepted", "InRepair", "completed"]
+ *      - in: path
+ *        name: partnerid
+ *        required: false
+ *        schema:
+ *           type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -140,19 +145,25 @@ router.post("/", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/status/:status", async (req, res) => {
-  let { status } = req.params;
+router.get("/status/:status/:partnerId?", async (req, res) => {
+  let { status, partnerId } = req.params;
 
   if (status !== 'all' && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
 
+  if (status !== 'all' && !partnerId) {
+    return res.status(400).json({ message: "partner id required" });
+  }
+
+
   let query = {};
 
   if (status === 'all') {
     query = {}
-  } else {
-    query = { Status: status }
+  }
+  else if (status !== 'all' && partnerId) {
+    query = { Status: status, Partner: partnerId }
   }
 
   try {

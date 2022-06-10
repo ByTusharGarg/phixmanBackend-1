@@ -9,6 +9,7 @@ const serviceTypes = [];
 const paymentModeTypes = ["cod"];
 const transsactionTypes = ["debit", "credit"];
 const transsactionStatus = ["successful", "pending", "failed"];
+const roles = ["customer","partner","order"]
 
 module.exports = {
   genderTypes,
@@ -21,5 +22,6 @@ module.exports = {
   serviceTypes,
   paymentModeTypes,
   transsactionTypes,
-  transsactionStatus
+  transsactionStatus,
+  roles
 };

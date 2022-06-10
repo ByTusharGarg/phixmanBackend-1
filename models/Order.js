@@ -5,6 +5,7 @@ const {
   paymentModeTypes,
 } = require("../enums/types");
 const Schema = mongoose.Schema;
+
 const Order = mongoose.model(
   "Order",
   new Schema({

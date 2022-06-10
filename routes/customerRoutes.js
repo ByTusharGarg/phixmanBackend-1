@@ -2,10 +2,12 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Customer, Order } = require("../models");
+const { Customer, Order, Partner } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword } = require("../libs/passwordLib");
+const { orderStatusTypes, orderTypes, paymentModeTypes } = require('../enums/types');
+const commonFunction = require('../utils/commonFunction');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -30,6 +32,30 @@ const verifyOtpBodyValidator = [
 const updateUserValidator = [
   body("email").isEmail().withMessage("email is invalid"),
   body("Password").isString().withMessage("password should be a string"),
+];
+
+
+
+const verifyOrderValidator = [
+  body("OrderType")
+    .notEmpty()
+    .withMessage("OrderType number cannot be empty")
+    .isIn(orderTypes)
+    .withMessage('OrderType does contain invalid value'),
+  body("PartnerId")
+    .notEmpty()
+    .withMessage("PartnerId number cannot be empty"),
+  body("PaymentMode")
+    .notEmpty()
+    .withMessage("PaymentMode number cannot be empty")
+    .isIn(paymentModeTypes)
+    .withMessage('PaymentMode does contain invalid value'),
+  body("PickUpRequired")
+    .isBoolean()
+    .withMessage('PickUpRequired Must be a boolean true or false'),
+  body("Items")
+    .isArray()
+    .withMessage('Items should be an array')
 ];
 
 /**
@@ -497,6 +523,140 @@ router.post("/address", async (req, res) => {
     );
     return res.status(200).json({ message: "address added" });
   } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /customer/create/order:
+ *  post:
+ *    summary: it's use to create a reqiuested new order to partner.
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                PartnerId:
+ *                  type: string
+ *                OrderType:
+ *                  type: string
+ *                  enum: [InStore, Home]
+ *                Items:
+ *                  type: array
+ *                  items:
+ *                    properties:
+ *                      name:
+ *                        type: string
+ *                      Service:
+ *                        type: string
+ *                      Cost:
+ *                        type: integer
+ *
+ *                PaymentMode:
+ *                  type: string
+ *                  enum: [cod]
+ *                address:
+ *                  type: object
+ *                  properties:
+ *                    street:
+ *                      type: string
+ *                    city:
+ *                      type: string
+ *                    pin:
+ *                      type: string
+ *                    state:
+ *                      type: string
+ *                    country:
+ *                      type: string
+ *                    cod:
+ *                      type: object
+ *                      properties:
+ *                         lattitude:
+ *                           type: string
+ *                         longitude:
+ *                            type: string
+ *                PickUpRequired:
+ *                  type: srting
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
+  const Customer = req.Customer._id;
+  const { OrderType, PartnerId, Items, PaymentMode, address, PickUpRequired } = req.body;
+  const Status = orderStatusTypes[0];
+  const OrderId = commonFunction.genrateID("ORD");
+  let Amount = 0;
+
+  Items.map(element => Amount += element?.Cost)
+
+
+  try {
+
+    const isPartnerExist = Partner.findById(PartnerId);
+    if (!isPartnerExist) {
+      const newOrder = new Order({ Partner: PartnerId, Customer, OrderId, OrderType, Status, OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+      const resp = await newOrder.save();
+      return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
+    } else {
+      return res.status(500).json({ message: "Partner not found" });
+    }
+
+
+  } catch (error) {
+    console.log(error)
     return res.status(500).json({ message: "Error encountered." });
   }
 });
