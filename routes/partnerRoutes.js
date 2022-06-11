@@ -2,8 +2,9 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Partner, Wallet, WalletTransaction } = require("../models");
+const { Partner, Wallet, Order } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
+const { orderStatusTypes } = require('../enums/types');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -217,9 +218,10 @@ router.post(
       if (partner === null) {
         return res.status(401).json({ message: "Invalid OTP" });
       }
-      const isWalletExixts = await Wallet.findOne(partner._id)
+      const isWalletExixts = await Wallet.findOne({ partnerId: partner?._id })
       if (!isWalletExixts) {
-        await Wallet.create({ partnerId: partner?._id })
+        const newWallet = new Wallet({ partnerId: partner?._id });
+        await newWallet.save();
       }
 
       return res.status(200).json({
@@ -231,6 +233,7 @@ router.post(
         type: partner.Type,
       });
     } catch (error) {
+      console.log(error)
       return res
         .status(500)
         .json({ message: "Error encountered while trying to verify otp" });
@@ -445,6 +448,60 @@ router.patch(
     }
   }
 );
+
+
+/**
+ * @openapi
+ * /partner/myorders/{status}:
+ *  get:
+ *    summary: using this route user can get all orders of his/her.
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["Requested", "Accepted", "InRepair", "completed","all"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/myorders/:status", async (req, res) => {
+  let { status } = req.params;
+  const partnerId = req.partner._id;
+
+  if (status !== 'all' && !orderStatusTypes.includes(status)) {
+    return res.status(400).json({ message: "Invalid status" });
+  }
+
+  let query = { Partner: partnerId };
+
+  if (status !== 'all') {
+    query = { Status: status }
+  }
+
+  try {
+    const orders = await Order.find(query);
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 
 module.exports = router;
