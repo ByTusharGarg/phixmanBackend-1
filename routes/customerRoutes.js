@@ -632,6 +632,8 @@ router.post("/address", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
   const Customer = req.Customer._id;
@@ -660,5 +662,72 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
+/**
+ * @openapi
+ * /cancel:
+ *   post:
+ *    summary: it's use to cancel the order.
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                id:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if order cancelled successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+router.post("/cancel", async (req, res) => {
+  const { id } = req.body;
+  const Customer = req.Customer._id;
+  const orderStatusTypes = ["Requested", "Accepted"];
+
+  try {
+    const isOrdrrBelongs = await Order.find({ _id: id, Customer });
+
+    if (!isOrdrrBelongs) {
+      return res.status(500).json({ message: "This order not belongs to you" });
+    }
+
+    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
+      return res.status(500).json({ message: "This order can't be Cancelled" });
+    }
+
+   await Order.findByIdAndUpdate(isOrdrrBelongs._id, { Status: "Cancelled" }, { new: true });
+
+    return res.status(200).json({ message: "Orders Cancelled successfully" });
+
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+})
 
 module.exports = router;
