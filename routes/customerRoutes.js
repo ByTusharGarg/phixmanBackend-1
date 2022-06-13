@@ -532,7 +532,7 @@ router.post("/address", async (req, res) => {
  * @openapi
  * /customer/create/order:
  *  post:
- *    summary: it's use to create a reqiuested new order to partner.
+ *    summary: it's use to create a requested new order to partner.
  *    tags:
  *    - Customer Routes
  *    requestBody:
@@ -666,7 +666,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
 
 /**
  * @openapi
- * /cancel:
+ * /customer/cancel:
  *   post:
  *    summary: it's use to cancel the order.
  *    tags:
@@ -729,5 +729,62 @@ router.post("/cancel", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 })
+
+
+/**
+ * @openapi
+ * /customer/myorders/{status}:
+ *  get:
+ *    summary: using this route user can get all orders of his/her.
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: path
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["Requested", "Accepted", "InRepair", "completed","all"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/myorders/:status", async (req, res) => {
+  let { status } = req.params;
+  const Customer = req.Customer._id;
+
+  if (status !== 'all' && !orderStatusTypes.includes(status)) {
+    return res.status(400).json({ message: "Invalid status" });
+  }
+
+  let query = { Customer };
+
+  if (status !== 'all') {
+    query = { Status: status }
+  }
+
+  try {
+    const orders = await Order.find(query);
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+
 
 module.exports = router;

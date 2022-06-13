@@ -504,4 +504,73 @@ router.get("/myorders/:status", async (req, res) => {
 });
 
 
+/**
+ * @openapi
+ * /partner/order/changestatus:
+ *  get:
+ *    summary: using this route partner change the order status
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["Requested", "Accepted", "InRepair", "completed","all"]
+ *      - in: path
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/order/changestatus", async (req, res) => {
+  let { status, orderId } = req.body;
+  const partnerId = req.partner._id;
+
+
+  if (!status || !orderId) {
+    return res.status(500).json({ message: "orderId and status must be provided" });
+  }
+
+  if (!orderStatusTypes.includes(status)) {
+    return res.status(500).json({ message: "Invalid status" });
+  }
+
+  try {
+    const order = await Order.findOne({ Partner: partnerId, _id: orderId });
+
+    if (!order) {
+      return res.status(500).json({ message: "order not belongs to this partner" });
+    }
+
+    if (order.Status === status) {
+      return res.status(200).json({ message: "This is your current status" });
+    }
+
+    await Order.findByIdAndUpdate(orderId, { Status: status }, { new: true });
+    return res.status(200).json({ message: "order status changes" });
+
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
 module.exports = router;
