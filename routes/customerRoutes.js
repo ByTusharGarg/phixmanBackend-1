@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Customer, Order, Partner } = require("../models");
+const { Customer, Order, Partner, Counters } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword } = require("../libs/passwordLib");
@@ -649,6 +649,12 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
 
     const isPartnerExist = Partner.findById(PartnerId);
     if (!isPartnerExist) {
+      let counterValue = await Counters.findOneAndUpdate(
+        { name: "orders" },
+        { $inc: { seq: 1 } },
+        { new: true }
+      );
+
       const newOrder = new Order({ Partner: PartnerId, Customer, OrderId, OrderType, Status, OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
       const resp = await newOrder.save();
       return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
@@ -721,7 +727,7 @@ router.post("/cancel", async (req, res) => {
       return res.status(500).json({ message: "This order can't be Cancelled" });
     }
 
-   await Order.findByIdAndUpdate(isOrdrrBelongs._id, { Status: "Cancelled" }, { new: true });
+    await Order.findByIdAndUpdate(isOrdrrBelongs._id, { Status: "Cancelled" }, { new: true });
 
     return res.status(200).json({ message: "Orders Cancelled successfully" });
 
