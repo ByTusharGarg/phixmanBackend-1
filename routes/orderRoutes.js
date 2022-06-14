@@ -1,4 +1,5 @@
 const { orderStatusTypes } = require("../enums/types");
+const { checkAdmin } = require('../middleware/AuthAdmin');
 const { Order, Counters } = require("../models");
 const router = require("express").Router();
 
@@ -124,7 +125,7 @@ router.post("/", async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *           enum: ["Requested", "Accepted", "InRepair", "completed"]
+ *           enum: ["Requested", "Accepted", "InRepair", "completed","Cancelled","all"]
  *      - in: path
  *        name: partnerid
  *        required: false
@@ -145,25 +146,28 @@ router.post("/", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/status/:status/:partnerId?", async (req, res) => {
+router.get("/status/:status/:partnerId?", checkAdmin, async (req, res) => {
   let { status, partnerId } = req.params;
+
+  if (!status && !partnerId) {
+    return res.status(400).json({ message: "status or partner id required" });
+  }
 
   if (status !== 'all' && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
-
-  if (status !== 'all' && !partnerId) {
-    return res.status(400).json({ message: "partner id required" });
-  }
-
 
   let query = {};
 
   if (status === 'all') {
     query = {}
   }
-  else if (status !== 'all' && partnerId) {
-    query = { Status: status, Partner: partnerId }
+  else if (status !== 'all') {
+    query = { Status: status }
+  }
+
+  if (partnerId) {
+    query = { ...query, Partner: partnerId }
   }
 
   try {
