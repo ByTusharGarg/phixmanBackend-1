@@ -506,6 +506,64 @@ router.get("/myorders/:status", async (req, res) => {
 
 /**
  * @openapi
+ * /partner/order/acceptorder:
+ *  get:
+ *    summary: using this route partner can accept order
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/order/acceptorder", async (req, res) => {
+  let { orderId } = req.body;
+  const partnerId = req.partner._id;
+
+
+  if (!orderId) {
+    return res.status(500).json({ message: "orderId must be provided" });
+  }
+
+
+  try {
+    const order = await Order.findOne({ _id: orderId });
+
+    if (!order) {
+      return res.status(500).json({ message: "order not exists" });
+    }
+
+    if (order.Status === 'Accepted') {
+      return res.status(500).json({ message: "order already Accepted" });
+    }
+
+    await Order.findByIdAndUpdate(orderId, { Status: "Accepted", Partner: partnerId }, { new: true });
+    return res.status(200).json({ message: "order Accepted" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
  * /partner/order/changestatus:
  *  get:
  *    summary: using this route partner change the order status
@@ -547,6 +605,12 @@ router.post("/order/changestatus", async (req, res) => {
     return res.status(500).json({ message: "orderId and status must be provided" });
   }
 
+
+  if (status === 'Accepted') {
+    return res.status(500).json({ message: "Accepted status is not allowed" });
+  }
+
+
   if (!orderStatusTypes.includes(status)) {
     return res.status(500).json({ message: "Invalid status" });
   }
@@ -564,8 +628,6 @@ router.post("/order/changestatus", async (req, res) => {
 
     await Order.findByIdAndUpdate(orderId, { Status: status }, { new: true });
     return res.status(200).json({ message: "order status changes" });
-
-    return res.status(200).json(orders);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
