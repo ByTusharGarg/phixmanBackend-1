@@ -67,6 +67,42 @@ router.post("/Register", AdminAuth.registerAdmin);
  */
 router.post("/Login", AdminAuth.adminLogin);
 
+
+/**
+ * @openapi
+ * /admin/forgotpassword:
+ *  post:
+ *    summary: used to change admin password
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: string
+ *                newpassword:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+ router.post("/forgotpassword", AdminAuth.changePassword);
+
+
+
+
 // router.use(AdminAuth.checkAdmin);
 
 /**

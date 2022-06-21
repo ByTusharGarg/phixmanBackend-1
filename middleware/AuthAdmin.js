@@ -122,8 +122,36 @@ const checkAdmin = (req, res, next) => {
   }
 };
 
+
+const changePassword = async (req, res) => {
+  const { email, newpassword } = req.body;
+  if (!email || !newpassword) {
+    return res.status(400).json({
+      message: "email newpassword required",
+    })
+  }
+
+  try {
+    const resp = await Admin.findOneAndUpdate({ email }, { password: hashpassword(newpassword) }, { new: true });
+    if (resp) {
+      return res.status(200).json({
+        message: "Password Changed successfully",
+      });
+    } else {
+      return res.status(404).json({
+        message: "Admin not found",
+      })
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Try again later !!!",
+    });
+  }
+}
+
 module.exports = {
   adminLogin,
   checkAdmin,
   registerAdmin,
+  changePassword
 };
