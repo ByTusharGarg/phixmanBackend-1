@@ -12,6 +12,8 @@ const partnerReviews = require("./partnerReviews");
 const ProductType = require("./ProductType");
 const Wallet = require("./Wallet");
 const WalletTransaction = require("./WalletTransaction");
+const Model = require("./Model");
+
 
 
 
@@ -29,5 +31,6 @@ module.exports = {
   Product_Service,
   partnerReviews,
   Wallet,
-  WalletTransaction
+  WalletTransaction,
+  Model
 };

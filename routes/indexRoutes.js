@@ -1,6 +1,6 @@
 const { param } = require("express-validator");
 const { rejectBadRequests } = require("../middleware");
-const { ProductType, Brand, Coupon, Product } = require("../models");
+const { ProductType, Brand, Coupon, Product, Model } = require("../models");
 const router = require("express").Router();
 
 const getServiceParamValidators = [
@@ -229,6 +229,160 @@ router.get("/Brands", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
+
+/**
+ * @openapi
+ * /Brands:
+ *  post:
+ *    summary: used to add brands.
+ *    tags:
+ *    - Index Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                  description: required
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/Brands", async (req, res) => {
+  const { name } = req.body;
+
+  if (!name) {
+    return res.status(500).json({ message: "name required" });
+  }
+  try {
+
+    const isExistBrands = await Brand.findOne({ Name: name });
+
+    if (isExistBrands) {
+      return res.status(500).json({ message: "Brands already exist" });
+    }
+
+    const brands = new Brand({ Name: name });
+    console.log(brands);
+    const resp = await brands.save();
+    return res.status(200).json({ message: "Brand added successfully", data: resp });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /models/{brandId}:
+ *  get:
+ *    summary: used to get all the models by brand id
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: brandId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+ router.get("/models/:id", async (req, res) => {
+  if (!req.params.id) {
+    return res.status(500).json({ message: "Brand id required." });
+  }
+
+  try {
+    const models = await Model.find({brandId:req.params.id});
+    return res.status(200).json({ message: "Models lists", data:models });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /models:
+ *  post:
+ *    summary: used to add Models.
+ *    tags:
+ *    - Index Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                brandId:
+ *                  type: string
+ *                  description: required
+ *                modelName:
+ *                  type: string
+ *                  description: required
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/models", async (req, res) => {
+  const { brandId, modelName } = req.body;
+
+  if (!brandId || !modelName) {
+    return res.status(500).json({ message: "brandId and modelName are required" });
+  }
+
+  try {
+
+    const isBrandExists = await Brand.findById(brandId);
+
+    if (!isBrandExists) {
+      return res.status(500).json({ message: "Brands not exist" });
+    }
+
+    const newmodel = new Model({ brandId, modelName });
+    const resp = await newmodel.save();
+    return res.status(200).json({ message: "Model created successfully", data: resp });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 
 /**
  * @openapi

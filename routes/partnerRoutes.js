@@ -463,7 +463,7 @@ router.patch(
  *        required: true
  *        schema:
  *           type: string
- *           enum: ["Requested", "Accepted", "InRepair", "completed","all"]
+ *           enum: ["Accepted", "InRepair", "completed","all"]
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -484,6 +484,10 @@ router.get("/myorders/:status", async (req, res) => {
   let { status } = req.params;
   const partnerId = req.partner._id;
 
+  if (status === 'Requested') {
+    return res.status(500).json({ message: "Requested status not allowed." });
+  }
+
   if (status !== 'all' && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
@@ -503,6 +507,44 @@ router.get("/myorders/:status", async (req, res) => {
   }
 });
 
+
+/**
+ * @openapi
+ * /partner/requestedorder/{city}:
+ *  get:
+ *    summary: using this route partner see requested orders lists
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: city
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/requestedorder/:city", async (req, res) => {
+  let { city } = req.params;
+  try {
+    const orders = await Order.find({ Status: "Requested", address: { city } });
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 /**
  * @openapi
@@ -540,7 +582,6 @@ router.post("/order/acceptorder", async (req, res) => {
   if (!orderId) {
     return res.status(500).json({ message: "orderId must be provided" });
   }
-
 
   try {
     const order = await Order.findOne({ _id: orderId });
