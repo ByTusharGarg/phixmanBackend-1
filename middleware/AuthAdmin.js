@@ -122,26 +122,34 @@ const checkAdmin = (req, res, next) => {
   }
 };
 
+const resetPassword = async (req, res) => {
+  const { email } = req.body;
 
-const changePassword = async (req, res) => {
-  const { email, newpassword } = req.body;
-  if (!email || !newpassword) {
+  if (!email) {
     return res.status(400).json({
-      message: "email newpassword required",
+      message: "email required",
     })
   }
 
   try {
-    const resp = await Admin.findOneAndUpdate({ email }, { password: hashpassword(newpassword) }, { new: true });
+    const resp = await Admin.findOne({ email });
+    let token;
+
     if (resp) {
-      return res.status(200).json({
-        message: "Password Changed successfully",
-      });
-    } else {
-      return res.status(404).json({
-        message: "Admin not found",
-      })
+      token = jwt.sign(
+        { userID: resp._id, email, type: "admin" },
+        process.env.CHNAGE_PASSWORD_SECRET,
+        {
+          expiresIn: "8hr", // expires in 24 hours
+        }
+      );
     }
+    return res.status(200).json({
+      success: true,
+      message: "Reset password instructions sent on your mail successfully valid till 8hr",
+      token
+    });
+
   } catch (error) {
     return res.status(500).json({
       message: "Try again later !!!",
@@ -149,9 +157,48 @@ const changePassword = async (req, res) => {
   }
 }
 
+const changePassword = async (req, res) => {
+  const { token, newpassword } = req.body;
+
+  if (!newpassword || !token) {
+    return res.status(400).json({
+      message: "token newpassword required",
+    })
+  }
+
+  try {
+
+    const data = await jwt.verify(token, process.env.CHNAGE_PASSWORD_SECRET);
+
+    if (data) {
+      if (data.type === 'admin') {
+        const resp = await Admin.findOneAndUpdate({ email: data.email }, { password: hashpassword(newpassword) }, { new: true });
+        if (resp) {
+          return res.status(200).json({
+            message: "Password Changed successfully",
+          });
+        } else {
+          return res.status(404).json({
+            message: "Token expired or invalid",
+          })
+        }
+      }
+    } else {
+      return res.status(500).json({
+        message: "Token expired or invalid",
+      })
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Token expired or invalid",
+    })
+  }
+}
+
 module.exports = {
   adminLogin,
   checkAdmin,
   registerAdmin,
-  changePassword
+  changePassword,
+  resetPassword
 };

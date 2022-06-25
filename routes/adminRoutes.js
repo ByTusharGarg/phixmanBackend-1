@@ -70,7 +70,37 @@ router.post("/Login", AdminAuth.adminLogin);
 
 /**
  * @openapi
- * /admin/forgotpassword:
+ * /admin/resetpassword:
+ *  post:
+ *    summary: used to send reset password link to the admin
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+ router.post("/resetpassword", AdminAuth.resetPassword);
+
+/**
+ * @openapi
+ * /admin/changepassword:
  *  post:
  *    summary: used to change admin password
  *    tags:
@@ -81,7 +111,7 @@ router.post("/Login", AdminAuth.adminLogin);
  *          schema:
  *              type: object
  *              properties:
- *                email:
+ *                token:
  *                  type: string
  *                newpassword:
  *                  type: string
@@ -98,7 +128,7 @@ router.post("/Login", AdminAuth.adminLogin);
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
- router.post("/forgotpassword", AdminAuth.changePassword);
+ router.post("/changepassword", AdminAuth.changePassword);
 
 
 
