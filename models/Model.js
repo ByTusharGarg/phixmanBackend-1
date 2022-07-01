@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const Product_Service = mongoose.model(
-    "Model",
-    new Schema({
-        brandId: { type: Schema.Types.ObjectId, required: true, ref: "Brand" },
-        modelName: { type: String, required: true }
-    })
-);
+const moodelSchema = new Schema({
+  Brand: { type: Schema.Types.ObjectId, ref: "Brand" },
+  modelId: { type: Schema.Types.ObjectId, ref: "Model" },
+  Name: { type: String, required: true },
+  categoryId: { type: Schema.Types.ObjectId, ref: "category", required: true }
+});
+const Model = mongoose.model("Model", moodelSchema);
 
-module.exports = Product_Service;
+module.exports = Model;

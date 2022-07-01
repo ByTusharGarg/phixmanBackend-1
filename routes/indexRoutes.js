@@ -1,6 +1,7 @@
 const { param } = require("express-validator");
 const { rejectBadRequests } = require("../middleware");
-const { ProductType, Brand, Coupon, Product, Model } = require("../models");
+const { checkAdmin } = require('../middleware/AuthAdmin');
+const { category, Brand, Coupon, Model } = require("../models");
 const router = require("express").Router();
 
 const getServiceParamValidators = [
@@ -19,7 +20,61 @@ router.get("/", (_, res) => {
 
 /**
  * @openapi
- * /products:
+ * /categories:
+ *  post:
+ *    summary: used to add brands.
+ *    tags:
+ *    - Index Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                video:
+ *                  type: string
+ *                  description: required
+ *                icon:
+ *                  type: string
+ *                  description: required
+ *                name:
+ *                  type: string
+ *                  description: required
+ *                key:
+ *                  type: string
+ *                  description: required
+ *                servedAt:
+ *                  type: string
+ *                  description: required
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/categories", async (req, res) => {
+  const { video, icon, name, key, servedAt } = req.body;
+  try {
+    const newCategory = new category({ video, icon, name, key, servedAt });
+    await newCategory.save();
+    return res.status(201).json({ message: "Category created successfully.", data: newCategory });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /categories:
  *  get:
  *    summary: lists all product categories available
  *    tags:
@@ -82,9 +137,9 @@ router.get("/", (_, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/products", rejectBadRequests, async (req, res) => {
+router.get("/categories", rejectBadRequests, async (req, res) => {
   try {
-    const products = await ProductType.find();
+    const products = await category.find();
     return res.status(200).json(
       products.map((prod) => {
         return {
@@ -104,7 +159,7 @@ router.get("/products", rejectBadRequests, async (req, res) => {
 
 /**
  * @openapi
- * /products/{serviceType}:
+ * /category/{serviceType}:
  *  get:
  *    summary: lists all product categories available served at a specific place
  *    tags:
@@ -175,12 +230,12 @@ router.get("/products", rejectBadRequests, async (req, res) => {
  *                    example: Error encountered.
  */
 router.get(
-  "/products/:serviceType",
+  "/category/:serviceType",
   ...getServiceParamValidators,
   rejectBadRequests,
   async (req, res) => {
     try {
-      const products = await ProductType.find({
+      const products = await category.find({
         servedAt: req?.params?.serviceType,
       });
       return res.status(200).json(
@@ -203,6 +258,62 @@ router.get(
 /**
  * @openapi
  * /Brands:
+ *  post:
+ *    summary: used to add brands.
+ *    tags:
+ *    - Index Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                  description: required
+ *                brandId:
+ *                  type: string
+ *                  description: required
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/brands", async (req, res) => {
+  const { name, brandId } = req.body;
+
+  if (!name || !brandId) {
+    return res.status(500).json({ message: "name and brandId required" });
+  }
+  try {
+
+    const isExistBrands = await Brand.findOne({ Name: name, brandId });
+
+    if (isExistBrands) {
+      return res.status(500).json({ message: "Brands already exist" });
+    }
+
+    const brands = new Brand({ Name: name, brandId });
+    const resp = await brands.save();
+    return res.status(200).json({ message: "Brand added successfully", data: resp });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /Brands:
  *  get:
  *    summary: used to get list of brands.
  *    tags:
@@ -220,7 +331,7 @@ router.get(
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/Brands", async (req, res) => {
+router.get("/brands", async (req, res) => {
   try {
     const brands = await Brand.find({});
     return res.status(200).json(brands);
@@ -230,101 +341,6 @@ router.get("/Brands", async (req, res) => {
   }
 });
 
-
-
-/**
- * @openapi
- * /Brands:
- *  post:
- *    summary: used to add brands.
- *    tags:
- *    - Index Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          schema:
- *              type: object
- *              properties:
- *                name:
- *                  type: string
- *                  description: required
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.post("/Brands", async (req, res) => {
-  const { name } = req.body;
-
-  if (!name) {
-    return res.status(500).json({ message: "name required" });
-  }
-  try {
-
-    const isExistBrands = await Brand.findOne({ Name: name });
-
-    if (isExistBrands) {
-      return res.status(500).json({ message: "Brands already exist" });
-    }
-
-    const brands = new Brand({ Name: name });
-    console.log(brands);
-    const resp = await brands.save();
-    return res.status(200).json({ message: "Brand added successfully", data: resp });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
-
-
-/**
- * @openapi
- * /models/{brandId}:
- *  get:
- *    summary: used to get all the models by brand id
- *    tags:
- *    - Index Routes
- *    parameters:
- *      - in: path
- *        name: brandId
- *        required: true
- *        schema:
- *           type: string
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
- router.get("/models/:id", async (req, res) => {
-  if (!req.params.id) {
-    return res.status(500).json({ message: "Brand id required." });
-  }
-
-  try {
-    const models = await Model.find({brandId:req.params.id});
-    return res.status(200).json({ message: "Models lists", data:models });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
 
 
 /**
@@ -360,10 +376,10 @@ router.post("/Brands", async (req, res) => {
  *                    example: Error encountered.
  */
 router.post("/models", async (req, res) => {
-  const { brandId, modelName } = req.body;
+  const { brandId, category, modelName, modelId } = req.body;
 
-  if (!brandId || !modelName) {
-    return res.status(500).json({ message: "brandId and modelName are required" });
+  if (!brandId || !modelName || !phoneId || !type) {
+    return res.status(500).json({ message: "brandId modelName and  phoneId are required" });
   }
 
   try {
@@ -374,9 +390,56 @@ router.post("/models", async (req, res) => {
       return res.status(500).json({ message: "Brands not exist" });
     }
 
-    const newmodel = new Model({ brandId, modelName });
+
+    const isCategoryExists = await category.findById(categoryId);
+
+    if (!isCategoryExists) {
+      return res.status(500).json({ message: "Category not exist" });
+    }
+
+    const newmodel = new Model({ Brand: brandId, Name: modelName, modelId, categoryId });
     const resp = await newmodel.save();
     return res.status(200).json({ message: "Model created successfully", data: resp });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /models/{brandId}:
+ *  get:
+ *    summary: used to get all the models by brand id
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: brandId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/models/:id", async (req, res) => {
+  if (!req.params.id) {
+    return res.status(500).json({ message: "Brand id required." });
+  }
+  try {
+    const models = await Model.findById(req.params.id);
+    return res.status(200).json({ message: "Models lists", data: models });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });

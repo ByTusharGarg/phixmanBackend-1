@@ -3,7 +3,7 @@ const seeder = require("mongoose-seed");
 const adminSeeders = require("./adminSeeders");
 const brandSeeders = require("./brandSeeders");
 const productSeeders = require("./productSeeders");
-const productTypeSeeder = require("./productTypeSeeder");
+const categorySeeder = require("./categorySeeder");
 
 // Connect to MongoDB via Mongoose
 seeder.connect(
@@ -17,15 +17,15 @@ seeder.connect(
   function () {
     // Load Mongoose models
     seeder.loadModels([
-      "./models/ProductType.js",
+      "./models/category.js",
       "./models/Admin.js",
       "./models/Brand.js",
-      "./models/Product.js",
+      "./models/Model.js",
     ]);
 
     // Clear specified collections
     seeder.clearModels(
-      ["ProductType", "Admin", "Brand", "Product"],
+      ["category", "Admin", "Brand", "Product"],
       function () {
         // Callback to populate DB once collections have been cleared
         seeder.populateModels(data, function () {
@@ -37,4 +37,4 @@ seeder.connect(
 );
 
 // Data array containing seed data - documents organized by Model
-const data = [productTypeSeeder, adminSeeders, brandSeeders, productSeeders];
+const data = [categorySeeder, adminSeeders, brandSeeders, productSeeders];

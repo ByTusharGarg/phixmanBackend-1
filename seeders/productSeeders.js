@@ -1,5 +1,5 @@
 module.exports = {
-  model: "Product",
+  model: "Model",
   documents: [
     
   ],

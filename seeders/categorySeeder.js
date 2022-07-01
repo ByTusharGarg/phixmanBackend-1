@@ -1,5 +1,5 @@
 module.exports = {
-  model: "ProductType",
+  model: "category",
   documents: {
     mobile: {
       name: "Mobile",

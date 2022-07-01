@@ -6,13 +6,12 @@ const Customer = require("./Customer");
 const Invoice = require("./Invoice");
 const Order = require("./Order");
 const Partner = require("./Partner");
-const Product = require("./Product");
+const Model = require("./Model");
 const Product_Service = require("./Product_Service");
 const partnerReviews = require("./partnerReviews");
-const ProductType = require("./ProductType");
+const category = require("./category");
 const Wallet = require("./Wallet");
 const WalletTransaction = require("./WalletTransaction");
-const Model = require("./Model");
 
 
 
@@ -26,11 +25,10 @@ module.exports = {
   Invoice,
   Order,
   Partner,
-  Product,
-  ProductType,
+  Model,
+  category,
   Product_Service,
   partnerReviews,
   Wallet,
   WalletTransaction,
-  Model
 };
