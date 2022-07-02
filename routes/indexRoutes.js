@@ -1,8 +1,11 @@
 const { param } = require("express-validator");
+const path = require("path");
 const { rejectBadRequests } = require("../middleware");
 const { checkAdmin } = require('../middleware/AuthAdmin');
 const { category, Brand, Coupon, Model } = require("../models");
 const router = require("express").Router();
+const csv = require('csvtojson')
+
 
 const getServiceParamValidators = [
   param("serviceType")
@@ -11,6 +14,8 @@ const getServiceParamValidators = [
     .isIn(["home", "store"])
     .withMessage("service type is invalid"),
 ];
+
+
 
 router.get("/", (_, res) => {
   return res.send(
@@ -257,7 +262,7 @@ router.get(
 
 /**
  * @openapi
- * /Brands:
+ * /brands:
  *  post:
  *    summary: used to add brands.
  *    tags:
@@ -313,7 +318,7 @@ router.post("/brands", async (req, res) => {
 
 /**
  * @openapi
- * /Brands:
+ * /brands:
  *  get:
  *    summary: used to get list of brands.
  *    tags:
@@ -342,7 +347,6 @@ router.get("/brands", async (req, res) => {
 });
 
 
-
 /**
  * @openapi
  * /models:
@@ -359,7 +363,13 @@ router.get("/brands", async (req, res) => {
  *                brandId:
  *                  type: string
  *                  description: required
+ *                categoryId:
+ *                  type: string
+ *                  description: required
  *                modelName:
+ *                  type: string
+ *                  description: required
+ *                modelId:
  *                  type: string
  *                  description: required
  *    responses:
@@ -376,14 +386,13 @@ router.get("/brands", async (req, res) => {
  *                    example: Error encountered.
  */
 router.post("/models", async (req, res) => {
-  const { brandId, category, modelName, modelId } = req.body;
+  const { brandId, categoryId, modelName, modelId } = req.body;
 
-  if (!brandId || !modelName || !phoneId || !type) {
+  if (!brandId || !modelName || !modelId || !categoryId) {
     return res.status(500).json({ message: "brandId modelName and  phoneId are required" });
   }
 
   try {
-
     const isBrandExists = await Brand.findById(brandId);
 
     if (!isBrandExists) {
@@ -397,7 +406,7 @@ router.post("/models", async (req, res) => {
       return res.status(500).json({ message: "Category not exist" });
     }
 
-    const newmodel = new Model({ Brand: brandId, Name: modelName, modelId, categoryId });
+    const newmodel = new Model({ brandId, Name: modelName, modelId, categoryId });
     const resp = await newmodel.save();
     return res.status(200).json({ message: "Model created successfully", data: resp });
   } catch (error) {
@@ -409,17 +418,23 @@ router.post("/models", async (req, res) => {
 
 /**
  * @openapi
- * /models/{brandId}:
+ * /models/{categoryId}/{brandId}:
  *  get:
- *    summary: used to get all the models by brand id
+ *    summary: used to get all the models by category and brandid 
  *    tags:
  *    - Index Routes
  *    parameters:
+ *      - in: path
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
  *      - in: path
  *        name: brandId
  *        required: true
  *        schema:
  *           type: string
+ * 
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -433,12 +448,15 @@ router.post("/models", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/models/:id", async (req, res) => {
-  if (!req.params.id) {
-    return res.status(500).json({ message: "Brand id required." });
+router.get("/models/:categoryId/:brandId", async (req, res) => {
+  const { categoryId, brandId } = req.params;
+
+  if (!categoryId || !brandId) {
+    return res.status(500).json({ message: "categoryId brandId are required" });
   }
+
   try {
-    const models = await Model.findById(req.params.id);
+    const models = await Model.find({ categoryId, brandId });
     return res.status(200).json({ message: "Models lists", data: models });
   } catch (error) {
     console.log(error);
@@ -446,6 +464,65 @@ router.get("/models/:id", async (req, res) => {
   }
 });
 
+router.post("/bulk/uploadmodels", async (req, res) => {
+  const { categoryId, brandId } = req.body;
+
+  // if (!categoryId || !brandId) {
+  //   return res.status(500).json({ message: "categoryId brandId are required" });
+  // }
+
+  try {
+
+    // const isCategoryExists = await category.findById(categoryId);
+
+    // if (!isCategoryExists) {
+    //   return res.status(500).json({ message: "Category not exist" });
+    // }
+
+    // const isBrandExists = await Brand.findById(brandId);
+
+    // if (!isBrandExists) {
+    //   return res.status(500).json({ message: "Brands not exist" });
+    // }
+
+    // console.log("file ",req.files.csvfile); // the uploaded file object
+    const file = req.files.csvfile;
+
+    // 1. concat name
+    // 2. insert models
+    // 3. apply validation
+    // 4. insert services
+    // 5. validation
+    // 6. process all data
+
+
+    if (!file) {
+      return res.status(400).send("No files were uploaded.");
+    }
+
+    let filepath = path.join(__dirname, `../public/csv/${file.name}`);
+
+    file.mv(filepath, async (err) => {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      const jsonArray = await csv().fromFile(filepath);
+      console.log(jsonArray);
+
+
+      // csv().fromFile(filepath)
+      //   .then((jsonObj) => {
+      //   })
+      return res.send({ status: "success" });
+    });
+
+    // return res.status(200).json({ message: "Models lists" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 /**
  * @openapi

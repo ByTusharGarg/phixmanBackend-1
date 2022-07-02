@@ -6,7 +6,7 @@ const Brand = mongoose.model(
   new Schema({
     Name: { type: String, required: true, unique: true },
     brandId: { type: String, required: true, unique: true },
-    types:[]
+    types: []
   })
 );
 module.exports = Brand;

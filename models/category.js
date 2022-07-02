@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const categorySchema = new mongoose.Schema({
   video: String,
   icon: String,
-  name: String,
+  name: { type: String, unique: true },
   key: String,
   servedAt: String,
 });
