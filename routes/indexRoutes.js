@@ -4,8 +4,9 @@ const { rejectBadRequests } = require("../middleware");
 const { checkAdmin } = require('../middleware/AuthAdmin');
 const { category, Brand, Coupon, Model } = require("../models");
 const router = require("express").Router();
-const csv = require('csvtojson')
-
+const csv = require('csvtojson');
+const { getParseModels } = require('../libs/commonFunction');
+const fs = require('fs');
 
 const getServiceParamValidators = [
   param("serviceType")
@@ -406,7 +407,10 @@ router.post("/models", async (req, res) => {
       return res.status(500).json({ message: "Category not exist" });
     }
 
-    const newmodel = new Model({ brandId, Name: modelName, modelId, categoryId });
+    const newmodel = await Model.findOneAndUpdate({ brandId }, { brandId, Name: modelName, modelId, categoryId }, { new: true, upsert: true });
+
+    // const newmodel = new Model({ brandId, Name: modelName, modelId, categoryId });
+
     const resp = await newmodel.save();
     return res.status(200).json({ message: "Model created successfully", data: resp });
   } catch (error) {
@@ -467,23 +471,23 @@ router.get("/models/:categoryId/:brandId", async (req, res) => {
 router.post("/bulk/uploadmodels", async (req, res) => {
   const { categoryId, brandId } = req.body;
 
-  // if (!categoryId || !brandId) {
-  //   return res.status(500).json({ message: "categoryId brandId are required" });
-  // }
+  if (!categoryId || !brandId) {
+    return res.status(500).json({ message: "categoryId brandId are required" });
+  }
 
   try {
 
-    // const isCategoryExists = await category.findById(categoryId);
+    const isCategoryExists = await category.findById(categoryId);
 
-    // if (!isCategoryExists) {
-    //   return res.status(500).json({ message: "Category not exist" });
-    // }
+    if (!isCategoryExists) {
+      return res.status(500).json({ message: "Category not exist" });
+    }
 
-    // const isBrandExists = await Brand.findById(brandId);
+    const isBrandExists = await Brand.findById(brandId);
 
-    // if (!isBrandExists) {
-    //   return res.status(500).json({ message: "Brands not exist" });
-    // }
+    if (!isBrandExists) {
+      return res.status(500).json({ message: "Brands not exist" });
+    }
 
     // console.log("file ",req.files.csvfile); // the uploaded file object
     const file = req.files.csvfile;
@@ -508,12 +512,20 @@ router.post("/bulk/uploadmodels", async (req, res) => {
       }
 
       const jsonArray = await csv().fromFile(filepath);
-      console.log(jsonArray);
+      const { modelsArr, services } = getParseModels(jsonArray.slice(1), brandId, categoryId, isBrandExists.Name);
 
+      Model.bulkWrite(modelsArr.map((ele) =>
+      ({
+        updateOne: {
+          filter: { modelId: ele.modelId },
+          update: { $set: ele },
+          upsert: true
+        }
+      })
+      ))
 
-      // csv().fromFile(filepath)
-      //   .then((jsonObj) => {
-      //   })
+      fs.unlinkSync(filepath)
+
       return res.send({ status: "success" });
     });
 
