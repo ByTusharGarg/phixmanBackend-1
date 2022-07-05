@@ -2,7 +2,7 @@ const { param } = require("express-validator");
 const path = require("path");
 const { rejectBadRequests } = require("../middleware");
 const { checkAdmin } = require('../middleware/AuthAdmin');
-const { category, Brand, Coupon, Model } = require("../models");
+const { category, Brand, Coupon, Model, Product_Service } = require("../models");
 const router = require("express").Router();
 const csv = require('csvtojson');
 const { getParseModels } = require('../libs/commonFunction');
@@ -468,7 +468,45 @@ router.get("/models/:categoryId/:brandId", async (req, res) => {
   }
 });
 
-router.post("/bulk/uploadmodels", async (req, res) => {
+
+/**
+ * @openapi
+ * /bulk/uploadcsvdata:
+ *  post:
+ *    summary: used to upload models and services
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: brandId
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: csvfile
+ *        required: true
+ *        schema:
+ *           type: file
+ * 
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/bulk/uploadcsvdata", async (req, res) => {
   const { categoryId, brandId } = req.body;
 
   if (!categoryId || !brandId) {
@@ -512,7 +550,7 @@ router.post("/bulk/uploadmodels", async (req, res) => {
       }
 
       const jsonArray = await csv().fromFile(filepath);
-      const { modelsArr, services } = getParseModels(jsonArray.slice(1), brandId, categoryId, isBrandExists.Name);
+      const { modelsArr, services } = getParseModels(jsonArray, brandId, categoryId, isBrandExists.Name);
 
       Model.bulkWrite(modelsArr.map((ele) =>
       ({
@@ -524,9 +562,19 @@ router.post("/bulk/uploadmodels", async (req, res) => {
       })
       ))
 
+      Product_Service.bulkWrite(services.map((ele) =>
+      ({
+        updateOne: {
+          filter: { modelId: ele.modelId },
+          update: { $set: ele },
+          upsert: true
+        }
+      })
+      ))
+
       fs.unlinkSync(filepath)
 
-      return res.send({ status: "success" });
+      return res.send({ status: "success", services });
     });
 
     // return res.status(200).json({ message: "Models lists" });
