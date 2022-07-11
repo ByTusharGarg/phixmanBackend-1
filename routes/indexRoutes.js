@@ -514,7 +514,6 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
   }
 
   try {
-
     const isCategoryExists = await category.findById(categoryId);
 
     if (!isCategoryExists) {
@@ -574,10 +573,52 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
 
       fs.unlinkSync(filepath)
 
-      return res.send({ status: "success", services });
+      return res.send({ status: "File data uploaded successfully", modelCount: modelsArr.length, servicesCount: services.length });
     });
 
-    // return res.status(200).json({ message: "Models lists" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /model/services/{modelid}:
+ *  get:
+ *    summary: get all services bu modelid
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: modelid
+ *        required: true
+ *        schema:
+ *           type: string
+ * 
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/model/services/:modelid", async (req, res) => {
+  const { modelid } = req.params;
+
+  if (!modelid) {
+    return res.status(500).json({ message: "modelid is required" });
+  }
+
+  try {
+    const services = await Product_Service.findOne({ modelId: modelid });
+    return res.status(200).json({ message: "Models lists", data: services });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });

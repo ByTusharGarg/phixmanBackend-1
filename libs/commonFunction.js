@@ -18,12 +18,14 @@ const getParseModels = (models, brandId, categoryId, phoneName) => {
     })
 
 
+    // services
     for (let index = 1; index < models.length; index++) {
         let currentModel = models[index];
 
         let singleModelService = {
+            categoryId,
             modelId: currentModel?.EDIT,
-            modelName: `${phoneName} ${currentModel?.ROW}`,
+            modelName: `${currentModel?.ROW.toLowerCase().includes(phoneName.toLowerCase()) ? currentModel?.ROW : phoneName + " " + currentModel?.ROW}`,
             services: []
         }
 
