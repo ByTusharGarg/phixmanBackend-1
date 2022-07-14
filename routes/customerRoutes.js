@@ -42,9 +42,6 @@ const verifyOrderValidator = [
     .withMessage("OrderType number cannot be empty")
     .isIn(orderTypes)
     .withMessage('OrderType does contain invalid value'),
-  body("PartnerId")
-    .notEmpty()
-    .withMessage("PartnerId number cannot be empty"),
   body("PaymentMode")
     .notEmpty()
     .withMessage("PaymentMode number cannot be empty")
@@ -530,7 +527,7 @@ router.post("/address", async (req, res) => {
 
 /**
  * @openapi
- * /customer/create/order:
+ * /customer/create/order/checkout:
  *  post:
  *    summary: it's use to create a requested new order to partner.
  *    tags:
@@ -550,9 +547,11 @@ router.post("/address", async (req, res) => {
  *                  type: array
  *                  items:
  *                    properties:
- *                      name:
+ *                      CategoryId:
  *                        type: string
- *                      Service:
+ *                      ModelId:
+ *                        type: string
+ *                      ServiceId:
  *                        type: string
  *                      Cost:
  *                        type: integer
@@ -635,18 +634,16 @@ router.post("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
+router.post("/create/order/checkout", verifyOrderValidator, rejectBadRequests, async (req, res) => {
   const Customer = req.Customer._id;
-  const { OrderType, PartnerId, Items, PaymentMode, address, PickUpRequired } = req.body;
+  const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
   const Status = orderStatusTypes[0];
   const OrderId = commonFunction.genrateID("ORD");
   let Amount = 0;
 
   Items.map(element => Amount += element?.Cost)
 
-
   try {
-
     const isPartnerExist = Partner.findById(PartnerId);
     if (!isPartnerExist) {
       let counterValue = await Counters.findOneAndUpdate(
@@ -655,7 +652,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
         { new: true }
       );
 
-      const newOrder = new Order({ Partner: PartnerId, Customer, OrderId, OrderType, Status, OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+      const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
       const resp = await newOrder.save();
       return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
     } else {

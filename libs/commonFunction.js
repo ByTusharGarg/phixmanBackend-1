@@ -14,7 +14,7 @@ const getParseModels = (models, brandId, categoryId, phoneName) => {
     let modelsData = models.slice(1);
 
     modelsData.map(function (data) {
-        modelsArr.push({ Name: phoneName ? `${phoneName} ${data.ROW}` : data.ROW, brandId, categoryId, modelId: data.EDIT });
+        modelsArr.push({ Name: `${data.ROW.toLowerCase().includes(phoneName.toLowerCase()) ? data.ROW : phoneName + " " + data.ROW}`, brandId, categoryId, modelId: data.EDIT });
     })
 
 
@@ -36,6 +36,7 @@ const getParseModels = (models, brandId, categoryId, phoneName) => {
                 if (currentModel[keys] !== "Null") {
                     data['serviceName'] = indexDataObject[keys],
                         data['cost'] = currentModel[keys];
+                    data['serviceId'] = keys;
                 }
 
                 if (Object.keys(data).length > 0) {

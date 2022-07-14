@@ -14,6 +14,7 @@ const helmet = require("helmet");
 const router = require("./routes/router");
 const connect = require("./connect");
 const https = require("https");
+const Payment = require('./libs/payments/Payment');
 
 // Configure Express app.
 const app = Express();
@@ -110,3 +111,25 @@ app.listen(process.env.PORT, function (err) {
   }
   console.log("Express Server Running at PORT: " + process.env.PORT);
 });
+
+date = new Date('2022-07-15T02:00:00Z');
+year = date.getFullYear();
+month = date.getMonth()+1;
+dt = date.getDate();
+
+if (dt < 10) {
+  dt = '0' + dt;
+}
+if (month < 10) {
+  month = '0' + month;
+}
+
+let datefi = year+'-' + month + '-'+dt;
+
+console.log();
+
+
+// (async ()=>{
+//   let resp = await Payment.createCustomerOrder({customerid:"irfhuhfuhfuhfuhfuhfufhiwuhfiwufhuih6560",email:"tarun@iotric.com",phone:"8510967005",OrderId:"ojdvijfsijsijijfuifhf652f56",Amount:100,expDate:datefi});
+//   console.log(resp);
+// })()

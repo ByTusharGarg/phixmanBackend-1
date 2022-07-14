@@ -10,6 +10,7 @@ const paymentModeTypes = ["cod"];
 const transsactionTypes = ["debit", "credit"];
 const transsactionStatus = ["successful", "pending", "failed"];
 const roles = ["customer","partner","order"]
+const paymentStatus = ["successful", "pending", "parital_completed","failed"];
 
 module.exports = {
   genderTypes,
@@ -23,5 +24,6 @@ module.exports = {
   paymentModeTypes,
   transsactionTypes,
   transsactionStatus,
-  roles
+  roles,
+  paymentStatus
 };

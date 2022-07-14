@@ -1035,3 +1035,39 @@
         ROW: '9 Pro'
     }
 ]
+
+
+{
+    "cf_order_id": 2650569,
+    "order_id": "kjijij954",
+    "entity": "order",
+    "order_currency": "INR",
+    "order_amount": 100,
+    "order_expiry_time": "2022-07-15T05:30:00+05:30",
+    "customer_details": {
+      "customer_id": "kfijijfijfijij",
+      "customer_name": null,
+      "customer_email": "tarun@iotric.com",
+      "customer_phone": "8510967005"
+    },
+    "order_meta": {
+      "return_url": null,
+      "notify_url": null,
+      "payment_methods": null
+    },
+    "settlements": {
+      "url": "https://sandbox.cashfree.com/pg/orders/kjijij954/settlements"
+    },
+    "payments": {
+      "url": "https://sandbox.cashfree.com/pg/orders/kjijij954/payments"
+    },
+    "refunds": {
+      "url": "https://sandbox.cashfree.com/pg/orders/kjijij954/refunds"
+    },
+    "order_status": "ACTIVE",
+    "order_token": "YNzMxX48T9Rijf63vrlq",
+    "order_note": "fkmdiuhjijdidj",
+    "payment_link": "https://payments-test.cashfree.com/order/#YNzMxX48T9Rijf63vrlq",
+    "order_tags": null,
+    "order_splits": []
+  }
