@@ -1,6 +1,6 @@
 const sdk = require('api')('@cashfreedocs-new/v2#1224ti1hl4o0uyhs');
-const Cashfree = require("cashfree-sdk");
-
+// const Cashfree = require("cashfree-sdk");
+const orderTransactionModel = require('../../models/Ordertransaction');
 
 class Payment {
     constructor() {
@@ -8,12 +8,12 @@ class Payment {
         this.APPSECRET = process.env.CASHFREE_APP_SECRET;
         this.ENV = "TEST";
 
-        this.Payouts = Cashfree.Payouts;
-        this.Payouts.Init({
-            "ENV": this.ENV,
-            "ClientID": this.APPID,
-            "ClientSecret": this.APPSECRET
-        });
+        // this.Payouts = Cashfree.Payouts;
+        // this.Payouts.Init({
+        //     "ENV": this.ENV,
+        //     "ClientID": this.APPID,
+        //     "ClientSecret": this.APPSECRET
+        // });
     }
 
     async createCustomerOrder(data) {
@@ -24,10 +24,12 @@ class Payment {
                     customer_email: data.email,
                     customer_phone: data.phone
                 },
+                order_meta: {
+                    notify_url: "http://51d2-103-159-43-182.ngrok.io/customerpayment/verifypayment"
+                },
                 order_id: data.OrderId,
                 order_amount: data.Amount,
                 order_currency: 'INR',
-                order_expiry_time: '2022-07-15T00:00:00Z',
             }, {
                 'x-client-id': this.APPID,
                 'x-client-secret': this.APPSECRET,
@@ -43,12 +45,19 @@ class Payment {
     }
 
     async verifyPaymentSignature(payload) {
-        return Cashfree.Payouts.VerifySignature(webhookPostDataJson) // returns true or false
+        // return Cashfree.Payouts.VerifySignature(payload, sign) // returns true or false
     }
 
-    async createTranssaction() { }
+    async createTranssaction(data) {
+        try {
+            const newTrassaction = new orderTransactionModel(data);
+            const resp = await newTrassaction.save();
+        } catch (error) {
+            throw new Error(error);
+        }
+    }
 
-    async MakePendingTranssaction() { }
+    async updateOrderTranssaction() { }
 
 
 }

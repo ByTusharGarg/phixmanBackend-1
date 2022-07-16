@@ -16,6 +16,12 @@ const transactionSchema = mongoose.Schema({
     order_amount: {
         type: Number
     },
+    order_status: {
+        type: String
+    },
+    order_token: {
+        type: String
+    },
     order_expiry_time: {
         type: String,
     },
@@ -25,14 +31,11 @@ const transactionSchema = mongoose.Schema({
     order_meta: {
         type: Object
     },
-    order_status: {
-        type: Number
-    },
-    order_token: {
-        type: String
-    },
     payment_link: {
         type: Boolean
+    },
+    payment_status: {
+        type: String
     },
     settlements: Object,
     payments: Object,
