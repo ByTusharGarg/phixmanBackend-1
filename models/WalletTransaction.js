@@ -15,7 +15,7 @@ const transsactionSchema = mongoose.Schema({
     status: {
         type: String,
         required: [true, "payment status is required"],
-        enum: transsactionStatus,
+        enum: transsactionStatus,   
     },
 }, { timestamps: true });
 

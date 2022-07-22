@@ -6,8 +6,9 @@ const { Customer, Order, Partner, Counters } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword } = require("../libs/passwordLib");
-const { orderStatusTypes, orderTypes, paymentModeTypes } = require('../enums/types');
+const { orderStatusTypes, orderTypes, paymentModeTypes, paymentStatus } = require('../enums/types');
 const commonFunction = require('../utils/commonFunction');
+const shortid = require('shortid');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -527,7 +528,7 @@ router.post("/address", async (req, res) => {
 
 /**
  * @openapi
- * /customer/create/order/checkout:
+ * /customer/create/order:
  *  post:
  *    summary: it's use to create a requested new order to partner.
  *    tags:
@@ -634,11 +635,13 @@ router.post("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create/order/checkout", verifyOrderValidator, rejectBadRequests, async (req, res) => {
+router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
   const Customer = req.Customer._id;
   const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
   const Status = orderStatusTypes[0];
   const OrderId = commonFunction.genrateID("ORD");
+  const stripeId = `${OrderId}-${shortid.generate()}`;
+
   let Amount = 0;
 
   Items.map(element => Amount += element?.Cost)
@@ -652,8 +655,25 @@ router.post("/create/order/checkout", verifyOrderValidator, rejectBadRequests, a
         { new: true }
       );
 
-      const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
-      const resp = await newOrder.save();
+      const resp = {};
+
+      if (PaymentMode === "cod") {
+        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, paymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+        resp = await newOrder.save();
+        // deduct commission from partner
+
+
+      } else if (PaymentMode === "online") {
+        // initiate payments process
+        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, paymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+        resp = await newOrder.save();
+        // genrate order
+
+
+        // initiate transaction
+      }
+
+
       return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
     } else {
       return res.status(500).json({ message: "Partner not found" });

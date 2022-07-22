@@ -7,13 +7,7 @@ class Payment {
         this.APPID = process.env.CASHFREE_APP_ID;
         this.APPSECRET = process.env.CASHFREE_APP_SECRET;
         this.ENV = "TEST";
-
-        // this.Payouts = Cashfree.Payouts;
-        // this.Payouts.Init({
-        //     "ENV": this.ENV,
-        //     "ClientID": this.APPID,
-        //     "ClientSecret": this.APPSECRET
-        // });
+        this.paymentMethods = ["card", "upi", "app"];
     }
 
     async createCustomerOrder(data) {
@@ -29,15 +23,32 @@ class Payment {
                 },
                 order_id: data.OrderId,
                 order_amount: data.Amount,
-                order_currency: 'INR',
+                order_currency: 'INR'
             }, {
                 'x-client-id': this.APPID,
                 'x-client-secret': this.APPSECRET,
                 'x-api-version': '2022-01-01'
             })
 
+            const newTransaction = new orderTransactionModel(resp);
+            await newTransaction.save();
+
             console.log("resp", resp);
             return resp;
+        } catch (error) {
+            console.log(error);
+            throw new Error("Couldn't Create the Order transaction")
+        }
+    }
+
+    async initializeOrderPay(order_token, method, paymentTypeObj) {
+        try {
+            sdk.OrderPay({
+                payment_method: {
+                    paymentTypeObj
+                },
+                order_token
+            });
         } catch (error) {
             console.log(error);
             throw new Error("Couldn't process the payment try again")
