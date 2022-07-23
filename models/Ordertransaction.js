@@ -48,7 +48,7 @@ const transactionSchema = mongoose.Schema({
     type: String,
     event_time: Date,
     Desc: String
-}, { timestamp: true });
+}, { timestamps: true });
 
 const mod = mongoose.model('ordertransaction', transactionSchema);
 module.exports = mod;

@@ -6,11 +6,13 @@ const storeStatusTypes = ["active", "inactive"];
 const orderTypes = ["InStore", "Home"];
 const orderStatusTypes = ["Requested", "Accepted", "InRepair", "completed","Cancelled"];
 const serviceTypes = [];
-const paymentModeTypes = ["cod"];
+const paymentModeTypes = ["cod","online"];
 const transsactionTypes = ["debit", "credit"];
 const transsactionStatus = ["successful", "pending", "failed"];
 const roles = ["customer","partner","order"]
 const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED","FAILED"];
+const acceptedPaymentMethods = ["card", "upi", "app"];
+
 
 module.exports = {
   genderTypes,
@@ -25,5 +27,6 @@ module.exports = {
   transsactionTypes,
   transsactionStatus,
   roles,
-  paymentStatus
+  paymentStatus,
+  acceptedPaymentMethods
 };

@@ -1,13 +1,14 @@
 const sdk = require('api')('@cashfreedocs-new/v2#1224ti1hl4o0uyhs');
 // const Cashfree = require("cashfree-sdk");
 const orderTransactionModel = require('../../models/Ordertransaction');
+const ordersModel = require('../../models/Order');
+const { acceptedPaymentMethods } = require('../../enums/types');
 
 class Payment {
     constructor() {
         this.APPID = process.env.CASHFREE_APP_ID;
         this.APPSECRET = process.env.CASHFREE_APP_SECRET;
         this.ENV = "TEST";
-        this.paymentMethods = ["card", "upi", "app"];
     }
 
     async createCustomerOrder(data) {
@@ -30,11 +31,18 @@ class Payment {
                 'x-api-version': '2022-01-01'
             })
 
-            const newTransaction = new orderTransactionModel(resp);
+            const existingOrderId = data.OrderId.split("-")[0];
+
+            const newTransaction = new orderTransactionModel({ ...resp, order_id: existingOrderId, cashfreeOrderId: data.OrderId });
             await newTransaction.save();
 
-            console.log("resp", resp);
-            return resp;
+            const isorderExist = await ordersModel.findOne({ OrderId: existingOrderId });
+
+            isorderExist.TxnId.push(newTransaction._id);
+
+            await isorderExist.save();
+
+            return newTransaction;
         } catch (error) {
             console.log(error);
             throw new Error("Couldn't Create the Order transaction")
@@ -42,16 +50,65 @@ class Payment {
     }
 
     async initializeOrderPay(order_token, method, paymentTypeObj) {
+        if (!acceptedPaymentMethods.includes(method)) {
+            throw new Error("payments methods not supported");
+        }
+
+        if (!order_token) {
+            throw new Error("order_token required");
+        }
+
         try {
-            sdk.OrderPay({
+            const resp = await sdk.OrderPay({
                 payment_method: {
-                    paymentTypeObj
+                    ...paymentTypeObj
                 },
                 order_token
             });
+            return resp;
         } catch (error) {
             console.log(error);
             throw new Error("Couldn't process the payment try again")
+        }
+    }
+
+    async getOrders(order_id) {
+        if (!order_id) {
+            throw new Error("order_id required");
+        }
+
+        try {
+            const resp = await sdk.GetOrder({
+                order_id,
+                'x-client-id': this.APPID,
+                'x-client-secret': this.APPSECRET,
+                'x-api-version': '2022-01-01'
+            });
+
+            return resp;
+        } catch (error) {
+            throw new Error(error);
+        }
+    }
+
+    async authenticatePayment(operation,paymentId,otp) {
+
+        if(operation !== "RESEND_OTP" || paymentId !== "SUBMIT_OTP"){
+            throw new Error("Invalid operation");
+        }
+
+        if(paymentId === "SUBMIT_OTP" || !otp){
+            throw new Error("Otp required");
+        }
+
+        try {
+            const resp = await sdk.OTPRequest({otp:otp, operation:operation}, {
+                payment_id: paymentId,
+                'x-api-version': '2022-01-01'
+              })
+              return resp;
+        } catch (error) {
+            throw new Error(error);
         }
     }
 

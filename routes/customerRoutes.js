@@ -8,7 +8,6 @@ const { isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword } = require("../libs/passwordLib");
 const { orderStatusTypes, orderTypes, paymentModeTypes, paymentStatus } = require('../enums/types');
 const commonFunction = require('../utils/commonFunction');
-const shortid = require('shortid');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -640,32 +639,32 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
   const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
   const Status = orderStatusTypes[0];
   const OrderId = commonFunction.genrateID("ORD");
-  const stripeId = `${OrderId}-${shortid.generate()}`;
 
   let Amount = 0;
 
   Items.map(element => Amount += element?.Cost)
 
   try {
-    const isPartnerExist = Partner.findById(PartnerId);
-    if (!isPartnerExist) {
-      let counterValue = await Counters.findOneAndUpdate(
-        { name: "orders" },
-        { $inc: { seq: 1 } },
-        { new: true }
-      );
+    // const isPartnerExist = Partner.findById(PartnerId);
+    // if (!isPartnerExist) {
+    //   let counterValue = await Counters.findOneAndUpdate(
+    //     { name: "orders" },
+    //     { $inc: { seq: 1 } },
+    //     { new: true }
+    //   );
 
-      const resp = {};
+      let resp = {};
 
       if (PaymentMode === "cod") {
-        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, paymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
         resp = await newOrder.save();
         // deduct commission from partner
 
 
       } else if (PaymentMode === "online") {
         // initiate payments process
-        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, paymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+        // let paymentObj = await Payment.createCustomerOrder({customerid:"irfhuhfuih6560",email:"tarun@iotric.com",phone:"8510967005",OrderId:carhfreeOrderId,Amount:Amount});
         resp = await newOrder.save();
         // genrate order
 
@@ -673,11 +672,10 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
         // initiate transaction
       }
 
-
       return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
-    } else {
-      return res.status(500).json({ message: "Partner not found" });
-    }
+    // } else {
+    //   return res.status(500).json({ message: "Partner not found" });
+    // }
 
 
   } catch (error) {
