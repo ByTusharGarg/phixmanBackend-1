@@ -3,13 +3,19 @@ const userStatusTypes = ["active", "inactive"];
 const partnerTypes = ["store", "individual"];
 const partnerStatusTypes = ["active", "inactive"];
 const storeStatusTypes = ["active", "inactive"];
-const orderTypes = ["InStore", "Home"];
-const orderStatusTypes = ["Requested", "Accepted", "InRepair", "completed","Cancelled"];
+const orderTypes = ["InStore", "Home", "PickUpDrop"];
+const orderStatusTypes = [
+  "Requested",
+  "Accepted",
+  "InRepair",
+  "completed",
+  "Cancelled",
+];
 const serviceTypes = [];
 const paymentModeTypes = ["cod"];
 const transsactionTypes = ["debit", "credit"];
 const transsactionStatus = ["successful", "pending", "failed"];
-const roles = ["customer","partner","order"]
+const roles = ["customer", "partner", "order"];
 
 module.exports = {
   genderTypes,
@@ -23,5 +29,5 @@ module.exports = {
   paymentModeTypes,
   transsactionTypes,
   transsactionStatus,
-  roles
+  roles,
 };
