@@ -653,26 +653,20 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
     //     { new: true }
     //   );
 
-      let resp = {};
+    let resp = {};
 
-      if (PaymentMode === "cod") {
-        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
-        resp = await newOrder.save();
-        // deduct commission from partner
+    if (PaymentMode === "cod") {
+      const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+      resp = await newOrder.save();
+      // deduct commission from partner
 
+    } else if (PaymentMode === "online") {
+      // initiate payments process
+      const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+      resp = await newOrder.save();
+    }
 
-      } else if (PaymentMode === "online") {
-        // initiate payments process
-        const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
-        // let paymentObj = await Payment.createCustomerOrder({customerid:"irfhuhfuih6560",email:"tarun@iotric.com",phone:"8510967005",OrderId:carhfreeOrderId,Amount:Amount});
-        resp = await newOrder.save();
-        // genrate order
-
-
-        // initiate transaction
-      }
-
-      return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
+    return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
     // } else {
     //   return res.status(500).json({ message: "Partner not found" });
     // }

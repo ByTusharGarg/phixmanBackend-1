@@ -2,7 +2,9 @@ const sdk = require('api')('@cashfreedocs-new/v2#1224ti1hl4o0uyhs');
 // const Cashfree = require("cashfree-sdk");
 const orderTransactionModel = require('../../models/Ordertransaction');
 const ordersModel = require('../../models/Order');
-const { acceptedPaymentMethods } = require('../../enums/types');
+const { acceptedPaymentMethods, transsactionStatus, orderStatusTypes, paymentStatus } = require('../../enums/types');
+const axios = require('axios').default;
+
 
 class Payment {
     constructor() {
@@ -12,15 +14,13 @@ class Payment {
     }
 
     async createCustomerOrder(data) {
+        console.log(data);
         try {
             const resp = await sdk.CreateOrder({
                 customer_details: {
                     customer_id: data.customerid,
                     customer_email: data.email,
                     customer_phone: data.phone
-                },
-                order_meta: {
-                    notify_url: "http://51d2-103-159-43-182.ngrok.io/customerpayment/verifypayment"
                 },
                 order_id: data.OrderId,
                 order_amount: data.Amount,
@@ -91,22 +91,22 @@ class Payment {
         }
     }
 
-    async authenticatePayment(operation,paymentId,otp) {
-
-        if(operation !== "RESEND_OTP" || paymentId !== "SUBMIT_OTP"){
+    async authenticatePayment(operation, paymentId, otp) {
+        if (operation !== "RESEND_OTP" && operation !== "SUBMIT_OTP") {
             throw new Error("Invalid operation");
         }
 
-        if(paymentId === "SUBMIT_OTP" || !otp){
+        if (operation === "SUBMIT_OTP" && !otp) {
             throw new Error("Otp required");
         }
 
         try {
-            const resp = await sdk.OTPRequest({otp:otp, operation:operation}, {
-                payment_id: paymentId,
-                'x-api-version': '2022-01-01'
-              })
-              return resp;
+            const resp = axios.post(`https://sandbox.cashfree.com/pg/orders/pay/authenticate/${paymentId}`, {
+                action: operation,
+                otp: otp
+            })
+
+            return resp;
         } catch (error) {
             throw new Error(error);
         }
@@ -120,12 +120,38 @@ class Payment {
         try {
             const newTrassaction = new orderTransactionModel(data);
             const resp = await newTrassaction.save();
+            return resp;
         } catch (error) {
             throw new Error(error);
         }
     }
 
-    async updateOrderTranssaction() { }
+    async updateOrderPaymentStatus(orderId, transactionId) {
+        try {
+            const txnData = await orderTransactionModel.findById(transactionId);
+            const orderData = await ordersModel.findOne({ OrderId: orderId });
+
+            const leftAmount = orderData.PendingAmount - txnData.order_amount;
+            
+            if (leftAmount === 0) {
+                await ordersModel.findOneAndUpdate({ OrderId: orderId }, { PaymentStatus: paymentStatus[0], Status: orderStatusTypes[1], PendingAmount: leftAmount });
+            } else {
+                await ordersModel.findOneAndUpdate({ OrderId: orderId }, { PaymentStatus: paymentStatus[2], Status: orderStatusTypes[1], PendingAmount: leftAmount });
+            }
+
+            return true;
+        } catch (error) {
+            throw new Error(error);
+        }
+    }
+
+    async markTranssactionSuccess(transactionId) {
+        try {
+            const resp = await orderTransactionModel.findByIdAndUpdate(transactionId, { payment_status: transsactionStatus[0], order_status: "PAID" });
+        } catch (error) {
+            throw new Error(error);
+        }
+    }
 
 
 }

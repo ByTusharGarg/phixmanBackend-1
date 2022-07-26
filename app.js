@@ -131,7 +131,7 @@ let datefi = year+'-' + month + '-'+dt;
 console.log();
 
 
-(async ()=>{
-  // let resp = await Payment.createCustomerOrder({customerid:"irfhuhfuih6560",email:"tarun@iotric.com",phone:"8510967005",OrderId:"ORdddD6548507223569888",Amount:100,expDate:datefi});
-  // console.log(resp);
-})()
+// (async ()=>{
+//   let resp = await Payment.createCustomerOrder({customerid:"irfhuhfuih6560",email:"tarun@iotric.com",phone:"8510967005",OrderId:"ORdddD6548507223569888",Amount:100,expDate:datefi});
+//   console.log(resp);
+// })()
