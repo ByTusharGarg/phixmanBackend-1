@@ -13,7 +13,8 @@ const Product_Service = mongoose.model(
         cost:Number,
         serviceId:{type:String,unique:true}
       }
-    ]
+    ],
+    services: [{ name: String, cost: Number, isTrivial: Boolean }],
   })
 );
 
