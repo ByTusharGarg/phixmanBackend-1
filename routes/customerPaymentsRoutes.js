@@ -131,8 +131,8 @@ router.post("/payment", paymentObjectValidator, rejectBadRequests, checkCustomer
         const customer = await Customer.findByIdAndUpdate(req.Customer._id);
 
         if (isOrderExist) {
-            if (isOrderExist.PendingAmount === 0 && isOrderExist.PaymentStatus === "SUCCESS") {
-                return res.status(500).json({ message: `Order transaction completed successfully` });
+            if (isOrderExist.PendingAmount === 0 || isOrderExist.PaymentStatus === "SUCCESS") {
+                return res.status(500).json({ message: `Order transaction already completed successfully` });
             }
 
 

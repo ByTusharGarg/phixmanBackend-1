@@ -5,6 +5,7 @@ const partnerStatusTypes = ["active", "inactive"];
 const storeStatusTypes = ["active", "inactive"];
 const orderTypes = ["InStore", "Home", "PickUpDrop"];
 const orderStatusTypes = [
+  "Initial",
   "Requested",
   "Accepted",
   "InRepair",

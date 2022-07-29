@@ -14,7 +14,6 @@ class Payment {
     }
 
     async createCustomerOrder(data) {
-        console.log(data);
         try {
             const resp = await sdk.CreateOrder({
                 customer_details: {
@@ -132,7 +131,7 @@ class Payment {
             const orderData = await ordersModel.findOne({ OrderId: orderId });
 
             const leftAmount = orderData.PendingAmount - txnData.order_amount;
-            
+
             if (leftAmount === 0) {
                 await ordersModel.findOneAndUpdate({ OrderId: orderId }, { PaymentStatus: paymentStatus[0], Status: orderStatusTypes[1], PendingAmount: leftAmount });
             } else {

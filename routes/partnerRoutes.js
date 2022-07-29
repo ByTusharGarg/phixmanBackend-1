@@ -435,13 +435,11 @@ router.patch(
         update.Password = hashpassword(req?.body?.Password);
       }
       if (req?.files?.image) {
-        console.log(req.files);
         update.image = "";
       }
       await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
       return res.status(200).json({ message: "user updated successfully." });
     } catch (error) {
-      console.log(error);
       return res
         .status(500)
         .json({ message: "Error encountered while trying to update user." });
@@ -535,10 +533,17 @@ router.get("/myorders/:status", async (req, res) => {
  *    - bearerAuth: []
  */
 
-router.get("/requestedorder/:city", async (req, res) => {
-  let { city } = req.params;
+router.get("/requestedorder/:city/:pincode?", async (req, res) => {
+  let { city, pincode } = req.params;
+  const queryobj = { Status: "Requested", "address.city": city };
+
+  if (pincode) {
+    queryobj['address.pin'] = pincode;
+  }
+
   try {
-    const orders = await Order.find({ Status: "Requested", address: { city } });
+    const orders = await Order.find(queryobj);
+
     return res.status(200).json(orders);
   } catch (error) {
     console.log(error);
@@ -578,7 +583,6 @@ router.post("/order/acceptorder", async (req, res) => {
   let { orderId } = req.body;
   const partnerId = req.partner._id;
 
-
   if (!orderId) {
     return res.status(500).json({ message: "orderId must be provided" });
   }
@@ -590,8 +594,8 @@ router.post("/order/acceptorder", async (req, res) => {
       return res.status(500).json({ message: "order not exists" });
     }
 
-    if (order.Status === 'Accepted') {
-      return res.status(500).json({ message: "order already Accepted" });
+    if (order.Status !== 'Requested') {
+      return res.status(500).json({ message: "order already Accepted or further processing" });
     }
 
     await Order.findByIdAndUpdate(orderId, { Status: "Accepted", Partner: partnerId }, { new: true });

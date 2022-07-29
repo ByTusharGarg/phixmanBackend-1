@@ -637,12 +637,13 @@ router.post("/address", async (req, res) => {
 router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
   const Customer = req.Customer._id;
   const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
-  const Status = orderStatusTypes[0];
   const OrderId = commonFunction.genrateID("ORD");
-
   let Amount = 0;
 
-  Items.map(element => Amount += element?.Cost)
+  
+
+  Items.map(element => Amount += element?.Cost);
+
 
   try {
     // const isPartnerExist = Partner.findById(PartnerId);
@@ -656,13 +657,13 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
     let resp = {};
 
     if (PaymentMode === "cod") {
-      const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+      const newOrder = new Order({ Customer, OrderId, OrderType, Status: orderStatusTypes[1], PendingAmount: Amount, PaymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
       resp = await newOrder.save();
       // deduct commission from partner
 
     } else if (PaymentMode === "online") {
       // initiate payments process
-      const newOrder = new Order({ Customer, OrderId, OrderType, Status, PendingAmount: Amount, PaymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
+      const newOrder = new Order({ Customer, OrderId, OrderType, Status: orderStatusTypes[0], PendingAmount: Amount, PaymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
       resp = await newOrder.save();
     }
 
