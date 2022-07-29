@@ -97,11 +97,13 @@ app.use("/api-docs", swaggerUiExpress.serve, swaggerUiExpress.setup(docs));
 
 // routes
 app.use("/", router.indexRoutes);
-app.use("/customer", router.customerRoutes);
+app.use("/customer", router.customerRoutes);  
 app.use("/partner", router.partnerRoutes);
 app.use("/admin", router.adminRoutes);
 app.use("/Order", router?.orderRoutes);
 app.use("/wallet", router?.walletRoutes);
+app.use("/customerpayment", router?.customerPaymentRoutes);
+
 
 
 // const server = https.createServer({}, app);
@@ -130,6 +132,6 @@ console.log();
 
 
 // (async ()=>{
-//   let resp = await Payment.createCustomerOrder({customerid:"irfhuhfuhfuhfuhfuhfufhiwuhfiwufhuih6560",email:"tarun@iotric.com",phone:"8510967005",OrderId:"ojdvijfsijsijijfuifhf652f56",Amount:100,expDate:datefi});
+//   let resp = await Payment.createCustomerOrder({customerid:"irfhuhfuih6560",email:"tarun@iotric.com",phone:"8510967005",OrderId:"ORdddD6548507223569888",Amount:100,expDate:datefi});
 //   console.log(resp);
 // })()

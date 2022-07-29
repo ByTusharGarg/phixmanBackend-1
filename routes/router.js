@@ -5,11 +5,15 @@ const partnerRoutes = require("./partnerRoutes");
 const orderRoutes = require("./orderRoutes");
 const walletRoutes = require("./walletRoute");
 
+const customerPaymentRoutes = require("./customerPaymentsRoutes");
+
+
 module.exports = {
   indexRoutes,
   adminRoutes,
   customerRoutes,
   partnerRoutes,
   orderRoutes,
-  walletRoutes
+  walletRoutes,
+  customerPaymentRoutes
 };

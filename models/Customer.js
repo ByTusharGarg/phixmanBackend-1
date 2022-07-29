@@ -7,7 +7,7 @@ const Customer = mongoose.model(
     Name: String,
     email: {
       type: String,
-      // unique: true,
+      unique: true,
     },
     phone: { type: String, required: true },
     Password: { type: String },

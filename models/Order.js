@@ -33,7 +33,9 @@ const Order = mongoose.model(
     PaymentMode: { type: String, enum: paymentModeTypes },
     PaymentStatus: { type: String, enum: paymentStatus },
     PendingAmount: { type: Number },
-    PaymentId: [],
+    TxnId: [
+      { type: Schema.Types.ObjectId, ref: "ordertransaction" }
+    ],
     address: {
       street: String,
       city: String,

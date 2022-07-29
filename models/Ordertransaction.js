@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { transsactionStatus } = require('../enums/types');
 
 const transactionSchema = mongoose.Schema({
     cf_order_id: {
@@ -7,6 +8,7 @@ const transactionSchema = mongoose.Schema({
     order_id: {
         type: String
     },
+    cashfreeOrderId: { type: String },
     entity: {
         type: String
     },
@@ -15,6 +17,12 @@ const transactionSchema = mongoose.Schema({
     },
     order_amount: {
         type: Number
+    },
+    order_status: {
+        type: String
+    },
+    order_token: {
+        type: String
     },
     order_expiry_time: {
         type: String,
@@ -25,14 +33,13 @@ const transactionSchema = mongoose.Schema({
     order_meta: {
         type: Object
     },
-    order_status: {
-        type: Number
-    },
-    order_token: {
+    payment_link: {
         type: String
     },
-    payment_link: {
-        type: Boolean
+    payment_status: {
+        type: String,
+        enum: transsactionStatus,
+        default: 'pending'
     },
     settlements: Object,
     payments: Object,
@@ -41,7 +48,7 @@ const transactionSchema = mongoose.Schema({
     type: String,
     event_time: Date,
     Desc: String
-}, { timestamp: true });
+}, { timestamps: true });
 
-const mod = mongoose.model('transaction', transactionSchema);
+const mod = mongoose.model('ordertransaction', transactionSchema);
 module.exports = mod;
