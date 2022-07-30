@@ -1,16 +1,18 @@
 const sdk = require('api')('@cashfreedocs-new/v2#1224ti1hl4o0uyhs');
-// const Cashfree = require("cashfree-sdk");
 const orderTransactionModel = require('../../models/Ordertransaction');
 const ordersModel = require('../../models/Order');
 const { acceptedPaymentMethods, transsactionStatus, orderStatusTypes, paymentStatus } = require('../../enums/types');
 const axios = require('axios').default;
 
+let casrfreeUrlLinks = process.env.CASH_FREE_MODE === 'Test' ? process.env.CASHFREE_GATEWAY_DEV_URL : process.env.CASHFREE_GATEWAY_PROD_URL;
+sdk.server(casrfreeUrlLinks);
 
 class Payment {
     constructor() {
         this.APPID = process.env.CASHFREE_APP_ID;
         this.APPSECRET = process.env.CASHFREE_APP_SECRET;
-        this.ENV = "TEST";
+        this.ENV = process.env.CASH_FREE_MODE;
+        this.casrfreeUrl = casrfreeUrlLinks;
     }
 
     async createCustomerOrder(data) {
@@ -100,13 +102,14 @@ class Payment {
         }
 
         try {
-            const resp = axios.post(`https://sandbox.cashfree.com/pg/orders/pay/authenticate/${paymentId}`, {
+            const resp = axios.post(`${this.casrfreeUrl}/orders/pay/authenticate/${paymentId}`, {
                 action: operation,
                 otp: otp
             })
 
             return resp;
         } catch (error) {
+            console.log(error);
             throw new Error(error);
         }
     }

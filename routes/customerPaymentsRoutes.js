@@ -261,6 +261,10 @@ router.post("/cardVerification/otp", async (req, res) => {
             return res.status(500).json({ message: "No transaction found" });
         }
 
+        if (fetchTransactions.payment.payment_method !== "card") {
+            return res.status(500).json({ message: "Only card payments orders verification is allowed" });
+        }
+
         if (fetchTransactions.payment_status !== "pending" || fetchTransactions.order_status !== "ACTIVE") {
             return res.status(500).json({ message: "transaction completed or not available" });
         }
@@ -294,6 +298,10 @@ router.post("/cardVerification/otp", async (req, res) => {
     }
 })
 
+
+router.post("/apppaymentverification", async (req, res) => {
+
+})
 
 
 router.post("/verifypayment", async (req, res) => {

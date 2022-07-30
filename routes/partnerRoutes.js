@@ -482,8 +482,10 @@ router.get("/myorders/:status", async (req, res) => {
   let { status } = req.params;
   const partnerId = req.partner._id;
 
-  if (status === 'Requested') {
-    return res.status(500).json({ message: "Requested status not allowed." });
+  const allowedStatus = ["Accepted", "InRepair", "completed", "Cancelled"];
+
+  if (!allowedStatus.includes(status)) {
+    return res.status(500).json({ message: `${status} status not allowed.` });
   }
 
   if (status !== 'all' && !orderStatusTypes.includes(status)) {
@@ -554,7 +556,7 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
 /**
  * @openapi
  * /partner/order/acceptorder:
- *  get:
+ *  post:
  *    summary: using this route partner can accept order
  *    tags:
  *    - partner Routes
@@ -588,7 +590,7 @@ router.post("/order/acceptorder", async (req, res) => {
   }
 
   try {
-    const order = await Order.findOne({ _id: orderId });
+    const order = await Order.findOne({ OrderId: orderId });
 
     if (!order) {
       return res.status(500).json({ message: "order not exists" });
@@ -598,7 +600,7 @@ router.post("/order/acceptorder", async (req, res) => {
       return res.status(500).json({ message: "order already Accepted or further processing" });
     }
 
-    await Order.findByIdAndUpdate(orderId, { Status: "Accepted", Partner: partnerId }, { new: true });
+    await Order.findOneAndUpdate({ OrderId: orderId }, { Status: orderStatusTypes[2], Partner: partnerId }, { new: true });
     return res.status(200).json({ message: "order Accepted" });
   } catch (error) {
     console.log(error);
@@ -610,7 +612,7 @@ router.post("/order/acceptorder", async (req, res) => {
 /**
  * @openapi
  * /partner/order/changestatus:
- *  get:
+ *  post:
  *    summary: using this route partner change the order status
  *    tags:
  *    - partner Routes
@@ -650,18 +652,15 @@ router.post("/order/changestatus", async (req, res) => {
     return res.status(500).json({ message: "orderId and status must be provided" });
   }
 
-
-  if (status === 'Accepted') {
-    return res.status(500).json({ message: "Accepted status is not allowed" });
-  }
+  const allowedStatus = ["InRepair", "completed", "Cancelled"];
 
 
-  if (!orderStatusTypes.includes(status)) {
-    return res.status(500).json({ message: "Invalid status" });
+  if (!allowedStatus.includes(status)) {
+    return res.status(500).json({ message: "status is not allowed" });
   }
 
   try {
-    const order = await Order.findOne({ Partner: partnerId, _id: orderId });
+    const order = await Order.findOne({ Partner: partnerId, OrderId: orderId });
 
     if (!order) {
       return res.status(500).json({ message: "order not belongs to this partner" });
@@ -671,7 +670,7 @@ router.post("/order/changestatus", async (req, res) => {
       return res.status(200).json({ message: "This is your current status" });
     }
 
-    await Order.findByIdAndUpdate(orderId, { Status: status }, { new: true });
+    await Order.findOneAndUpdate({ OrderId: orderId }, { Status: status }, { new: true });
     return res.status(200).json({ message: "order status changes" });
   } catch (error) {
     console.log(error);
