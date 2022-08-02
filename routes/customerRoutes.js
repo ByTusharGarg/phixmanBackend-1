@@ -6,8 +6,13 @@ const { Customer, Order, Partner, Counters } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword } = require("../libs/passwordLib");
-const { orderStatusTypes, orderTypes, paymentModeTypes, paymentStatus } = require('../enums/types');
-const commonFunction = require('../utils/commonFunction');
+const {
+  orderStatusTypes,
+  orderTypes,
+  paymentModeTypes,
+  paymentStatus,
+} = require("../enums/types");
+const commonFunction = require("../utils/commonFunction");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -34,25 +39,21 @@ const updateUserValidator = [
   body("Password").isString().withMessage("password should be a string"),
 ];
 
-
-
 const verifyOrderValidator = [
   body("OrderType")
     .notEmpty()
     .withMessage("OrderType number cannot be empty")
     .isIn(orderTypes)
-    .withMessage('OrderType does contain invalid value'),
+    .withMessage("OrderType does contain invalid value"),
   body("PaymentMode")
     .notEmpty()
     .withMessage("PaymentMode number cannot be empty")
     .isIn(paymentModeTypes)
-    .withMessage('PaymentMode does contain invalid value'),
+    .withMessage("PaymentMode does contain invalid value"),
   body("PickUpRequired")
     .isBoolean()
-    .withMessage('PickUpRequired Must be a boolean true or false'),
-  body("Items")
-    .isArray()
-    .withMessage('Items should be an array')
+    .withMessage("PickUpRequired Must be a boolean true or false"),
+  body("Items").isArray().withMessage("Items should be an array"),
 ];
 
 /**
@@ -144,9 +145,9 @@ router.post(
       sendOtp(customer.phone, otp);
       return res
         .status(200)
-        .json({ message: "OTP has been sent successfully" });
+        .json({ message: "OTP has been sent successfully", otp: otp });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       return res
         .status(500)
         .json({ message: "Error encountered while trying to send otp" });
@@ -524,7 +525,6 @@ router.post("/address", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /customer/create/order:
@@ -634,51 +634,73 @@ router.post("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
-  const Customer = req.Customer._id;
-  const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
-  const OrderId = commonFunction.genrateID("ORD");
-  let Amount = 0;
+router.post(
+  "/create/order",
+  verifyOrderValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    const Customer = req.Customer._id;
+    const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
+    const OrderId = commonFunction.genrateID("ORD");
+    let Amount = 0;
 
-  
+    Items.map((element) => (Amount += element?.Cost));
 
-  Items.map(element => Amount += element?.Cost);
+    try {
+      // const isPartnerExist = Partner.findById(PartnerId);
+      // if (!isPartnerExist) {
+      //   let counterValue = await Counters.findOneAndUpdate(
+      //     { name: "orders" },
+      //     { $inc: { seq: 1 } },
+      //     { new: true }
+      //   );
 
+      let resp = {};
 
-  try {
-    // const isPartnerExist = Partner.findById(PartnerId);
-    // if (!isPartnerExist) {
-    //   let counterValue = await Counters.findOneAndUpdate(
-    //     { name: "orders" },
-    //     { $inc: { seq: 1 } },
-    //     { new: true }
-    //   );
+      if (PaymentMode === "cod") {
+        const newOrder = new Order({
+          Customer,
+          OrderId,
+          OrderType,
+          Status: orderStatusTypes[1],
+          PendingAmount: Amount,
+          PaymentStatus: paymentStatus[0],
+          OrderDetails: { Amount, Items },
+          PaymentMode,
+          address,
+          PickUpRequired,
+        });
+        resp = await newOrder.save();
+        // deduct commission from partner
+      } else if (PaymentMode === "online") {
+        // initiate payments process
+        const newOrder = new Order({
+          Customer,
+          OrderId,
+          OrderType,
+          Status: orderStatusTypes[0],
+          PendingAmount: Amount,
+          PaymentStatus: paymentStatus[1],
+          OrderDetails: { Amount, Items },
+          PaymentMode,
+          address,
+          PickUpRequired,
+        });
+        resp = await newOrder.save();
+      }
 
-    let resp = {};
-
-    if (PaymentMode === "cod") {
-      const newOrder = new Order({ Customer, OrderId, OrderType, Status: orderStatusTypes[1], PendingAmount: Amount, PaymentStatus: paymentStatus[0], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
-      resp = await newOrder.save();
-      // deduct commission from partner
-
-    } else if (PaymentMode === "online") {
-      // initiate payments process
-      const newOrder = new Order({ Customer, OrderId, OrderType, Status: orderStatusTypes[0], PendingAmount: Amount, PaymentStatus: paymentStatus[1], OrderDetails: { Amount, Items }, PaymentMode, address, PickUpRequired });
-      resp = await newOrder.save();
+      return res
+        .status(200)
+        .json({ message: "Orders created successfully.", newOrder: resp });
+      // } else {
+      //   return res.status(500).json({ message: "Partner not found" });
+      // }
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Error encountered." });
     }
-
-    return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
-    // } else {
-    //   return res.status(500).json({ message: "Partner not found" });
-    // }
-
-
-  } catch (error) {
-    console.log(error)
-    return res.status(500).json({ message: "Error encountered." });
   }
-});
-
+);
 
 /**
  * @openapi
@@ -737,15 +759,17 @@ router.post("/cancel", async (req, res) => {
       return res.status(500).json({ message: "This order can't be Cancelled" });
     }
 
-    await Order.findByIdAndUpdate(isOrdrrBelongs._id, { Status: "Cancelled" }, { new: true });
+    await Order.findByIdAndUpdate(
+      isOrdrrBelongs._id,
+      { Status: "Cancelled" },
+      { new: true }
+    );
 
     return res.status(200).json({ message: "Orders Cancelled successfully" });
-
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
-})
-
+});
 
 /**
  * @openapi
@@ -781,14 +805,14 @@ router.get("/myorders/:status", async (req, res) => {
   let { status } = req.params;
   const Customer = req.Customer._id;
 
-  if (status !== 'all' && !orderStatusTypes.includes(status)) {
+  if (status !== "all" && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
 
   let query = { Customer };
 
-  if (status !== 'all') {
-    query = { Status: status }
+  if (status !== "all") {
+    query = { Status: status };
   }
 
   try {
@@ -799,7 +823,5 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
-
 
 module.exports = router;

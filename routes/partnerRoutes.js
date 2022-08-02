@@ -4,7 +4,7 @@ const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, Wallet, Order } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypes } = require('../enums/types');
+const { orderStatusTypes } = require("../enums/types");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -120,7 +120,7 @@ router.post(
       sendOtp(partner.phone, otp);
       return res
         .status(200)
-        .json({ message: "OTP has been sent successfully" });
+        .json({ message: "OTP has been sent successfully", otp });
     } catch (error) {
       console.log(error);
       return res
@@ -218,7 +218,7 @@ router.post(
       if (partner === null) {
         return res.status(401).json({ message: "Invalid OTP" });
       }
-      const isWalletExixts = await Wallet.findOne({ partnerId: partner?._id })
+      const isWalletExixts = await Wallet.findOne({ partnerId: partner?._id });
       if (!isWalletExixts) {
         const newWallet = new Wallet({ partnerId: partner?._id });
         await newWallet.save();
@@ -233,7 +233,7 @@ router.post(
         type: partner.Type,
       });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       return res
         .status(500)
         .json({ message: "Error encountered while trying to verify otp" });
@@ -447,7 +447,6 @@ router.patch(
   }
 );
 
-
 /**
  * @openapi
  * /partner/myorders/{status}:
@@ -488,14 +487,14 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: `${status} status not allowed.` });
   }
 
-  if (status !== 'all' && !orderStatusTypes.includes(status)) {
+  if (status !== "all" && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
 
   let query = { Partner: partnerId };
 
-  if (status !== 'all') {
-    query = { Status: status }
+  if (status !== "all") {
+    query = { Status: status };
   }
 
   try {
@@ -506,7 +505,6 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -540,7 +538,7 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
   const queryobj = { Status: "Requested", "address.city": city };
 
   if (pincode) {
-    queryobj['address.pin'] = pincode;
+    queryobj["address.pin"] = pincode;
   }
 
   try {
@@ -596,18 +594,23 @@ router.post("/order/acceptorder", async (req, res) => {
       return res.status(500).json({ message: "order not exists" });
     }
 
-    if (order.Status !== 'Requested') {
-      return res.status(500).json({ message: "order already Accepted or further processing" });
+    if (order.Status !== "Requested") {
+      return res
+        .status(500)
+        .json({ message: "order already Accepted or further processing" });
     }
 
-    await Order.findOneAndUpdate({ OrderId: orderId }, { Status: orderStatusTypes[2], Partner: partnerId }, { new: true });
+    await Order.findOneAndUpdate(
+      { OrderId: orderId },
+      { Status: orderStatusTypes[2], Partner: partnerId },
+      { new: true }
+    );
     return res.status(200).json({ message: "order Accepted" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -647,13 +650,13 @@ router.post("/order/changestatus", async (req, res) => {
   let { status, orderId } = req.body;
   const partnerId = req.partner._id;
 
-
   if (!status || !orderId) {
-    return res.status(500).json({ message: "orderId and status must be provided" });
+    return res
+      .status(500)
+      .json({ message: "orderId and status must be provided" });
   }
 
   const allowedStatus = ["InRepair", "completed", "Cancelled"];
-
 
   if (!allowedStatus.includes(status)) {
     return res.status(500).json({ message: "status is not allowed" });
@@ -663,20 +666,25 @@ router.post("/order/changestatus", async (req, res) => {
     const order = await Order.findOne({ Partner: partnerId, OrderId: orderId });
 
     if (!order) {
-      return res.status(500).json({ message: "order not belongs to this partner" });
+      return res
+        .status(500)
+        .json({ message: "order not belongs to this partner" });
     }
 
     if (order.Status === status) {
       return res.status(200).json({ message: "This is your current status" });
     }
 
-    await Order.findOneAndUpdate({ OrderId: orderId }, { Status: status }, { new: true });
+    await Order.findOneAndUpdate(
+      { OrderId: orderId },
+      { Status: status },
+      { new: true }
+    );
     return res.status(200).json({ message: "order status changes" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 module.exports = router;
