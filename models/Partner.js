@@ -8,7 +8,7 @@ const Schema = mongoose.Schema;
 const Partner = mongoose.model(
   "Partner",
   new Schema({
-    Sno: String,
+    // Sno: String,
     Name: String,
     Dob: String,
     Type: {
@@ -17,14 +17,14 @@ const Partner = mongoose.model(
     },
     Product_Service: {
       type: Schema.Types.ObjectId,
-      ref: "Product_Service",
+      ref: "category",
     },
-    Store: { type: Schema.Types.ObjectId, ref: "Partner" },
+    isParent: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
     phone: { type: String, required: true, unique: true },
     email: {
       type: String,
     },
-    password: { type: String },
+    // password: { type: String },
     otp: {
       code: {
         type: String,
@@ -36,9 +36,11 @@ const Partner = mongoose.model(
     },
     helpers: [String],
     gender: { type: String, enum: genderTypes },
-    isActive: { type: Boolean, required: true, default: true },
+    isActive: { type: Boolean, default: true },
     isVerified: { type: Boolean, required: true, default: false },
-    isPublished: { type: Boolean, required: true, default: false },
+    isDocumentUpload: { type: Boolean, default: false },
+    isPublished: { type: Boolean, default: true },
+    isApproved: { type: Boolean, default: false },
     address: {
       street: String,
       city: String,
