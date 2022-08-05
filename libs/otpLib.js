@@ -1,4 +1,5 @@
 const http = require("https");
+const axios = require("axios").default;
 
 function generateOtp(length) {
   const digits = "0123456789";
@@ -9,33 +10,19 @@ function generateOtp(length) {
   return OTP;
 }
 
-function sendOtp(phone, otp) {
-
-  // auth key(phixman) = 269742AhRZnGKBTMsC606d9a73P1 
+async function sendOtp(phone, otp) {
   console.log(phone, otp);
-  // const options = {
-  //   method: "GET",
-  //   hostname: "api.msg91.com",
-  //   port: null,
-  //   path: `/api/v5/otp?template_id=&mobile=${phone}&authkey=`,
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //   },
-  // };
-
-  // const req = http.request(options, function (res) {
-  //   const chunks = [];
-
-  //   res.on("data", function (chunk) {
-  //     chunks.push(chunk);
-  //   });
-
-  //   res.on("end", function () {
-  //     const body = Buffer.concat(chunks);
-  //     console.log(body.toString());
-  //   });
-  // });
-  // req.end();
+  try {
+    const apiKey = process.env.TWOFACTOR_API_KEY;
+    let balance = await axios.get(`http://2factor.in/API/V1/${apiKey}/BAL/SMS`);
+    let response = await axios.get(
+      `http://2factor.in/API/V1/${apiKey}/SMS/${phone}/${otp}/LOGIN%20OTP`
+    );
+    if (response?.data.Status !== "Success")
+      throw new Error("Error encountered while sending otp");
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 module.exports = {

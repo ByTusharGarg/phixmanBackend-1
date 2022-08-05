@@ -267,13 +267,13 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
 );
 
 router.post("/completeProfile", validateTempToken, async (req, res) => {
-  let { name, catrgory, address, Dob, Type, Product_Service, email, gender, panNumber, aadharNumber } = req.body;
-
+  let { name, catrgory,address,Dob,Type,Product_Service,email,gender,panNumber,aadharNumber } = req.body;
+  
   try {
     const aadharImage = req.files.aadharimage;
     const pancardImage = req.files.panimage;
 
-
+    
   } catch (error) {
     return res.status(500).json({ message: "Error encountered while trying to uploading documents" });
   }
