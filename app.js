@@ -30,8 +30,8 @@ app.use(Express.static(path.join(__dirname, "public")));
 app.use(Express.json({ limit: "50mb" }));
 app.use(
   fileUpload({
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
-    useTempFiles: true, // flag for use temporary directory for handling file coming through api requests
+    limits: { fileSize: 1 * 1024 * 1024 }, // 1 MB
+    useTempFiles: false, // flag for use temporary directory for handling file coming through api requests
     tempFileDir: "/tmp/", // temporary directory for handling file coming through api requests
     abortOnLimit: true, // abort api request if the incoming file size is larger then the specified size
   })
