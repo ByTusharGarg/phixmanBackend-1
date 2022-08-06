@@ -1,12 +1,19 @@
-const { param } = require("express-validator");
+const { param, body } = require("express-validator");
 const path = require("path");
 const { rejectBadRequests } = require("../middleware");
-const { checkAdmin } = require('../middleware/AuthAdmin');
-const { category, Brand, Coupon, Model, Product_Service } = require("../models");
+const { checkAdmin } = require("../middleware/AuthAdmin");
+const {
+  category,
+  Brand,
+  Coupon,
+  Model,
+  Product_Service,
+} = require("../models");
 const router = require("express").Router();
-const csv = require('csvtojson');
-const { getParseModels } = require('../libs/commonFunction');
-const fs = require('fs');
+const csv = require("csvtojson");
+const { getParseModels } = require("../libs/commonFunction");
+const fs = require("fs");
+const { encodeImage } = require("../libs/imageLib");
 
 const getServiceParamValidators = [
   param("serviceType")
@@ -16,67 +23,11 @@ const getServiceParamValidators = [
     .withMessage("service type is invalid"),
 ];
 
-
-
 router.get("/", (_, res) => {
   return res.send(
     `<code>Server is running at PORT:${process.env.PORT}. Please refer to the api documentation <a href="/api-docs">here</a></code>`
   );
 });
-
-/**
- * @openapi
- * /categories:
- *  post:
- *    summary: used to add brands.
- *    tags:
- *    - Index Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          schema:
- *              type: object
- *              properties:
- *                video:
- *                  type: string
- *                  description: required
- *                icon:
- *                  type: string
- *                  description: required
- *                name:
- *                  type: string
- *                  description: required
- *                key:
- *                  type: string
- *                  description: required
- *                servedAt:
- *                  type: string
- *                  description: required
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.post("/categories", async (req, res) => {
-  const { video, icon, name, key, servedAt } = req.body;
-  try {
-    const newCategory = new category({ video, icon, name, key, servedAt });
-    await newCategory.save();
-    return res.status(201).json({ message: "Category created successfully.", data: newCategory });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
-
 
 /**
  * @openapi
@@ -92,18 +43,6 @@ router.post("/categories", async (req, res) => {
  *            application/json:
  *             schema:
  *               type: array
- *               description: list of all the product types available for store service.
- *               items:
- *                type: object
- *                properties:
- *                  name:
- *                   type: string
- *                  icon:
- *                   type: string
- *                  key:
- *                   type: string
- *                  video:
- *                   type: string
  *      400:
  *         description: if the parameters given were invalid
  *         content:
@@ -296,7 +235,6 @@ router.post("/brands", async (req, res) => {
     return res.status(500).json({ message: "name and brandId required" });
   }
   try {
-
     const isExistBrands = await Brand.findOne({ Name: name, brandId });
 
     if (isExistBrands) {
@@ -305,13 +243,14 @@ router.post("/brands", async (req, res) => {
 
     const brands = new Brand({ Name: name, brandId });
     const resp = await brands.save();
-    return res.status(200).json({ message: "Brand added successfully", data: resp });
+    return res
+      .status(200)
+      .json({ message: "Brand added successfully", data: resp });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -342,7 +281,6 @@ router.get("/brands", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -386,7 +324,9 @@ router.post("/models", async (req, res) => {
   const { brandId, categoryId, modelName, modelId } = req.body;
 
   if (!brandId || !modelName || !modelId || !categoryId) {
-    return res.status(500).json({ message: "brandId modelName and  phoneId are required" });
+    return res
+      .status(500)
+      .json({ message: "brandId modelName and  phoneId are required" });
   }
 
   try {
@@ -396,31 +336,35 @@ router.post("/models", async (req, res) => {
       return res.status(500).json({ message: "Brands not exist" });
     }
 
-
     const isCategoryExists = await category.findById(categoryId);
 
     if (!isCategoryExists) {
       return res.status(500).json({ message: "Category not exist" });
     }
 
-    const newmodel = await Model.findOneAndUpdate({ brandId }, { brandId, Name: modelName, modelId, categoryId }, { new: true, upsert: true });
+    const newmodel = await Model.findOneAndUpdate(
+      { brandId },
+      { brandId, Name: modelName, modelId, categoryId },
+      { new: true, upsert: true }
+    );
 
     // const newmodel = new Model({ brandId, Name: modelName, modelId, categoryId });
 
     const resp = await newmodel.save();
-    return res.status(200).json({ message: "Model created successfully", data: resp });
+    return res
+      .status(200)
+      .json({ message: "Model created successfully", data: resp });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
 
-
 /**
  * @openapi
  * /models/{categoryId}/{brandId}:
  *  get:
- *    summary: used to get all the models by category and brandid 
+ *    summary: used to get all the models by category and brandid
  *    tags:
  *    - Index Routes
  *    parameters:
@@ -434,7 +378,7 @@ router.post("/models", async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- * 
+ *
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -464,7 +408,6 @@ router.get("/models/:categoryId/:brandId", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /bulk/uploadcsvdata:
@@ -488,7 +431,7 @@ router.get("/models/:categoryId/:brandId", async (req, res) => {
  *        required: true
  *        schema:
  *           type: file
- * 
+ *
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -543,33 +486,41 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
       }
 
       const jsonArray = await csv().fromFile(filepath);
-      const { modelsArr, services } = getParseModels(jsonArray, brandId, categoryId, isBrandExists.Name);
+      const { modelsArr, services } = getParseModels(
+        jsonArray,
+        brandId,
+        categoryId,
+        isBrandExists.Name
+      );
 
-      Model.bulkWrite(modelsArr.map((ele) =>
-      ({
-        updateOne: {
-          filter: { modelId: ele.modelId },
-          update: { $set: ele },
-          upsert: true
-        }
-      })
-      ))
+      Model.bulkWrite(
+        modelsArr.map((ele) => ({
+          updateOne: {
+            filter: { modelId: ele.modelId },
+            update: { $set: ele },
+            upsert: true,
+          },
+        }))
+      );
 
-      Product_Service.bulkWrite(services.map((ele) =>
-      ({
-        updateOne: {
-          filter: { modelId: ele.modelId },
-          update: { $set: ele },
-          upsert: true
-        }
-      })
-      ))
+      Product_Service.bulkWrite(
+        services.map((ele) => ({
+          updateOne: {
+            filter: { modelId: ele.modelId },
+            update: { $set: ele },
+            upsert: true,
+          },
+        }))
+      );
 
-      fs.unlinkSync(filepath)
+      fs.unlinkSync(filepath);
 
-      return res.send({ status: "File data uploaded successfully", modelCount: modelsArr.length, servicesCount: services.length });
+      return res.send({
+        status: "File data uploaded successfully",
+        modelCount: modelsArr.length,
+        servicesCount: services.length,
+      });
     });
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -589,7 +540,7 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- * 
+ *
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
