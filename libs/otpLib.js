@@ -18,8 +18,10 @@ async function sendOtp(phone, otp) {
     let response = await axios.get(
       `http://2factor.in/API/V1/${apiKey}/SMS/${phone}/${otp}/LOGIN%20OTP`
     );
-    if (response?.data.Status !== "Success")
-      throw new Error("Error encountered while sending otp");
+    if (response?.data.Status !== "Success") {
+      console.log(phone, otp);
+      // throw new Error("Error encountered while sending otp");
+    }
   } catch (error) {
     console.log(error);
   }
