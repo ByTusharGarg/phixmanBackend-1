@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
 
-// const accessTokenSecret = process.env.JWT_PARTNER_SECRET;
+const accessTokenSecret = process.env.JWT_SECRET_ACCESS_TOKEN;
 const refreshTokenSecret = process.env.JWT_REFRESH_TOKEN_SECRET;
 const tempTokenSecret = process.env.JWT_TEMP_TOKEN_SECRET;
 
 class TokenService {
-    generateAuthTokens(payload, accessTokenSecret) {
+    generateAuthTokens(payload) {
         const accessToken = jwt.sign(payload, accessTokenSecret, {
             expiresIn: '10d',
         });
@@ -37,8 +37,8 @@ class TokenService {
         return jwt.verify(token, tempTokenSecret);
     }
 
-    async verifyAccessToken(token, secret) {
-        return jwt.verify(token, secret);
+    async verifyAccessToken(token) {
+        return jwt.verify(token, accessTokenSecret);
     }
 
     async verifyRefreshToken(refreshToken) {

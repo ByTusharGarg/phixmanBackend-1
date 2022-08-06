@@ -1,3 +1,4 @@
+const fs = require('fs');
 
 const getParseModels = (models, brandId, categoryId, phoneName) => {
     let modelsArr = [];
@@ -51,8 +52,14 @@ const getParseModels = (models, brandId, categoryId, phoneName) => {
     return { modelsArr, services }
 }
 
+function base64_encode(file) {
+    // read binary data
+    var bitmap = fs.readFileSync(file).toString('base64');
+    return bitmap;
+}
 
 
 module.exports = {
-    getParseModels
+    getParseModels,
+    base64_encode
 }

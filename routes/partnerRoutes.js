@@ -5,10 +5,11 @@ const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, Wallet, Order } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypes } = require('../enums/types');
-const jwt = require('jsonwebtoken');
 const tokenService = require('../services/token-service');
 const validateTempToken = require('../middleware/tempTokenVerification');
-
+const { base64_encode } = require('../libs/commonFunction');
+const path = require('path');
+const fs = require('fs');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -101,16 +102,16 @@ const updatePartnerValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post(
-  "/SendOTP",
-  ...sendOtpBodyValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    //generate new otp
-    let otp = generateOtp(6);
-    try {
-      //check if partner with given number exists and update otp in db, else create new partner.
-      const partner = await Partner.findOneAndUpdate(
+router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, res) => {
+  //generate new otp
+  let otp = generateOtp(6);
+  console.log(otp);
+  try {
+    //check if partner with given number exists and update otp in db, else create new partner.
+    const isuserExist = await Partner.findOne({ phone: req?.body?.phone });
+
+    if (isuserExist) {
+      await Partner.findOneAndUpdate(
         { phone: req?.body?.phone, isActive: true },
         {
           otp: {
@@ -118,20 +119,25 @@ router.post(
             status: "active",
           },
         },
-        { upsert: true, new: true }
+        { new: true }
       );
-      //send otp to user
-      sendOtp(partner.phone, otp);
-      return res
-        .status(200)
-        .json({ message: "OTP has been sent successfully" });
-    } catch (error) {
-      console.log(error);
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to send otp" });
+    } else {
+      const newuser = new Partner({ phone: req?.body?.phone, otp: { code: otp, status: 'active' } });
+      await newuser.save();
     }
+
+    //send otp to user
+    // sendOtp(partner.phone, otp);
+    return res
+      .status(200)
+      .json({ message: "OTP has been sent successfully" });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to send otp" });
   }
+}
 );
 
 /**
@@ -237,9 +243,9 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
       resp['message'] = "Account block contact admin manager"
     }
 
-    if (!partner.isDocumentUpload) {
+    if (!partner.isProfileCompleted) {
       const docToken = tokenService.generatetempToken({ _id: partner._id, tokenType: "upload_docs_token" });
-      return res.status(200).json({ uid: partner._id, message: "Upload your documents", completeProfileToken: docToken, document: partner.isDocumentUpload });
+      return res.status(200).json({ uid: partner._id, message: "Upload your documents", completeProfileToken: docToken, isProfileCompleted: partner.isProfileCompleted });
     }
 
     if (resp.message) {
@@ -266,15 +272,147 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
 }
 );
 
-router.post("/completeProfile", validateTempToken, async (req, res) => {
-  let { name, catrgory,address,Dob,Type,Product_Service,email,gender,panNumber,aadharNumber } = req.body;
-  
-  try {
-    const aadharImage = req.files.aadharimage;
-    const pancardImage = req.files.panimage;
 
-    
+/**
+ * @openapi
+ * /partner/completeProfile:
+ *  post:
+ *    summary: used to upload document for fresh users
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: Name
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: address
+ *        required: true
+ *        schema:
+ *           type: object
+ *           properties:
+ *             street:
+ *               type: string
+ *             city:
+ *               type: string
+ *             pin:
+ *               type: string
+ *             state:
+ *               type: string
+ *             country:
+ *               type: string
+ *             cood:
+ *               type: object
+ *               properties:
+ *                 lattitude:
+ *                   type: string
+ *                 longitude:
+ *                   type: string
+ *      - in: path
+ *        name: Dob
+ *        required: true
+ *        schema:
+ *           type: date
+ *      - in: path
+ *        name: Type
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["store", "individual"]
+ *      - in: path
+ *        name: Product_Service
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: email
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: gender
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: panNumber
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: aadharNumber
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: aadharImage
+ *        required: true
+ *        schema:
+ *           type: file
+ *      - in: path
+ *        name: pancardImage
+ *        required: true
+ *        schema:
+ *           type: file
+ *
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/completeProfile", validateTempToken, async (req, res) => {
+  let { Name, address, Dob, Type, Product_Service, email, gender, panNumber, aadharNumber } = req.body;
+
+  let images = [];
+
+  const _id = req.tempdata._id;
+  let token_type = req.tempdata.tokenType;
+
+  if (token_type !== 'upload_docs_token') {
+    return res.status(500).json({ message: "Invalid token type" });
+  }
+
+  try {
+    images.push(req.files.aadharImage);
+    images.push(req.files.pancardImage);
+
+    let fileUrls = await Promise.all(images.map((file, i) => {
+      let filepath = path.join(__dirname, `../public/csv/${file.name}`);
+      return new Promise((resolve, reject) => {
+        file.mv(filepath, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(filepath);
+          }
+        })
+      })
+    }));
+
+    let fileString = fileUrls.map(element => {
+      let st = base64_encode(element);
+      fs.unlinkSync(element);
+      return st;
+    });
+
+    const resp = await Partner.findByIdAndUpdate(_id, { $set: { Name, Dob, Type, Product_Service, email, gender, address, isProfileCompleted: true, aadhar: { number: aadharNumber, file: fileString[0] }, pan: { number: panNumber, file: fileString[1] } } }, { new: true });
+
+    if (resp) {
+      return res.status(201).json({ message: "profile updated successfully", data: resp });
+    } else {
+      return res.status(500).json({ message: "No registration found" });
+    }
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Error encountered while trying to uploading documents" });
   }
 })
@@ -452,37 +590,33 @@ router.get("/", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.patch(
-  "/",
-  ...updatePartnerValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    try {
-      let update = req?.body;
-      update.isVerified = true;
-      console.log(update);
-      if (req?.body?.email && req?.body?.email === "") {
-        update.email = req?.body?.email.toLowerCase();
-      }
-      if (req?.body?.Password && req?.body?.Password === "") {
-        if (!isStrong(req?.body?.Password)) {
-          return res
-            .status(400)
-            .json({ message: "password is not strong enough." });
-        }
-        update.Password = hashpassword(req?.body?.Password);
-      }
-      if (req?.files?.image) {
-        update.image = "";
-      }
-      await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
-      return res.status(200).json({ message: "user updated successfully." });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to update user." });
+router.patch("/", ...updatePartnerValidator, rejectBadRequests, async (req, res) => {
+  try {
+    let update = req?.body;
+    update.isVerified = true;
+    console.log(update);
+    if (req?.body?.email && req?.body?.email === "") {
+      update.email = req?.body?.email.toLowerCase();
     }
+    if (req?.body?.Password && req?.body?.Password === "") {
+      if (!isStrong(req?.body?.Password)) {
+        return res
+          .status(400)
+          .json({ message: "password is not strong enough." });
+      }
+      update.Password = hashpassword(req?.body?.Password);
+    }
+    if (req?.files?.image) {
+      update.image = "";
+    }
+    await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
+    return res.status(200).json({ message: "user updated successfully." });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to update user." });
   }
+}
 );
 
 
@@ -519,21 +653,21 @@ router.patch(
 router.get("/myorders/:status", async (req, res) => {
   let { status } = req.params;
   const partnerId = req.partner._id;
-
+  console.log(partnerId);
   const allowedStatus = ["Accepted", "InRepair", "completed", "Cancelled"];
 
-  if (!allowedStatus.includes(status)) {
+  if (status !== "all" && !allowedStatus.includes(status)) {
     return res.status(500).json({ message: `${status} status not allowed.` });
   }
 
-  if (status !== 'all' && !orderStatusTypes.includes(status)) {
-    return res.status(400).json({ message: "Invalid status" });
-  }
+  // if (status !== 'all' && !orderStatusTypes.includes(status)) {
+  //   return res.status(400).json({ message: "Invalid status" });
+  // }
 
   let query = { Partner: partnerId };
 
   if (status !== 'all') {
-    query = { Status: status }
+    query['Status'] = status;
   }
 
   try {

@@ -235,30 +235,26 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get(
-  "/category/:serviceType",
-  ...getServiceParamValidators,
-  rejectBadRequests,
-  async (req, res) => {
-    try {
-      const products = await category.find({
-        servedAt: req?.params?.serviceType,
-      });
-      return res.status(200).json(
-        products.map((prod) => {
-          return {
-            name: prod.name,
-            icon: prod.icon,
-            key: prod.key,
-            video: prod.video,
-            modelRequired: prod.servedAt === "store" ? true : false,
-          };
-        })
-      );
-    } catch (error) {
-      return res.status(500).json({ message: "Error encountered." });
-    }
+router.get("/category/:serviceType", ...getServiceParamValidators, rejectBadRequests, async (req, res) => {
+  try {
+    const products = await category.find({
+      servedAt: req?.params?.serviceType,
+    });
+    return res.status(200).json(
+      products.map((prod) => {
+        return {
+          name: prod.name,
+          icon: prod.icon,
+          key: prod.key,
+          video: prod.video,
+          modelRequired: prod.servedAt === "store" ? true : false,
+        };
+      })
+    );
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
   }
+}
 );
 
 /**

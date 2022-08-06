@@ -8,9 +8,9 @@ const Schema = mongoose.Schema;
 const Partner = mongoose.model(
   "Partner",
   new Schema({
-    // Sno: String,
+    Sno: String,
     Name: String,
-    Dob: String,
+    Dob: Date,
     Type: {
       type: String,
       enum: partnerTypes,
@@ -24,7 +24,11 @@ const Partner = mongoose.model(
     email: {
       type: String,
     },
-    // password: { type: String },
+    refreshToken: {
+      type: String,
+      default: null
+    },
+    password: { type: String },
     otp: {
       code: {
         type: String,
@@ -38,7 +42,7 @@ const Partner = mongoose.model(
     gender: { type: String, enum: genderTypes },
     isActive: { type: Boolean, default: true },
     isVerified: { type: Boolean, required: true, default: false },
-    isDocumentUpload: { type: Boolean, default: false },
+    isProfileCompleted: { type: Boolean, default: false },
     isPublished: { type: Boolean, default: true },
     isApproved: { type: Boolean, default: false },
     address: {

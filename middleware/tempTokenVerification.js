@@ -19,7 +19,7 @@ const validateTempToken = async (req, res, next) => {
         if (!tempData) {
             res.status(401).json({ message: 'Token mismatch try again' });
         }
-        req.temdata = tempData;
+        req.tempdata = tempData;
         next();
     } catch (err) {
         res.status(401).json({ message: 'Invalid token' });
