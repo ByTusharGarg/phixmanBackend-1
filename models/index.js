@@ -11,10 +11,8 @@ const Product_Service = require("./Product_Service");
 const partnerReviews = require("./partnerReviews");
 const category = require("./category");
 const Wallet = require("./Wallet");
+const Features = require("./Features");
 const WalletTransaction = require("./WalletTransaction");
-
-
-
 
 module.exports = {
   Admin,
@@ -31,4 +29,5 @@ module.exports = {
   partnerReviews,
   Wallet,
   WalletTransaction,
+  Features,
 };
