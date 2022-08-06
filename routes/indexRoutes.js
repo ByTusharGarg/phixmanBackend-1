@@ -526,7 +526,6 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
       return res.status(500).json({ message: "Brands not exist" });
     }
 
-    // console.log("file ",req.files.csvfile); // the uploaded file object
     const file = req.files.csvfile;
 
     // 1. concat name
@@ -535,7 +534,6 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
     // 4. insert services
     // 5. validation
     // 6. process all data
-
 
     if (!file) {
       return res.status(400).send("No files were uploaded.");

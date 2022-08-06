@@ -4,7 +4,11 @@ const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, Wallet, Order } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypes } = require("../enums/types");
+const { orderStatusTypes } = require('../enums/types');
+const jwt = require('jsonwebtoken');
+const tokenService = require('../services/token-service');
+const validateTempToken = require('../middleware/tempTokenVerification');
+
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -107,7 +111,7 @@ router.post(
     try {
       //check if partner with given number exists and update otp in db, else create new partner.
       const partner = await Partner.findOneAndUpdate(
-        { phone: req?.body?.phone },
+        { phone: req?.body?.phone, isActive: true },
         {
           otp: {
             code: otp,
@@ -120,7 +124,7 @@ router.post(
       sendOtp(partner.phone, otp);
       return res
         .status(200)
-        .json({ message: "OTP has been sent successfully", otp });
+        .json({ message: "OTP has been sent successfully" });
     } catch (error) {
       console.log(error);
       return res
@@ -198,48 +202,82 @@ router.post(
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post(
-  "/VerifyOTP",
-  ...verifyOtpBodyValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    try {
-      const partner = await Partner.findOneAndUpdate(
-        {
-          phone: req?.body?.phone,
-          "otp.code": req?.body?.otp,
-          "otp.status": "active",
-        },
-        {
-          "otp.status": "inactive",
-        },
-        { new: true }
-      );
-      if (partner === null) {
-        return res.status(401).json({ message: "Invalid OTP" });
-      }
-      const isWalletExixts = await Wallet.findOne({ partnerId: partner?._id });
-      if (!isWalletExixts) {
-        const newWallet = new Wallet({ partnerId: partner?._id });
-        await newWallet.save();
-      }
+router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (req, res) => {
+  let resp = {};
+  try {
+    const partner = await Partner.findOneAndUpdate(
+      {
+        phone: req?.body?.phone,
+        "otp.code": req?.body?.otp,
+        "otp.status": "active",
+      },
+      {
+        "otp.status": "inactive",
+      },
+      { new: true }
+    );
+    // console.log(partner);
+    if (partner === null) {
+      return res.status(401).json({ message: "Invalid OTP" });
+    }
+    // wallet creation
+    const isWalletExixts = await Wallet.findOne({ partnerId: partner?._id })
+    if (!isWalletExixts) {
+      const newWallet = new Wallet({ partnerId: partner?._id });
+      await newWallet.save();
+    }
+
+    if (!partner.isVerified) {
+      resp['message'] = "Account is not verified"
+    }
+    else if (!partner.isApproved) {
+      resp['message'] = "Account is not appproved contact admin manager"
+    }
+    else if (!partner.isPublished) {
+      resp['message'] = "Account block contact admin manager"
+    }
+
+    if (!partner.isDocumentUpload) {
+      const docToken = tokenService.generatetempToken({ _id: partner._id, tokenType: "upload_docs_token" });
+      return res.status(200).json({ uid: partner._id, message: "Upload your documents", completeProfileToken: docToken, document: partner.isDocumentUpload });
+    }
+
+    if (resp.message) {
+      return res.status(500).json({ ...resp });
+    } else {
+      const { accessToken, refreshToken } = tokenService.generateAuthTokens({ _id: partner._id, type: partner.Type, isPublished: partner.isPublished }, process.env.JWT_SECRET_ACCESS_TOKEN);
 
       return res.status(200).json({
-        message: "OTP verified successfully",
+        message: "Login successfully",
         uid: partner._id,
-        isActive: partner.isActive,
-        isVerified: partner.isVerified,
-        isPublished: partner.isPublished,
-        type: partner.Type,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        isApproved: partner.isApproved,
+        type: partner.Type
       });
-    } catch (error) {
-      console.log(error);
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to verify otp" });
     }
+
+  } catch (error) {
+    console.log(error)
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to verify otp" });
   }
+}
 );
+
+router.post("/completeProfile", validateTempToken, async (req, res) => {
+  let { name, catrgory,address,Dob,Type,Product_Service,email,gender,panNumber,aadharNumber } = req.body;
+  
+  try {
+    const aadharImage = req.files.aadharimage;
+    const pancardImage = req.files.panimage;
+
+    
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered while trying to uploading documents" });
+  }
+})
 
 router.use(checkPartner);
 
@@ -447,6 +485,7 @@ router.patch(
   }
 );
 
+
 /**
  * @openapi
  * /partner/myorders/{status}:
@@ -487,14 +526,14 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: `${status} status not allowed.` });
   }
 
-  if (status !== "all" && !orderStatusTypes.includes(status)) {
+  if (status !== 'all' && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
 
   let query = { Partner: partnerId };
 
-  if (status !== "all") {
-    query = { Status: status };
+  if (status !== 'all') {
+    query = { Status: status }
   }
 
   try {
@@ -505,6 +544,7 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
 
 /**
  * @openapi
@@ -538,7 +578,7 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
   const queryobj = { Status: "Requested", "address.city": city };
 
   if (pincode) {
-    queryobj["address.pin"] = pincode;
+    queryobj['address.pin'] = pincode;
   }
 
   try {
@@ -594,23 +634,18 @@ router.post("/order/acceptorder", async (req, res) => {
       return res.status(500).json({ message: "order not exists" });
     }
 
-    if (order.Status !== "Requested") {
-      return res
-        .status(500)
-        .json({ message: "order already Accepted or further processing" });
+    if (order.Status !== 'Requested') {
+      return res.status(500).json({ message: "order already Accepted or further processing" });
     }
 
-    await Order.findOneAndUpdate(
-      { OrderId: orderId },
-      { Status: orderStatusTypes[2], Partner: partnerId },
-      { new: true }
-    );
+    await Order.findOneAndUpdate({ OrderId: orderId }, { Status: orderStatusTypes[2], Partner: partnerId }, { new: true });
     return res.status(200).json({ message: "order Accepted" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
 
 /**
  * @openapi
@@ -650,13 +685,13 @@ router.post("/order/changestatus", async (req, res) => {
   let { status, orderId } = req.body;
   const partnerId = req.partner._id;
 
+
   if (!status || !orderId) {
-    return res
-      .status(500)
-      .json({ message: "orderId and status must be provided" });
+    return res.status(500).json({ message: "orderId and status must be provided" });
   }
 
   const allowedStatus = ["InRepair", "completed", "Cancelled"];
+
 
   if (!allowedStatus.includes(status)) {
     return res.status(500).json({ message: "status is not allowed" });
@@ -666,25 +701,20 @@ router.post("/order/changestatus", async (req, res) => {
     const order = await Order.findOne({ Partner: partnerId, OrderId: orderId });
 
     if (!order) {
-      return res
-        .status(500)
-        .json({ message: "order not belongs to this partner" });
+      return res.status(500).json({ message: "order not belongs to this partner" });
     }
 
     if (order.Status === status) {
       return res.status(200).json({ message: "This is your current status" });
     }
 
-    await Order.findOneAndUpdate(
-      { OrderId: orderId },
-      { Status: status },
-      { new: true }
-    );
+    await Order.findOneAndUpdate({ OrderId: orderId }, { Status: status }, { new: true });
     return res.status(200).json({ message: "order status changes" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
 
 module.exports = router;
