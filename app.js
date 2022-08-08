@@ -17,6 +17,40 @@ const connect = require("./connect");
 // Configure Express app.
 const app = Express();
 
+// swagger documentation
+
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      version: "1.0.0",
+      title: "Phixman API",
+      description: "Phixman API documentation.",
+      contact: {
+        name: "API Support",
+        email: "tushar.garg@phixman.in",
+      },
+      license: {
+        name: "Proprietary",
+        url: "https://en.wikipedia.org/wiki/Proprietary_software",
+      },
+      servers: [process.env.backendUrl],
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+        },
+      },
+    },
+  },
+  apis: ["./routes/*.js"], // files containing annotations as above
+};
+
+const docs = swaggerJsdoc(options);
+app.use("/api-docs", swaggerUiExpress.serve, swaggerUiExpress.setup(docs));
+
 //data Parsers
 app.use(
   Express.urlencoded({
@@ -59,50 +93,14 @@ app.use(
 // connect to db
 connect();
 
-// swagger documentation
-
-const options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      version: "1.0.0",
-      title: "Phixman API",
-      description: "Phixman API documentation.",
-      contact: {
-        name: "API Support",
-        email: "tushar.garg@phixman.in",
-      },
-      license: {
-        name: "Proprietary",
-        url: "https://en.wikipedia.org/wiki/Proprietary_software",
-      },
-      servers: [process.env.backendUrl],
-    },
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-        },
-      },
-    },
-  },
-  apis: ["./routes/*.js"], // files containing annotations as above
-};
-
-const docs = swaggerJsdoc(options);
-app.use("/api-docs", swaggerUiExpress.serve, swaggerUiExpress.setup(docs));
-
 // routes
 app.use("/", router.indexRoutes);
-app.use("/customer", router.customerRoutes);  
+app.use("/customer", router.customerRoutes);
 app.use("/partner", router.partnerRoutes);
 app.use("/admin", router.adminRoutes);
 app.use("/Order", router?.orderRoutes);
 app.use("/wallet", router?.walletRoutes);
 app.use("/customerpayment", router?.customerPaymentRoutes);
-
-
 
 // const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {
