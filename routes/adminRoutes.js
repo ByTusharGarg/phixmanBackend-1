@@ -3,6 +3,7 @@ const { AdminAuth } = require("../middleware");
 const {
   Admin,
   Customer,
+  Partner,
   Coupon,
   Order,
   WalletTransaction,
@@ -549,6 +550,86 @@ router.get("/Features", async (req, res) => {
   try {
     let features = await Feature.find();
     res.status(200).json(features);
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+
+
+/**
+ * @openapi
+ * /admin/get/partners/{type}:
+ *  get:
+ *    summary: using this route admin can see partners list like all,kycpending and block users
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: type
+ *        required: true
+ *        schema:
+ *          type: string
+ *          enum: ["kycpending", "block","all"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/partners/:type", async (req, res) => {
+  let query = {};
+  const { type } = req.params;
+
+  if (type === "kycpending") {
+    query = { isProfileCompleted: true, isVerified: false, isApproved: false };
+  }
+  else if (type === "block") {
+    query = { isPublished: false };
+  } else {
+    query = {};
+  }
+
+  try {
+    let partners = await Partner.find(query);
+    res.status(200).json({ message: "Partners list", data: partners });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+
+router.put("/partners/:id", async (req, res) => {
+  let query = {};
+  const { id } = req.params;
+  const { type } = req.body;
+
+  if (!id || !type) {
+    return res.status(500).json({ message: `id and type required` });
+  }
+
+  if (type === "approve") {
+    query = { isApproved: true, isVerified: false };
+  } else if (type === "block") {
+    query = { isPublished: false };
+  } else if (type === "unblock") {
+    query = { isPublished: true };
+  } else {
+    res.status(200).json({ message: "Invalid type", data: partners });
+  }
+
+  try {
+    let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
+    res.status(200).json({ message: "operations successfully", data: partners });
   } catch (error) {
     console.log(error);
   }

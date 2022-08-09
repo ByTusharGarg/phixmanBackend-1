@@ -6,10 +6,9 @@ const Customer = mongoose.model(
   new Schema({
     Name: String,
     email: {
-      type: String,
-      unique: true,
+      type: String
     },
-    phone: { type: String, required: true },
+    phone: { type: String, required: true,unique: true},
     Password: { type: String },
     image: { type: String },
     gender: { type: String, enum: genderTypes },
