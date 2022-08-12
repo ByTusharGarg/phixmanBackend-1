@@ -561,7 +561,7 @@ router.get("/Features", async (req, res) => {
  * @openapi
  * /admin/get/partners/{type}:
  *  get:
- *    summary: using this route admin can see partners list like all,kycpending and block users
+ *    summary: using this route admin can see partners actions like all,kycpending and block users
  *    tags:
  *    - Admin Routes
  *    parameters:
