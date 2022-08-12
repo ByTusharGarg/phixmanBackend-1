@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Customer, Order, Partner, Counters } = require("../models");
+const { Customer, Order, Partner, Counters, CustomerWallet } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require('../services/token-service');
@@ -225,7 +225,12 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
     }
 
     if (!customer.isVerified) {
-      await Customer.findOneAndUpdate({ phone: req?.body?.phone, "otp.code": req?.body?.otp, "otp.status": "active" }, { isVerified:true }, { new: true });
+      // This condition runs when customer login first time
+      await Customer.findOneAndUpdate({ phone: req?.body?.phone, "otp.code": req?.body?.otp, "otp.status": "active" }, { isVerified: true }, { new: true });
+
+      // generate customer wallet
+      const newWallet = new CustomerWallet({ customerId: customer?._id });
+      await newWallet.save();
     }
 
     if (!customer.isPublished) {

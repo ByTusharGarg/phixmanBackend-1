@@ -10,7 +10,9 @@ const Model = require("./Model");
 const Product_Service = require("./Product_Service");
 const partnerReviews = require("./partnerReviews");
 const category = require("./category");
-const Wallet = require("./Wallet");
+const Wallet = require("./PartnerWallet");
+const CustomerWallet = require("./CustomerWallet");
+
 const Features = require("./Features");
 const WalletTransaction = require("./WalletTransaction");
 
@@ -30,4 +32,5 @@ module.exports = {
   Wallet,
   WalletTransaction,
   Features,
+  CustomerWallet,
 };

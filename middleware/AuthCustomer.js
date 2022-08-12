@@ -30,7 +30,6 @@ async function checkCustomer(req, res, next) {
     req.Customer = customer;
     next();
   } catch (error) {
-    console.log(error);
     return res.status(401).json({
       success: false,
       message: "invalid access token or expire",

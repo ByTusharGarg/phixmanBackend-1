@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const wallletSchema = mongoose.Schema({
+const partnerWalletSchema = mongoose.Schema({
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true, unique: true },
     balance: {
         type: Number,
@@ -12,6 +12,6 @@ const wallletSchema = mongoose.Schema({
     }
 }, { timestamps: true });
 
-const Coupon = mongoose.model("Wallet", wallletSchema);
+const Coupon = mongoose.model("partnerwallet", partnerWalletSchema);
 
 module.exports = Coupon;
