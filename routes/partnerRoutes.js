@@ -7,7 +7,7 @@ const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypes } = require('../enums/types');
 const tokenService = require('../services/token-service');
 const validateTempToken = require('../middleware/tempTokenVerification');
-const { base64_encode } = require('../libs/commonFunction');
+const { base64_encode, generateRandomReferralCode } = require('../libs/commonFunction');
 const path = require('path');
 const fs = require('fs');
 
@@ -33,7 +33,8 @@ const verifyOtpBodyValidator = [
 
 const updatePartnerValidator = [
   body("email").isEmail().withMessage("email is invalid"),
-  body("Password").isString().withMessage("password should be a string"),
+  body("dob").isEmail().withMessage("email is invalid"),
+
 ];
 
 /**
@@ -105,7 +106,6 @@ const updatePartnerValidator = [
 router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, res) => {
   //generate new otp
   let otp = generateOtp(6);
-  console.log(otp);
   try {
     //check if partner with given number exists and update otp in db, else create new partner.
     const isuserExist = await Partner.findOne({ phone: req?.body?.phone });
@@ -122,7 +122,7 @@ router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, 
         { new: true }
       );
     } else {
-      const newuser = new Partner({ phone: req?.body?.phone, otp: { code: otp, status: 'active' } });
+      const newuser = new Partner({ phone: req?.body?.phone, otp: { code: otp, status: 'active' }, uniqueReferralCode: generateRandomReferralCode() });
       await newuser.save();
     }
 
@@ -465,117 +465,57 @@ router.get("/", async (req, res) => {
 
 /**
  * @openapi
- * /partner:
- *  patch:
- *    summary: used to update user data.
+ * /partner/changeprofile:
+ *  put:
+ *    summary: used to update partner profile
  *    tags:
  *    - partner Routes
- *    requestBody:
- *      content:
- *        multipart/form-data:
- *          schema:
- *              type: object
- *              properties:
- *                email:
- *                  type: string
- *                Password:
- *                  type: string
- *                name:
- *                  type: string
- *                dob:
- *                  type: string
- *                address:
- *                  type: object
- *                  properties:
- *                    city:
- *                      type: string
- *                    state:
- *                      type: string
- *                    country:
- *                      type: string
- *                    street:
- *                      type: string
- *                    pin:
- *                      type: string
- *                    cood:
- *                      type: object
- *                      properties:
- *                        lattitude:
- *                          type: string
- *                        longitude:
- *                          type: string
- *                image:
- *                  type: file
- *                panNumber:
- *                  type: string
- *                pan:
- *                  type: file
- *                aadharNumber:
- *                  type: string
- *                aadhar:
- *                  type: file
- *                gender:
- *                  type: string
- *                  enum: ["male", "female", "non-binary"]
- *                Type:
- *                  type: string
- *                  enum: ["store", "individual"]
- *          encoding:
- *              image:
- *                  contentType: image/png, image/jpeg, image/jpg, image/gif
- *              pan:
- *                  contentType: image/png, image/jpeg, image/jpg, image/gif
- *              aadhar:
- *                  contentType: image/png, image/jpeg, image/jpg, image/gif
+ *    parameters:
+ *      - in: path
+ *        name: Name
+ *        required: false
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: address
+ *        required: false
+ *        schema:
+ *           type: object
+ *           properties:
+ *             street:
+ *               type: string
+ *             city:
+ *               type: string
+ *             pin:
+ *               type: string
+ *             state:
+ *               type: string
+ *             country:
+ *               type: string
+ *             cood:
+ *               type: object
+ *               properties:
+ *                 lattitude:
+ *                   type: string
+ *                 longitude:
+ *                   type: string
+ *      - in: path
+ *        name: Dob
+ *        required: false
+ *        placeholder: yyyy/mm/dd
+ *        schema:
+ *           type: date
+ *      - in: path
+ *        name: email
+ *        required: false
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: profilePic
+ *        required: false
+ *        schema:
+ *           type: file
  *    responses:
- *      200:
- *          description: if user updated successfully
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: user updated successfully.
- *      400:
- *         description: if the parameters given were invalid
- *         content:
- *           application/json:
- *             schema:
- *               required:
- *               - errors
- *               type: object
- *               properties:
- *                 errors:
- *                   type: array
- *                   description: a list of validation errors
- *                   items:
- *                     type: object
- *                     properties:
- *                       value:
- *                         type: object
- *                         description: the value received for the parameter
- *                       msg:
- *                         type: string
- *                         description: a message describing the validation error
- *                       param:
- *                         type: string
- *                         description: the parameter for which the validation error occurred
- *                       location:
- *                         type: string
- *                         description: the location at which the validation error occurred (e.g. query, body)
- *      404:
- *          description: if user not found or auth token not supplied.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
  *      500:
  *          description: if internal server error occured while performing request.
  *          content:
@@ -587,31 +527,42 @@ router.get("/", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
-router.patch("/", ...updatePartnerValidator, rejectBadRequests, async (req, res) => {
+router.put("/changeprofile", async (req, res) => {
+  // const { Name, Dob, email, address } = req.body;
+  let base64String = null;
+
+  if (req.body.phone) {
+    return res.status(500).json({ message: "phone number is not allowed" });
+  }
+
   try {
-    let update = req?.body;
-    update.isVerified = true;
-    console.log(update);
-    if (req?.body?.email && req?.body?.email === "") {
-      update.email = req?.body?.email.toLowerCase();
+    if (req.files && req.files.profilePic) {
+      let profilePic = req.files.profilePic;
+
+      let filepath = path.join(__dirname, `../public/csv/${profilePic.name}`);
+      profilePic.mv(filepath, (err) => {
+        if (err) {
+          reject(err);
+        }
+      })
+
+      base64String = base64_encode(filepath);
+      fs.unlinkSync(filepath);
     }
-    if (req?.body?.Password && req?.body?.Password === "") {
-      if (!isStrong(req?.body?.Password)) {
-        return res
-          .status(400)
-          .json({ message: "password is not strong enough." });
-      }
-      update.Password = hashpassword(req?.body?.Password);
+
+    let update = {
+      ...req.body
     }
-    if (req?.files?.image) {
-      update.image = "";
+
+    if (base64String) {
+      update['profilePic'] = base64String;
     }
+
     await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
     return res.status(200).json({ message: "user updated successfully." });
   } catch (error) {
+    console.log(error);
     return res
       .status(500)
       .json({ message: "Error encountered while trying to update user." });

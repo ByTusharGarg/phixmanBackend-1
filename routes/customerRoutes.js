@@ -7,6 +7,8 @@ const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require('../services/token-service');
 const { hashpassword } = require("../libs/passwordLib");
+
+
 const {
   orderStatusTypes,
   orderTypes,
@@ -14,6 +16,7 @@ const {
   paymentStatus,
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
+const { generateRandomReferralCode } = require('../libs/commonFunction');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -132,7 +135,7 @@ router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, 
     if (isuserExist) {
       await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { otp: { code: otp, status: "active" } }, { new: true });
     } else {
-      const newuser = new Customer({ phone: req?.body?.phone, otp: { code: otp, status: 'active' } });
+      const newuser = new Customer({ phone: req?.body?.phone, otp: { code: otp, status: 'active' }, uniqueReferralCode: generateRandomReferralCode() });
       await newuser.save();
     }
     //send otp to user
@@ -642,18 +645,12 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
   const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
   const OrderId = commonFunction.genrateID("ORD");
   let Amount = 0;
+  let grandTotal = 0;
 
   Items.map((element) => (Amount += element?.Cost));
+  grandTotal = Amount;
 
   try {
-    // const isPartnerExist = Partner.findById(PartnerId);
-    // if (!isPartnerExist) {
-    //   let counterValue = await Counters.findOneAndUpdate(
-    //     { name: "orders" },
-    //     { $inc: { seq: 1 } },
-    //     { new: true }
-    //   );
-
     let resp = {};
 
     if (PaymentMode === "cod") {
@@ -680,7 +677,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
         Status: orderStatusTypes[0],
         PendingAmount: Amount,
         PaymentStatus: paymentStatus[1],
-        OrderDetails: { Amount, Items },
+        OrderDetails: { Amount, Gradtotal: grandTotal, Items },
         PaymentMode,
         address,
         PickUpRequired,
@@ -688,12 +685,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
       resp = await newOrder.save();
     }
 
-    return res
-      .status(200)
-      .json({ message: "Orders created successfully.", newOrder: resp });
-    // } else {
-    //   return res.status(500).json({ message: "Partner not found" });
-    // }
+    return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });

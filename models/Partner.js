@@ -45,6 +45,8 @@ const Partner = mongoose.model(
     isProfileCompleted: { type: Boolean, default: false },
     isPublished: { type: Boolean, default: true },
     isApproved: { type: Boolean, default: false },
+    profilePic: { type: String, default: "" },
+    uniqueReferralCode: { type: String, required: true, unique: true, index: true },
     address: {
       street: String,
       city: String,

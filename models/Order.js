@@ -20,6 +20,7 @@ const Order = mongoose.model(
     },
     OrderDetails: {
       Amount: { type: Number },
+      Gradtotal: { type: Number },
       Items: [
         {
           CategoryId: { type: Schema.Types.ObjectId, ref: "category" },
