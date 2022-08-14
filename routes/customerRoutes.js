@@ -148,7 +148,7 @@ router.post(
           { new: true }
         );
         //send otp to user
-        sendOtp(isuserExist.phone, otp);
+        // sendOtp(isuserExist.phone, otp);
       } else {
         const newuser = new Customer({
           phone: req?.body?.phone,
@@ -157,9 +157,8 @@ router.post(
         });
         await newuser.save();
         //send otp to user
-        sendOtp(newuser.phone, otp);
       }
-      
+      sendOtp(req?.body?.phone, otp);
       return res
         .status(200)
         .json({ message: "OTP has been sent successfully", otp: otp });

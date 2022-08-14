@@ -7,7 +7,7 @@ const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypes } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
-const { base64_encode } = require("../libs/commonFunction");
+const { base64_encode, generateRandomReferralCode } = require("../libs/commonFunction");
 const path = require("path");
 const fs = require("fs");
 
@@ -125,16 +125,17 @@ router.post(
           },
           { new: true }
         );
-        sendOtp(isuserExist.phone, otp);
+        // sendOtp(isuserExist.phone, otp);
       } else {
         const newuser = new Partner({
           phone: req?.body?.phone,
           otp: { code: otp, status: "active" },
+          uniqueReferralCode: generateRandomReferralCode()
         });
         await newuser.save();
-        sendOtp(newuser.phone, otp);
       }
-
+      sendOtp(req?.body?.phone, otp);
+      
       return res
         .status(200)
         .json({ message: "OTP has been sent successfully", otp });
