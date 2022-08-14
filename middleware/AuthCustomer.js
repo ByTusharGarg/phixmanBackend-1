@@ -1,5 +1,6 @@
 const { isEmpty, trim } = require("../libs/checkLib");
 const { Customer } = require("../models");
+const { verifyAccessToken } = require('../services/token-service');
 
 async function checkCustomer(req, res, next) {
   try {
@@ -14,19 +15,24 @@ async function checkCustomer(req, res, next) {
       token = token.slice(7, token.length);
     }
 
-    const customer = await Customer.findOne({ _id: token });
+    const data = await verifyAccessToken(token);
+
+    if (!data) {
+      res.status(401).json({ message: 'Token mismatch try again' });
+    }
+
+    const customer = await Customer.findOne({ _id: data._id });
     if (customer === null) {
-      return res.status(404).json({
+      return res.status(401).json({
         message: "Customer not found",
       });
     }
     req.Customer = customer;
     next();
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
+    return res.status(401).json({
       success: false,
-      message: "ERROR",
+      message: "invalid access token or expire",
     });
   }
 }

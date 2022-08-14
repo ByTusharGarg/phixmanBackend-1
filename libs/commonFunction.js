@@ -1,4 +1,6 @@
 const fs = require('fs');
+const randomstring = require("randomstring");
+
 
 const getParseModels = (models, brandId, categoryId, phoneName) => {
     let modelsArr = [];
@@ -59,7 +61,15 @@ function base64_encode(file) {
 }
 
 
+const generateRandomReferralCode = () => {
+    return randomstring.generate({
+        length: 12,
+        charset: 'alphanumeric'
+    });
+}
+
 module.exports = {
     getParseModels,
-    base64_encode
+    base64_encode,
+    generateRandomReferralCode
 }

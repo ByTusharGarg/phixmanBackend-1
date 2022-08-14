@@ -19,6 +19,7 @@ const transsactionStatus = ["successful", "pending", "failed"];
 const roles = ["customer","partner","order"]
 const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED","FAILED"];
 const acceptedPaymentMethods = ["card", "upi", "app"];
+const transsactionUser = ["partner","customer"];
 
 
 module.exports = {
@@ -35,5 +36,6 @@ module.exports = {
   transsactionStatus,
   roles,
   paymentStatus,
-  acceptedPaymentMethods
+  acceptedPaymentMethods,
+  transsactionUser,
 };

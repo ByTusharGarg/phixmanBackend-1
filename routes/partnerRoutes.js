@@ -4,12 +4,12 @@ const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, Wallet, Order } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypes } = require("../enums/types");
-const tokenService = require("../services/token-service");
-const validateTempToken = require("../middleware/tempTokenVerification");
-const { base64_encode } = require("../libs/commonFunction");
-const path = require("path");
-const fs = require("fs");
+const { orderStatusTypes } = require('../enums/types');
+const tokenService = require('../services/token-service');
+const validateTempToken = require('../middleware/tempTokenVerification');
+const { base64_encode } = require('../libs/commonFunction');
+const path = require('path');
+const fs = require('fs');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -33,7 +33,8 @@ const verifyOtpBodyValidator = [
 
 const updatePartnerValidator = [
   body("email").isEmail().withMessage("email is invalid"),
-  body("Password").isString().withMessage("password should be a string"),
+  body("dob").isEmail().withMessage("email is invalid"),
+
 ];
 
 /**
@@ -102,36 +103,29 @@ const updatePartnerValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post(
-  "/SendOTP",
-  ...sendOtpBodyValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    //generate new otp
-    let otp = generateOtp(6);
-    console.log(otp);
-    try {
-      //check if partner with given number exists and update otp in db, else create new partner.
-      const isuserExist = await Partner.findOne({ phone: req?.body?.phone });
+router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, res) => {
+  //generate new otp
+  let otp = generateOtp(6);
+  console.log(otp);
+  try {
+    //check if partner with given number exists and update otp in db, else create new partner.
+    const isuserExist = await Partner.findOne({ phone: req?.body?.phone });
 
-      if (isuserExist) {
-        await Partner.findOneAndUpdate(
-          { phone: req?.body?.phone, isActive: true },
-          {
-            otp: {
-              code: otp,
-              status: "active",
-            },
+    if (isuserExist) {
+      await Partner.findOneAndUpdate(
+        { phone: req?.body?.phone, isActive: true },
+        {
+          otp: {
+            code: otp,
+            status: "active",
           },
-          { new: true }
-        );
-      } else {
-        const newuser = new Partner({
-          phone: req?.body?.phone,
-          otp: { code: otp, status: "active" },
-        });
-        await newuser.save();
-      }
+        },
+        { new: true }
+      );
+    } else {
+      const newuser = new Partner({ phone: req?.body?.phone, otp: { code: otp, status: 'active' } });
+      await newuser.save();
+    }
 
       //send otp to user
       sendOtp(partner.phone, otp);
@@ -524,9 +518,9 @@ router.get("/", async (req, res) => {
 
 /**
  * @openapi
- * /partner:
- *  patch:
- *    summary: used to update user data.
+ * /partner/changeprofile:
+ *  put:
+ *    summary: used to update partner profile
  *    tags:
  *    - partner Routes
  *    requestBody:
@@ -646,40 +640,34 @@ router.get("/", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
-router.patch(
-  "/",
-  ...updatePartnerValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    try {
-      let update = req?.body;
-      update.isVerified = true;
-      console.log(update);
-      if (req?.body?.email && req?.body?.email === "") {
-        update.email = req?.body?.email.toLowerCase();
-      }
-      if (req?.body?.Password && req?.body?.Password === "") {
-        if (!isStrong(req?.body?.Password)) {
-          return res
-            .status(400)
-            .json({ message: "password is not strong enough." });
-        }
-        update.Password = hashpassword(req?.body?.Password);
-      }
-      if (req?.files?.image) {
-        update.image = "";
-      }
-      await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
-      return res.status(200).json({ message: "user updated successfully." });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to update user." });
+router.patch("/", ...updatePartnerValidator, rejectBadRequests, async (req, res) => {
+  try {
+    let update = req?.body;
+    update.isVerified = true;
+    console.log(update);
+    if (req?.body?.email && req?.body?.email === "") {
+      update.email = req?.body?.email.toLowerCase();
     }
+    if (req?.body?.Password && req?.body?.Password === "") {
+      if (!isStrong(req?.body?.Password)) {
+        return res
+          .status(400)
+          .json({ message: "password is not strong enough." });
+      }
+      update.Password = hashpassword(req?.body?.Password);
+    }
+    if (req?.files?.image) {
+      update.image = "";
+    }
+    await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
+    return res.status(200).json({ message: "user updated successfully." });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to update user." });
   }
+}
 );
 
 /**

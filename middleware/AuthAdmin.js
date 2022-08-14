@@ -36,7 +36,7 @@ const registerAdmin = async (req, res) => {
     });
     //send activation mail here
     return res.status(201).json({
-      message: "Admin Created",
+      message: "Admin Registration successfull",
     });
   } catch (error) {
     return res.status(500).json({
