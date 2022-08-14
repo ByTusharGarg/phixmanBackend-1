@@ -26,7 +26,7 @@ const Partner = mongoose.model(
     },
     refreshToken: {
       type: String,
-      default: null
+      default: null,
     },
     password: { type: String },
     otp: {
@@ -46,7 +46,12 @@ const Partner = mongoose.model(
     isPublished: { type: Boolean, default: true },
     isApproved: { type: Boolean, default: false },
     profilePic: { type: String, default: "" },
-    uniqueReferralCode: { type: String, unique: true, index: true },
+    uniqueReferralCode: {
+      type: String,
+      unique: true,
+      index: true,
+      sparse: true,
+    },
     address: {
       street: String,
       city: String,

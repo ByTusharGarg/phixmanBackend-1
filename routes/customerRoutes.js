@@ -2,12 +2,17 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Customer, Order, Partner, Counters, CustomerWallet } = require("../models");
+const {
+  Customer,
+  Order,
+  Partner,
+  Counters,
+  CustomerWallet,
+} = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
-const tokenService = require('../services/token-service');
+const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
-
 
 const {
   orderStatusTypes,
@@ -16,7 +21,7 @@ const {
   paymentStatus,
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
-const { generateRandomReferralCode } = require('../libs/commonFunction');
+const { generateRandomReferralCode } = require("../libs/commonFunction");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -126,28 +131,45 @@ const verifyOrderValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, res) => {
-  //generate new otp
-  let otp = generateOtp(6);
-  try {
-    //check if customer with given number exists and update otp in db, else create new customer.
-    const isuserExist = await Customer.findOne({ phone: req?.body?.phone });
-    if (isuserExist) {
-      await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { otp: { code: otp, status: "active" } }, { new: true });
-    } else {
-      const newuser = new Customer({ phone: req?.body?.phone, otp: { code: otp, status: 'active' }, uniqueReferralCode: generateRandomReferralCode() });
-      await newuser.save();
+router.post(
+  "/SendOTP",
+  ...sendOtpBodyValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    //generate new otp
+    let otp = generateOtp(6);
+    try {
+      //check if customer with given number exists and update otp in db, else create new customer.
+      const isuserExist = await Customer.findOne({ phone: req?.body?.phone });
+      if (isuserExist) {
+        await Customer.findOneAndUpdate(
+          { phone: req?.body?.phone },
+          { otp: { code: otp, status: "active" } },
+          { new: true }
+        );
+        //send otp to user
+        sendOtp(isuserExist.phone, otp);
+      } else {
+        const newuser = new Customer({
+          phone: req?.body?.phone,
+          otp: { code: otp, status: "active" },
+          uniqueReferralCode: generateRandomReferralCode(),
+        });
+        await newuser.save();
+        //send otp to user
+        sendOtp(newuser.phone, otp);
+      }
+      
+      return res
+        .status(200)
+        .json({ message: "OTP has been sent successfully", otp: otp });
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ message: "Error encountered while trying to send otp" });
     }
-    //send otp to user
-    // sendOtp(customer.phone, otp);
-    return res.status(200).json({ message: "OTP has been sent successfully", otp: otp });
-  } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Error encountered while trying to send otp" });
   }
-}
 );
 
 /**
@@ -218,47 +240,70 @@ router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, 
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (req, res) => {
-  let resp = {};
-  try {
-    const customer = await Customer.findOneAndUpdate({ phone: req?.body?.phone, "otp.code": req?.body?.otp, "otp.status": "active" }, { "otp.status": "inactive" }, { new: true });
+router.post(
+  "/VerifyOTP",
+  ...verifyOtpBodyValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    let resp = {};
+    try {
+      const customer = await Customer.findOneAndUpdate(
+        {
+          phone: req?.body?.phone,
+          "otp.code": req?.body?.otp,
+          "otp.status": "active",
+        },
+        { "otp.status": "inactive" },
+        { new: true }
+      );
 
-    if (customer === null) {
-      return res.status(401).json({ message: "Invalid OTP" });
+      if (customer === null) {
+        return res.status(401).json({ message: "Invalid OTP" });
+      }
+
+      if (!customer.isVerified) {
+        // This condition runs when customer login first time
+        await Customer.findOneAndUpdate(
+          {
+            phone: req?.body?.phone,
+            "otp.code": req?.body?.otp,
+            "otp.status": "active",
+          },
+          { isVerified: true },
+          { new: true }
+        );
+
+        // generate customer wallet
+        const newWallet = new CustomerWallet({ customerId: customer?._id });
+        await newWallet.save();
+      }
+
+      if (!customer.isPublished) {
+        resp["message"] =
+          "Account block contact admin . please wait for approval.";
+      }
+
+      if (resp.message) {
+        return res.status(500).json({ ...resp });
+      } else {
+        const { accessToken, refreshToken } = tokenService.generateAuthTokens(
+          { _id: customer._id, isPublished: customer.isPublished },
+          process.env.JWT_SECRET_ACCESS_TOKEN
+        );
+        return res.status(200).json({
+          message: "Login successfully",
+          uid: customer._id,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          isApproved: customer.isApproved,
+        });
+      }
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: "Error encountered while trying to verify otp" });
     }
-
-    if (!customer.isVerified) {
-      // This condition runs when customer login first time
-      await Customer.findOneAndUpdate({ phone: req?.body?.phone, "otp.code": req?.body?.otp, "otp.status": "active" }, { isVerified: true }, { new: true });
-
-      // generate customer wallet
-      const newWallet = new CustomerWallet({ customerId: customer?._id });
-      await newWallet.save();
-    }
-
-    if (!customer.isPublished) {
-      resp['message'] = "Account block contact admin . please wait for approval.";
-    }
-
-    if (resp.message) {
-      return res.status(500).json({ ...resp });
-    } else {
-      const { accessToken, refreshToken } = tokenService.generateAuthTokens({ _id: customer._id, isPublished: customer.isPublished }, process.env.JWT_SECRET_ACCESS_TOKEN);
-      return res.status(200).json({
-        message: "Login successfully",
-        uid: customer._id,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        isApproved: customer.isApproved
-      });
-    }
-
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Error encountered while trying to verify otp" });
   }
-}
 );
 
 /**
@@ -640,57 +685,63 @@ router.post("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
-  const Customer = req.Customer._id;
-  const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
-  const OrderId = commonFunction.genrateID("ORD");
-  let Amount = 0;
-  let grandTotal = 0;
+router.post(
+  "/create/order",
+  verifyOrderValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    const Customer = req.Customer._id;
+    const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
+    const OrderId = commonFunction.genrateID("ORD");
+    let Amount = 0;
+    let grandTotal = 0;
 
-  Items.map((element) => (Amount += element?.Cost));
-  grandTotal = Amount;
+    Items.map((element) => (Amount += element?.Cost));
+    grandTotal = Amount;
 
-  try {
-    let resp = {};
+    try {
+      let resp = {};
 
-    if (PaymentMode === "cod") {
-      const newOrder = new Order({
-        Customer,
-        OrderId,
-        OrderType,
-        Status: orderStatusTypes[1],
-        PendingAmount: Amount,
-        PaymentStatus: paymentStatus[0],
-        OrderDetails: { Amount, Items },
-        PaymentMode,
-        address,
-        PickUpRequired,
-      });
-      resp = await newOrder.save();
-      // deduct commission from partner
-    } else if (PaymentMode === "online") {
-      // initiate payments process
-      const newOrder = new Order({
-        Customer,
-        OrderId,
-        OrderType,
-        Status: orderStatusTypes[0],
-        PendingAmount: Amount,
-        PaymentStatus: paymentStatus[1],
-        OrderDetails: { Amount, Gradtotal: grandTotal, Items },
-        PaymentMode,
-        address,
-        PickUpRequired,
-      });
-      resp = await newOrder.save();
+      if (PaymentMode === "cod") {
+        const newOrder = new Order({
+          Customer,
+          OrderId,
+          OrderType,
+          Status: orderStatusTypes[1],
+          PendingAmount: Amount,
+          PaymentStatus: paymentStatus[0],
+          OrderDetails: { Amount, Items },
+          PaymentMode,
+          address,
+          PickUpRequired,
+        });
+        resp = await newOrder.save();
+        // deduct commission from partner
+      } else if (PaymentMode === "online") {
+        // initiate payments process
+        const newOrder = new Order({
+          Customer,
+          OrderId,
+          OrderType,
+          Status: orderStatusTypes[0],
+          PendingAmount: Amount,
+          PaymentStatus: paymentStatus[1],
+          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
+          PaymentMode,
+          address,
+          PickUpRequired,
+        });
+        resp = await newOrder.save();
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Orders created successfully.", newOrder: resp });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Error encountered." });
     }
-
-    return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
   }
-}
 );
 
 /**
@@ -802,8 +853,8 @@ router.get("/myorders/:status", async (req, res) => {
 
   let query = { Customer };
 
-  if (status !== 'all') {
-    query['Status'] = status;
+  if (status !== "all") {
+    query["Status"] = status;
   }
 
   try {

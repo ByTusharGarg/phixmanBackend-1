@@ -6,7 +6,7 @@ const Customer = mongoose.model(
   new Schema({
     Name: String,
     email: {
-      type: String
+      type: String,
     },
     phone: { type: String, required: true, unique: true },
     Password: { type: String },
@@ -34,7 +34,12 @@ const Customer = mongoose.model(
       },
     ],
     refferdCode: { type: String, default: null },
-    uniqueReferralCode: { type: String, required: true, unique: true, index: true },
+    uniqueReferralCode: {
+      type: String,
+      unique: true,
+      index: true,
+      sparse: true,
+    },
     isActive: { type: Boolean, required: true, default: true },
     isVerified: { type: Boolean, required: true, default: false },
     isPublished: { type: Boolean, required: true, default: true },
