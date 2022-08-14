@@ -4,12 +4,12 @@ const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, Wallet, Order } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypes } = require('../enums/types');
-const tokenService = require('../services/token-service');
-const validateTempToken = require('../middleware/tempTokenVerification');
-const { base64_encode } = require('../libs/commonFunction');
-const path = require('path');
-const fs = require('fs');
+const { orderStatusTypes } = require("../enums/types");
+const tokenService = require("../services/token-service");
+const validateTempToken = require("../middleware/tempTokenVerification");
+const { base64_encode } = require("../libs/commonFunction");
+const path = require("path");
+const fs = require("fs");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -34,7 +34,6 @@ const verifyOtpBodyValidator = [
 const updatePartnerValidator = [
   body("email").isEmail().withMessage("email is invalid"),
   body("dob").isEmail().withMessage("email is invalid"),
-
 ];
 
 /**
@@ -103,32 +102,39 @@ const updatePartnerValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests, async (req, res) => {
-  //generate new otp
-  let otp = generateOtp(6);
-  console.log(otp);
-  try {
-    //check if partner with given number exists and update otp in db, else create new partner.
-    const isuserExist = await Partner.findOne({ phone: req?.body?.phone });
+router.post(
+  "/SendOTP",
+  ...sendOtpBodyValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    //generate new otp
+    let otp = generateOtp(6);
+    console.log(otp);
+    try {
+      //check if partner with given number exists and update otp in db, else create new partner.
+      const isuserExist = await Partner.findOne({ phone: req?.body?.phone });
 
-    if (isuserExist) {
-      await Partner.findOneAndUpdate(
-        { phone: req?.body?.phone, isActive: true },
-        {
-          otp: {
-            code: otp,
-            status: "active",
+      if (isuserExist) {
+        await Partner.findOneAndUpdate(
+          { phone: req?.body?.phone, isActive: true },
+          {
+            otp: {
+              code: otp,
+              status: "active",
+            },
           },
-        },
-        { new: true }
-      );
-    } else {
-      const newuser = new Partner({ phone: req?.body?.phone, otp: { code: otp, status: 'active' } });
-      await newuser.save();
-    }
+          { new: true }
+        );
+        sendOtp(isuserExist.phone, otp);
+      } else {
+        const newuser = new Partner({
+          phone: req?.body?.phone,
+          otp: { code: otp, status: "active" },
+        });
+        await newuser.save();
+        sendOtp(newuser.phone, otp);
+      }
 
-      //send otp to user
-      sendOtp(partner.phone, otp);
       return res
         .status(200)
         .json({ message: "OTP has been sent successfully", otp });
@@ -251,14 +257,12 @@ router.post(
           _id: partner._id,
           tokenType: "upload_docs_token",
         });
-        return res
-          .status(200)
-          .json({
-            uid: partner._id,
-            message: "Upload your documents",
-            completeProfileToken: docToken,
-            isProfileCompleted: partner.isProfileCompleted,
-          });
+        return res.status(200).json({
+          uid: partner._id,
+          message: "Upload your documents",
+          completeProfileToken: docToken,
+          isProfileCompleted: partner.isProfileCompleted,
+        });
       }
 
       if (resp.message) {
@@ -462,11 +466,9 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .json({
-        message: "Error encountered while trying to uploading documents",
-      });
+    return res.status(500).json({
+      message: "Error encountered while trying to uploading documents",
+    });
   }
 });
 
@@ -641,33 +643,37 @@ router.get("/", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.patch("/", ...updatePartnerValidator, rejectBadRequests, async (req, res) => {
-  try {
-    let update = req?.body;
-    update.isVerified = true;
-    console.log(update);
-    if (req?.body?.email && req?.body?.email === "") {
-      update.email = req?.body?.email.toLowerCase();
-    }
-    if (req?.body?.Password && req?.body?.Password === "") {
-      if (!isStrong(req?.body?.Password)) {
-        return res
-          .status(400)
-          .json({ message: "password is not strong enough." });
+router.patch(
+  "/",
+  ...updatePartnerValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    try {
+      let update = req?.body;
+      update.isVerified = true;
+      console.log(update);
+      if (req?.body?.email && req?.body?.email === "") {
+        update.email = req?.body?.email.toLowerCase();
       }
-      update.Password = hashpassword(req?.body?.Password);
+      if (req?.body?.Password && req?.body?.Password === "") {
+        if (!isStrong(req?.body?.Password)) {
+          return res
+            .status(400)
+            .json({ message: "password is not strong enough." });
+        }
+        update.Password = hashpassword(req?.body?.Password);
+      }
+      if (req?.files?.image) {
+        update.image = "";
+      }
+      await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
+      return res.status(200).json({ message: "user updated successfully." });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: "Error encountered while trying to update user." });
     }
-    if (req?.files?.image) {
-      update.image = "";
-    }
-    await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
-    return res.status(200).json({ message: "user updated successfully." });
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Error encountered while trying to update user." });
   }
-}
 );
 
 /**
