@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
+const { offerPromoType } = require('../enums/types');
 
 const couponSchema = mongoose.Schema({
-  promocode: {type: String,unique: true,index: true},
-  promoType: { type: String, require: true },
+  promoCode: { type: String, unique: true },
+  promoType: { type: String, require: true, enum: offerPromoType },
 
-  offerType: { type: String, require: true },
   title: { type: String, require: true },
   description: { type: String },
   offerAmount: { type: Number, require: true },
@@ -12,10 +12,10 @@ const couponSchema = mongoose.Schema({
   percentageOff: Number,
   maxDisc: Number,
   minCartValue: Number,
-  
+
   startValidity: Date,
   endValidity: Date,
-  isActive:{
+  isActive: {
     type: Boolean,
     default: true
   }

@@ -20,6 +20,8 @@ const roles = ["customer","partner","order"]
 const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED","FAILED"];
 const acceptedPaymentMethods = ["card", "upi", "app"];
 const transsactionUser = ["partner","customer"];
+const offerPromoType = ["flat","upto"];
+
 
 
 module.exports = {
@@ -38,4 +40,5 @@ module.exports = {
   paymentStatus,
   acceptedPaymentMethods,
   transsactionUser,
+  offerPromoType,
 };

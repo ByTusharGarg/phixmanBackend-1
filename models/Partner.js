@@ -65,7 +65,8 @@ const Partner = mongoose.model(
     },
     aadhar: {
       number: String,
-      file: String,
+      fileF: String,
+      fileB: String
     },
     pan: {
       number: String,

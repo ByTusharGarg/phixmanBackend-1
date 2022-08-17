@@ -135,7 +135,7 @@ router.post(
         await newuser.save();
       }
       sendOtp(req?.body?.phone, otp);
-      
+
       return res
         .status(200)
         .json({ message: "OTP has been sent successfully", otp });
@@ -369,7 +369,12 @@ router.post(
  *        schema:
  *           type: string
  *      - in: path
- *        name: aadharImage
+ *        name: aadharImageF
+ *        required: true
+ *        schema:
+ *           type: file
+ *      - in: path
+ *        name: aadharImageB
  *        required: true
  *        schema:
  *           type: file
@@ -405,6 +410,8 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     aadharNumber,
   } = req.body;
 
+  const {aadharImageF,aadharImageB,pancardImage} = req.files;
+
   let images = [];
 
   const _id = req.tempdata._id;
@@ -415,8 +422,12 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   }
 
   try {
-    images.push(req.files.aadharImage);
-    images.push(req.files.pancardImage);
+    images.push(aadharImageF);
+    images.push(aadharImageB);
+    images.push(pancardImage);
+
+    // check files validations
+
 
     let fileUrls = await Promise.all(
       images.map((file, i) => {
@@ -451,8 +462,8 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
           gender,
           address,
           isProfileCompleted: true,
-          aadhar: { number: aadharNumber, file: fileString[0] },
-          pan: { number: panNumber, file: fileString[1] },
+          aadhar: { number: aadharNumber, fileF: fileString[0], fileB: fileString[1] },
+          pan: { number: panNumber, file: fileString[2] },
         },
       },
       { new: true }
