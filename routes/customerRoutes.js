@@ -255,15 +255,7 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
 
     if (!customer.isVerified) {
       // This condition runs when customer login first time
-      const up = await Customer.findOneAndUpdate(
-        { phone: req?.body?.phone },
-        {
-          "otp.code": req?.body?.otp,
-          "otp.status": "active",
-          isVerified: true
-        },
-        { new: true }
-      );
+      await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { isVerified: true }, { new: true });
 
       // generate customer wallet
       const isWalletExists = await CustomerWallet.findOne({ customerId: customer?._id });
@@ -281,7 +273,7 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
       return res.status(500).json({ ...resp });
     } else {
       const { accessToken, refreshToken } = tokenService.generateAuthTokens(
-        { _id: customer._id, isPublished: customer.isPublished },
+        { _id: customer._id, isPublished: customer.isPublished, role: "customer" },
         process.env.JWT_SECRET_ACCESS_TOKEN
       );
       return res.status(200).json({
@@ -293,10 +285,7 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
       });
     }
   } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Error encountered while trying to verify otp" });
+    return res.status(500).json({ message: "Error encountered while trying to verify otp" });
   }
 }
 );
@@ -581,8 +570,6 @@ router.post("/address", async (req, res) => {
  *          schema:
  *              type: object
  *              properties:
- *                PartnerId:
- *                  type: string
  *                OrderType:
  *                  type: string
  *                  enum: [InStore, Home]
@@ -601,7 +588,7 @@ router.post("/address", async (req, res) => {
  *
  *                PaymentMode:
  *                  type: string
- *                  enum: [cod]
+ *                  enum: [cod,online]
  *                address:
  *                  type: object
  *                  properties:
@@ -677,63 +664,59 @@ router.post("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post(
-  "/create/order",
-  verifyOrderValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    const Customer = req.Customer._id;
-    const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
-    const OrderId = commonFunction.genrateID("ORD");
-    let Amount = 0;
-    let grandTotal = 0;
+router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
+  const Customer = req.Customer._id;
+  const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
+  const OrderId = commonFunction.genrateID("ORD");
+  let Amount = 0;
+  let grandTotal = 0;
 
-    Items.map((element) => (Amount += element?.Cost));
-    grandTotal = Amount;
+  Items.map((element) => (Amount += element?.Cost));
+  grandTotal = Amount;
 
-    try {
-      let resp = {};
+  try {
+    let resp = {};
 
-      if (PaymentMode === "cod") {
-        const newOrder = new Order({
-          Customer,
-          OrderId,
-          OrderType,
-          Status: orderStatusTypes[1],
-          PendingAmount: Amount,
-          PaymentStatus: paymentStatus[0],
-          OrderDetails: { Amount, Items },
-          PaymentMode,
-          address,
-          PickUpRequired,
-        });
-        resp = await newOrder.save();
-        // deduct commission from partner
-      } else if (PaymentMode === "online") {
-        // initiate payments process
-        const newOrder = new Order({
-          Customer,
-          OrderId,
-          OrderType,
-          Status: orderStatusTypes[0],
-          PendingAmount: Amount,
-          PaymentStatus: paymentStatus[1],
-          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
-          PaymentMode,
-          address,
-          PickUpRequired,
-        });
-        resp = await newOrder.save();
-      }
-
-      return res
-        .status(200)
-        .json({ message: "Orders created successfully.", newOrder: resp });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "Error encountered." });
+    if (PaymentMode === "cod") {
+      const newOrder = new Order({
+        Customer,
+        OrderId,
+        OrderType,
+        Status: orderStatusTypes[1],
+        PendingAmount: Amount,
+        PaymentStatus: paymentStatus[1],
+        OrderDetails: { Amount, Items },
+        PaymentMode,
+        address,
+        PickUpRequired,
+      });
+      resp = await newOrder.save();
+      // deduct commission from partner
+    } else if (PaymentMode === "online") {
+      // initiate payments process
+      const newOrder = new Order({
+        Customer,
+        OrderId,
+        OrderType,
+        Status: orderStatusTypes[0],
+        PendingAmount: Amount,
+        PaymentStatus: paymentStatus[1],
+        OrderDetails: { Amount, Gradtotal: grandTotal, Items },
+        PaymentMode,
+        address,
+        PickUpRequired,
+      });
+      resp = await newOrder.save();
     }
+
+    return res
+      .status(200)
+      .json({ message: "Orders created successfully.", newOrder: resp });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
+}
 );
 
 /**

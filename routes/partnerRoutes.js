@@ -10,6 +10,7 @@ const validateTempToken = require("../middleware/tempTokenVerification");
 const { base64_encode, generateRandomReferralCode } = require("../libs/commonFunction");
 const path = require("path");
 const fs = require("fs");
+const { uploadFile, randomImageName, getObjectSignedUrl } = require('../services/s3-service');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -102,10 +103,7 @@ const updatePartnerValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post(
-  "/SendOTP",
-  ...sendOtpBodyValidator,
-  rejectBadRequests,
+router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests,
   async (req, res) => {
     //generate new otp
     let otp = generateOtp(6);
@@ -216,10 +214,7 @@ router.post(
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post(
-  "/VerifyOTP",
-  ...verifyOtpBodyValidator,
-  rejectBadRequests,
+router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests,
   async (req, res) => {
     let resp = {};
     try {
@@ -273,7 +268,7 @@ router.post(
           {
             _id: partner._id,
             type: partner.Type,
-            isPublished: partner.isPublished,
+            isPublished: partner.isPublished
           },
           process.env.JWT_SECRET_ACCESS_TOKEN
         );
@@ -307,6 +302,11 @@ router.post(
  *      - in: path
  *        name: Name
  *        required: true
+ *        schema:
+ *           type: string
+ *      - in: path
+ *        name: secondaryNumber
+ *        required: false
  *        schema:
  *           type: string
  *      - in: path
@@ -383,7 +383,21 @@ router.post(
  *        required: true
  *        schema:
  *           type: file
- *
+ *      - in: path
+ *        name: gstCertificate
+ *        required: false
+ *        schema:
+ *           type: file
+ *      - in: path
+ *        name: incorprationCertificate
+ *        required: false
+ *        schema:
+ *           type: file
+ *      - in: path
+ *        name: expCertificate
+ *        required: false
+ *        schema:
+ *           type: file
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -408,11 +422,52 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     gender,
     panNumber,
     aadharNumber,
+    secondaryNumber
   } = req.body;
 
-  const {aadharImageF,aadharImageB,pancardImage} = req.files;
-
   let images = [];
+  let docs = {};
+
+  const { aadharImageF, aadharImageB, pancardImage, gstCertificate, incorprationCertificate, expCertificate } = req.files;
+
+  if (!aadharImageF || !aadharImageB || !pancardImage) {
+    return res.status(500).json({ message: "aadharImageF, aadharImageB, pancardImage documents required" });
+  } else {
+    images.push({ ...aadharImageF, fileName: randomImageName() });
+    images.push({ ...aadharImageB, fileName: randomImageName() });
+    images.push({ ...pancardImage, fileName: randomImageName() });
+  }
+
+  if (Type === "store" && (!gstCertificate || !incorprationCertificate)) {
+    return res.status(500).json({ message: "gstCertificate incorprationCertificate documents required" });
+  } else {
+    docs['incorprationCertificate'] = incorprationCertificate ? randomImageName() : null;
+    docs['gstCertificate'] = gstCertificate ? randomImageName() : null;
+
+    if (incorprationCertificate) {
+      images.push({ ...incorprationCertificate, fileName: randomImageName() });
+    } else {
+      images.push(undefined);
+    }
+    if (gstCertificate) {
+      images.push({ ...gstCertificate, fileName: randomImageName() });
+    } else {
+      images.push(undefined);
+    }
+  }
+
+  if (Type === "individual" && !expCertificate) {
+    return res.status(500).json({ message: "expCertificate documents required" });
+  } else {
+    docs['expCertificate'] = expCertificate ? randomImageName() : null;
+
+    if (expCertificate) {
+      images.push({ ...expCertificate, fileName: randomImageName() });
+    } else {
+      images.push(undefined);
+    }
+  }
+
 
   const _id = req.tempdata._id;
   let token_type = req.tempdata.tokenType;
@@ -422,36 +477,16 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   }
 
   try {
-    images.push(aadharImageF);
-    images.push(aadharImageB);
-    images.push(pancardImage);
-
-    // check files validations
-    // const resp = await uploadFile(fileBuffer, imageName, file.mimetype)
-    // console.log(req.files);
-    return;
-
 
     let fileUrls = await Promise.all(
       images.map((file, i) => {
-        let filepath = path.join(__dirname, `../public/csv/${file.name}`);
-        return new Promise((resolve, reject) => {
-          file.mv(filepath, (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(filepath);
-            }
-          });
-        });
+        if (file) {
+          return uploadFile(file.data, file.fileName, file.mimetype);
+        } else {
+          return
+        }
       })
-    );
-
-    let fileString = fileUrls.map((element) => {
-      let st = base64_encode(element);
-      fs.unlinkSync(element);
-      return st;
-    });
+    )
 
     const resp = await Partner.findByIdAndUpdate(
       _id,
@@ -465,8 +500,10 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
           gender,
           address,
           isProfileCompleted: true,
-          aadhar: { number: aadharNumber, fileF: fileString[0], fileB: fileString[1] },
-          pan: { number: panNumber, file: fileString[2] },
+          aadhar: { number: aadharNumber, fileF: images[0].fileName, fileB: images[1].fileName },
+          pan: { number: panNumber, file: images[2].fileName },
+          secondaryNumber,
+          ...docs
         },
       },
       { new: true }
@@ -536,7 +573,7 @@ router.get("/", async (req, res) => {
 /**
  * @openapi
  * /partner/changeprofile:
- *  put:
+ *  patch:
  *    summary: used to update partner profile
  *    tags:
  *    - partner Routes

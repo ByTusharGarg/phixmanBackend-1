@@ -21,6 +21,7 @@ const Partner = mongoose.model(
     },
     isParent: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
     phone: { type: String, required: true, unique: true },
+    secondaryNumber: { type: String, default: null },
     email: {
       type: String,
     },
@@ -68,10 +69,23 @@ const Partner = mongoose.model(
       fileF: String,
       fileB: String
     },
+
     pan: {
       number: String,
       file: String,
     },
+    gstCertificate: {
+      type: String,
+      default: null
+    },
+    incorprationCertificate: {
+      type: String,
+      default: null
+    },
+    expCertificate: {
+      type: String,
+      default: null
+    }
   })
 );
 

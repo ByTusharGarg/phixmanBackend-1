@@ -1,9 +1,6 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
-
+const crypto = require("crypto");
 
 const bucketName = process.env.AWS_BUCKET_NAME;
 const region = process.env.AWS_BUCKET_REGION;
@@ -19,9 +16,12 @@ const s3Client = new S3Client({
     }
 })
 
+const randomImageName = (byte = 32) => {
+    return crypto.randomBytes(byte).toString('hex');
+}
 
 
-export function uploadFile(fileBuffer, fileName, mimetype) {
+function uploadFile(fileBuffer, fileName, mimetype) {
     const uploadParams = {
         Bucket: bucketName,
         Body: fileBuffer,
@@ -31,7 +31,7 @@ export function uploadFile(fileBuffer, fileName, mimetype) {
     return s3Client.send(new PutObjectCommand(uploadParams));
 }
 
-export function deleteFile(fileName) {
+function deleteFile(fileName) {
     const deleteParams = {
         Bucket: bucketName,
         Key: fileName,
@@ -39,15 +39,22 @@ export function deleteFile(fileName) {
     return s3Client.send(new DeleteObjectCommand(deleteParams));
 }
 
-export async function getObjectSignedUrl(key) {
+async function getObjectSignedUrl(key, seconds = 3600) {
     const params = {
         Bucket: bucketName,
         Key: key
     }
 
     const command = new GetObjectCommand(params);
-    const seconds = 60*60;
-    const url = await getSignedUrl(s3Client, command);
+    
+    const url = await getSignedUrl(s3Client, command, seconds);
 
     return url
+}
+
+module.exports = {
+    uploadFile,
+    deleteFile,
+    getObjectSignedUrl,
+    randomImageName
 }

@@ -13,6 +13,27 @@ const {
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
+const commonFunction = require('../utils/commonFunction');
+const { paymentStatus, orderStatusTypes, orderTypes, paymentModeTypes } = require('../enums/types');
+const { body } = require("express-validator");
+
+const verifyOrderValidator = [
+  body("OrderType")
+    .notEmpty()
+    .withMessage("OrderType number cannot be empty")
+    .isIn(orderTypes)
+    .withMessage("OrderType does contain invalid value"),
+  body("PaymentMode")
+    .notEmpty()
+    .withMessage("PaymentMode number cannot be empty")
+    .isIn(paymentModeTypes)
+    .withMessage("PaymentMode does contain invalid value"),
+  body("PickUpRequired")
+    .isBoolean()
+    .withMessage("PickUpRequired Must be a boolean true or false"),
+  body("Items").isArray().withMessage("Items should be an array"),
+];
+
 /**
  * @openapi
  * /admin/Register:
@@ -327,6 +348,163 @@ router.get("/getCustomers", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+/**
+ * @openapi
+ * /admin/create/order:
+ *  post:
+ *    summary: it's use to create a requested new order to partner.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                PartnerId:
+ *                  type: string
+ *                customerId:
+ *                  type: string
+ *                OrderType:
+ *                  type: string
+ *                  enum: [InStore, Home]
+ *                Items:
+ *                  type: array
+ *                  items:
+ *                    properties:
+ *                      CategoryId:
+ *                        type: string
+ *                      ModelId:
+ *                        type: string
+ *                      ServiceId:
+ *                        type: string
+ *                      Cost:
+ *                        type: integer
+ *
+ *                PaymentMode:
+ *                  type: string
+ *                  enum: [cod]
+ *                address:
+ *                  type: object
+ *                  properties:
+ *                    street:
+ *                      type: string
+ *                    city:
+ *                      type: string
+ *                    pin:
+ *                      type: string
+ *                    state:
+ *                      type: string
+ *                    country:
+ *                      type: string
+ *                    cod:
+ *                      type: object
+ *                      properties:
+ *                         lattitude:
+ *                           type: string
+ *                         longitude:
+ *                            type: string
+ *                PickUpRequired:
+ *                  type: srting
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
+
+  const { OrderType, Items, PaymentMode, address, PickUpRequired, customerId, partnerId } = req.body;
+
+  if (!partnerId || !customerId) {
+    return res.status(500).json({ message: "partnerid and customerid are required" });
+  }
+
+  const OrderId = commonFunction.genrateID("ORD");
+  let Amount = 0;
+  let grandTotal = 0;
+
+  Items.map((element) => (Amount += element?.Cost));
+  grandTotal = Amount;
+
+  try {
+    let resp = {};
+
+    if (PaymentMode !== "cod") {
+      return res.status(500).json({ message: "Cod  is allowed." });
+    }
+    const newOrder = new Order({
+      Partner: partnerId,
+      Customer: customerId,
+      OrderId,
+      OrderType,
+      Status: orderStatusTypes[2],
+      PendingAmount: Amount,
+      PaymentStatus: paymentStatus[1],
+      OrderDetails: { Amount, Items },
+      PaymentMode,
+      address,
+      PickUpRequired,
+    });
+
+    resp = await newOrder.save();
+    // deduct commission from partner
+
+    return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+}
+);
 
 /**
  * @openapi
