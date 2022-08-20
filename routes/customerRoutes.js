@@ -131,7 +131,10 @@ const verifyOrderValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests,
+router.post(
+  "/SendOTP",
+  ...sendOtpBodyValidator,
+  rejectBadRequests,
   async (req, res) => {
     //generate new otp
     let otp = generateOtp(6);
@@ -255,7 +258,15 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
 
     if (!customer.isVerified) {
       // This condition runs when customer login first time
-      await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { isVerified: true }, { new: true });
+      const up = await Customer.findOneAndUpdate(
+        { phone: req?.body?.phone },
+        {
+          "otp.code": req?.body?.otp,
+          "otp.status": "active",
+          isVerified: true
+        },
+        { new: true }
+      );
 
       // generate customer wallet
       const isWalletExists = await CustomerWallet.findOne({ customerId: customer?._id });
@@ -273,7 +284,7 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
       return res.status(500).json({ ...resp });
     } else {
       const { accessToken, refreshToken } = tokenService.generateAuthTokens(
-        { _id: customer._id, isPublished: customer.isPublished, role: "customer" },
+        { _id: customer._id, isPublished: customer.isPublished },
         process.env.JWT_SECRET_ACCESS_TOKEN
       );
       return res.status(200).json({
@@ -285,7 +296,10 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
       });
     }
   } catch (error) {
-    return res.status(500).json({ message: "Error encountered while trying to verify otp" });
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to verify otp" });
   }
 }
 );
@@ -383,7 +397,10 @@ router.use(checkCustomer);
  *    security:
  *    - bearerAuth: []
  */
-router.patch("/", ...updateUserValidator, rejectBadRequests,
+router.patch(
+  "/",
+  ...updateUserValidator,
+  rejectBadRequests,
   async (req, res) => {
     try {
       let update = req?.body;
@@ -510,6 +527,30 @@ router.get("/address", async (req, res) => {
  *    summary: successfully added new address for the user.
  *    tags:
  *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                address:
+ *                  type: object
+ *                  properties:
+ *                   street:
+ *                    type: string
+ *                   city:
+ *                    type: string
+ *                   pin:
+ *                    type: string
+ *                   state:
+ *                    type: string
+ *                   cood:
+ *                    type: object
+ *                    properties:
+ *                     lattitude:
+ *                      type: string
+ *                     longitude:
+ *                      type: string
  *    responses:
  *      200:
  *          description: if successfully found user
@@ -544,6 +585,9 @@ router.get("/address", async (req, res) => {
  */
 router.post("/address", async (req, res) => {
   try {
+    if (!req?.body?.address || Object.keys(req?.body?.address).length === 0) {
+      return res.status(404).json({ message: "address field not found." });
+    }
     await Customer.findByIdAndUpdate(
       req.Customer._id,
       {
