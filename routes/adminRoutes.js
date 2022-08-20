@@ -207,7 +207,7 @@ router.get("/session", (req, res) => {
  *  post:
  *    summary: request server to genrate and send otp on given number.
  *    tags:
- *    - Customer Routes
+ *    - Admin Routes
  *    requestBody:
  *      content:
  *        application/json:
