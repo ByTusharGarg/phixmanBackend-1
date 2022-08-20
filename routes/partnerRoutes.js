@@ -427,6 +427,9 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     images.push(pancardImage);
 
     // check files validations
+    // const resp = await uploadFile(fileBuffer, imageName, file.mimetype)
+    // console.log(req.files);
+    return;
 
 
     let fileUrls = await Promise.all(

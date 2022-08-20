@@ -8,6 +8,7 @@ const {
   Order,
   WalletTransaction,
   category,
+  CustomerWallet,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -198,6 +199,103 @@ router.get("/", async (req, res) => {
 router.get("/session", (req, res) => {
   return res.send(200);
 });
+
+
+/**
+ * @openapi
+ * /admin/SendOTP:
+ *  post:
+ *    summary: request server to genrate and send otp on given number.
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                phone:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/createcustomer", async (req, res) => {
+  console.log(req.body.phone.length);
+  // return
+  if (!req?.body?.phone || req.body.phone.length < 10) {
+    return res.status(200).json({ message: "invalid number or required" });
+  }
+  try {
+    //check if customer with given number exists and update otp in db, else create new customer.
+    const isuserExist = await Customer.findOne({ phone: req?.body?.phone });
+    if (isuserExist) {
+      return res.status(500).json({ message: "Customer number already exists" });
+    } else {
+      const newuser = new Customer({
+        phone: req?.body?.phone,
+        isVerified: true
+      });
+      const newUserResp = await newuser.save();
+      console.log(newUserResp._id);
+      // generate customer wallet
+      const newWallet = new CustomerWallet({ customerId: newUserResp?._id });
+      await newWallet.save();
+    }
+    return res.status(200).json({ message: "Customer created successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered while trying to send otp" });
+  }
+}
+);
 
 /**
  * @openapi

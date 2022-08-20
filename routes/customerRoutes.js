@@ -131,10 +131,7 @@ const verifyOrderValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post(
-  "/SendOTP",
-  ...sendOtpBodyValidator,
-  rejectBadRequests,
+router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests,
   async (req, res) => {
     //generate new otp
     let otp = generateOtp(6);
@@ -239,70 +236,69 @@ router.post(
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post(
-  "/VerifyOTP",
-  ...verifyOtpBodyValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    let resp = {};
-    try {
-      const customer = await Customer.findOneAndUpdate(
+router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (req, res) => {
+  let resp = {};
+  try {
+    const customer = await Customer.findOneAndUpdate(
+      {
+        phone: req?.body?.phone,
+        "otp.code": req?.body?.otp,
+        "otp.status": "active",
+      },
+      { "otp.status": "inactive" },
+      { new: true }
+    );
+
+    if (customer === null) {
+      return res.status(401).json({ message: "Invalid OTP" });
+    }
+
+    if (!customer.isVerified) {
+      // This condition runs when customer login first time
+      const up = await Customer.findOneAndUpdate(
+        { phone: req?.body?.phone },
         {
-          phone: req?.body?.phone,
           "otp.code": req?.body?.otp,
           "otp.status": "active",
+          isVerified: true
         },
-        { "otp.status": "inactive" },
         { new: true }
       );
 
-      if (customer === null) {
-        return res.status(401).json({ message: "Invalid OTP" });
-      }
-
-      if (!customer.isVerified) {
-        // This condition runs when customer login first time
-        await Customer.findOneAndUpdate(
-          {
-            phone: req?.body?.phone,
-            "otp.code": req?.body?.otp,
-            "otp.status": "active",
-          },
-          { isVerified: true },
-          { new: true }
-        );
-
-        // generate customer wallet
+      // generate customer wallet
+      const isWalletExists = await CustomerWallet.findOne({ customerId: customer?._id });
+      if (!isWalletExists) {
         const newWallet = new CustomerWallet({ customerId: customer?._id });
         await newWallet.save();
       }
-
-      if (!customer.isPublished) {
-        resp["message"] =
-          "Account block contact admin . please wait for approval.";
-      }
-
-      if (resp.message) {
-        return res.status(500).json({ ...resp });
-      } else {
-        const { accessToken, refreshToken } = tokenService.generateAuthTokens(
-          { _id: customer._id, isPublished: customer.isPublished },
-          process.env.JWT_SECRET_ACCESS_TOKEN
-        );
-        return res.status(200).json({
-          message: "Login successfully",
-          uid: customer._id,
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-          isApproved: customer.isApproved,
-        });
-      }
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to verify otp" });
     }
+
+    if (!customer.isPublished) {
+      resp["message"] = "Account block contact admin . please wait for approval.";
+    }
+
+    if (resp.message) {
+      return res.status(500).json({ ...resp });
+    } else {
+      const { accessToken, refreshToken } = tokenService.generateAuthTokens(
+        { _id: customer._id, isPublished: customer.isPublished },
+        process.env.JWT_SECRET_ACCESS_TOKEN
+      );
+      return res.status(200).json({
+        message: "Login successfully",
+        uid: customer._id,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        isApproved: customer.isApproved,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to verify otp" });
   }
+}
 );
 
 /**
@@ -398,10 +394,7 @@ router.use(checkCustomer);
  *    security:
  *    - bearerAuth: []
  */
-router.patch(
-  "/",
-  ...updateUserValidator,
-  rejectBadRequests,
+router.patch("/", ...updateUserValidator, rejectBadRequests,
   async (req, res) => {
     try {
       let update = req?.body;
