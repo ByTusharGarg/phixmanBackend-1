@@ -15,10 +15,12 @@ const Partner = mongoose.model(
       type: String,
       enum: partnerTypes,
     },
-    Product_Service: {
-      type: Schema.Types.ObjectId,
-      ref: "category",
-    },
+    Product_Service: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "category",
+      },
+    ],
     isParent: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
     phone: { type: String, required: true, unique: true },
     secondaryNumber: { type: String, default: null },
@@ -67,7 +69,7 @@ const Partner = mongoose.model(
     aadhar: {
       number: String,
       fileF: String,
-      fileB: String
+      fileB: String,
     },
 
     pan: {
@@ -76,16 +78,16 @@ const Partner = mongoose.model(
     },
     gstCertificate: {
       type: String,
-      default: null
+      default: null,
     },
     incorprationCertificate: {
       type: String,
-      default: null
+      default: null,
     },
     expCertificate: {
       type: String,
-      default: null
-    }
+      default: null,
+    },
   })
 );
 

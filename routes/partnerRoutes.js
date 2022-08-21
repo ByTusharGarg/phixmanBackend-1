@@ -7,10 +7,17 @@ const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypes } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
-const { base64_encode, generateRandomReferralCode } = require("../libs/commonFunction");
+const {
+  base64_encode,
+  generateRandomReferralCode,
+} = require("../libs/commonFunction");
 const path = require("path");
 const fs = require("fs");
-const { uploadFile, randomImageName, getObjectSignedUrl } = require('../services/s3-service');
+const {
+  uploadFile,
+  randomImageName,
+  getObjectSignedUrl,
+} = require("../services/s3-service");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -103,7 +110,10 @@ const updatePartnerValidator = [
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests,
+router.post(
+  "/SendOTP",
+  ...sendOtpBodyValidator,
+  rejectBadRequests,
   async (req, res) => {
     //generate new otp
     let otp = generateOtp(6);
@@ -128,7 +138,7 @@ router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests,
         const newuser = new Partner({
           phone: req?.body?.phone,
           otp: { code: otp, status: "active" },
-          uniqueReferralCode: generateRandomReferralCode()
+          uniqueReferralCode: generateRandomReferralCode(),
         });
         await newuser.save();
       }
@@ -214,7 +224,10 @@ router.post("/SendOTP", ...sendOtpBodyValidator, rejectBadRequests,
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests,
+router.post(
+  "/VerifyOTP",
+  ...verifyOtpBodyValidator,
+  rejectBadRequests,
   async (req, res) => {
     let resp = {};
     try {
@@ -268,7 +281,7 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests,
           {
             _id: partner._id,
             type: partner.Type,
-            isPublished: partner.isPublished
+            isPublished: partner.isPublished,
           },
           process.env.JWT_SECRET_ACCESS_TOKEN
         );
@@ -298,106 +311,80 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests,
  *    summary: used to upload document for fresh users
  *    tags:
  *    - partner Routes
- *    parameters:
- *      - in: path
- *        name: Name
- *        required: true
+ *    requestBody:
+ *     content:
+ *       multipart/form-data:
  *        schema:
- *           type: string
- *      - in: path
- *        name: secondaryNumber
- *        required: false
- *        schema:
- *           type: string
- *      - in: path
- *        name: address
- *        required: true
- *        schema:
- *           type: object
- *           properties:
- *             street:
- *               type: string
- *             city:
- *               type: string
- *             pin:
- *               type: string
- *             state:
- *               type: string
- *             country:
- *               type: string
- *             cood:
- *               type: object
- *               properties:
+ *          type: object
+ *          properties:
+ *            Name:
+ *              type: string
+ *              required: true
+ *            gender:
+ *              type: string
+ *              required: true
+ *            email:
+ *              type: string
+ *              required: true
+ *            Dob:
+ *              type: string
+ *              required: true
+ *            Type:
+ *              type: string
+ *              required: true
+ *              enum: ["store", "individual"]
+ *            Product_Service:
+ *              type: string
+ *              required: true
+ *            panNumber:
+ *              type: string
+ *              required: true
+ *            aadharNumber:
+ *              type: string
+ *              required: true
+ *            address:
+ *              type: object
+ *              required: true
+ *              properties:
+ *               street:
+ *                type: string
+ *               city:
+ *                type: string
+ *               pin:
+ *                type: string
+ *               state:
+ *                type: string
+ *               country:
+ *                type: string
+ *               cood:
+ *                type: object
+ *                properties:
  *                 lattitude:
  *                   type: string
  *                 longitude:
  *                   type: string
- *      - in: path
- *        name: Dob
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: Type
- *        required: true
- *        schema:
- *           type: string
- *           enum: ["store", "individual"]
- *      - in: path
- *        name: Product_Service
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: email
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: gender
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: panNumber
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: aadharNumber
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: aadharImageF
- *        required: true
- *        schema:
- *           type: file
- *      - in: path
- *        name: aadharImageB
- *        required: true
- *        schema:
- *           type: file
- *      - in: path
- *        name: pancardImage
- *        required: true
- *        schema:
- *           type: file
- *      - in: path
- *        name: gstCertificate
- *        required: false
- *        schema:
- *           type: file
- *      - in: path
- *        name: incorprationCertificate
- *        required: false
- *        schema:
- *           type: file
- *      - in: path
- *        name: expCertificate
- *        required: false
- *        schema:
- *           type: file
+ *            secondaryNumber:
+ *              type: string
+ *            aadharImageF:
+ *              type: file
+ *              required: true
+ *            aadharImageB:
+ *              type: file
+ *              required: true
+ *            pancardImage:
+ *              type: file
+ *              required: true
+ *            gstCertificate:
+ *              type: file
+ *              required: false
+ *              description: required for businesses
+ *            incorprationCertificate:
+ *              type: file
+ *              required: false
+ *              description: required for businesses
+ *            expCertificate:
+ *              type: file
+ *              required: false
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -410,8 +397,11 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests,
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.post("/completeProfile", validateTempToken, async (req, res) => {
+  console.log(req.body);
   let {
     Name,
     address,
@@ -422,16 +412,25 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     gender,
     panNumber,
     aadharNumber,
-    secondaryNumber
+    secondaryNumber,
   } = req.body;
 
   let images = [];
   let docs = {};
 
-  const { aadharImageF, aadharImageB, pancardImage, gstCertificate, incorprationCertificate, expCertificate } = req.files;
+  const {
+    aadharImageF,
+    aadharImageB,
+    pancardImage,
+    gstCertificate,
+    incorprationCertificate,
+    expCertificate,
+  } = req.files;
 
   if (!aadharImageF || !aadharImageB || !pancardImage) {
-    return res.status(500).json({ message: "aadharImageF, aadharImageB, pancardImage documents required" });
+    return res.status(500).json({
+      message: "aadharImageF, aadharImageB, pancardImage documents required",
+    });
   } else {
     images.push({ ...aadharImageF, fileName: randomImageName() });
     images.push({ ...aadharImageB, fileName: randomImageName() });
@@ -439,10 +438,14 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   }
 
   if (Type === "store" && (!gstCertificate || !incorprationCertificate)) {
-    return res.status(500).json({ message: "gstCertificate incorprationCertificate documents required" });
+    return res.status(500).json({
+      message: "gstCertificate incorprationCertificate documents required",
+    });
   } else {
-    docs['incorprationCertificate'] = incorprationCertificate ? randomImageName() : null;
-    docs['gstCertificate'] = gstCertificate ? randomImageName() : null;
+    docs["incorprationCertificate"] = incorprationCertificate
+      ? randomImageName()
+      : null;
+    docs["gstCertificate"] = gstCertificate ? randomImageName() : null;
 
     if (incorprationCertificate) {
       images.push({ ...incorprationCertificate, fileName: randomImageName() });
@@ -457,9 +460,11 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   }
 
   if (Type === "individual" && !expCertificate) {
-    return res.status(500).json({ message: "expCertificate documents required" });
+    return res
+      .status(500)
+      .json({ message: "expCertificate documents required" });
   } else {
-    docs['expCertificate'] = expCertificate ? randomImageName() : null;
+    docs["expCertificate"] = expCertificate ? randomImageName() : null;
 
     if (expCertificate) {
       images.push({ ...expCertificate, fileName: randomImageName() });
@@ -467,7 +472,6 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
       images.push(undefined);
     }
   }
-
 
   const _id = req.tempdata._id;
   let token_type = req.tempdata.tokenType;
@@ -477,16 +481,15 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   }
 
   try {
-
     let fileUrls = await Promise.all(
       images.map((file, i) => {
         if (file) {
           return uploadFile(file.data, file.fileName, file.mimetype);
         } else {
-          return
+          return;
         }
       })
-    )
+    );
 
     const resp = await Partner.findByIdAndUpdate(
       _id,
@@ -500,10 +503,14 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
           gender,
           address,
           isProfileCompleted: true,
-          aadhar: { number: aadharNumber, fileF: images[0].fileName, fileB: images[1].fileName },
+          aadhar: {
+            number: aadharNumber,
+            fileF: images[0].fileName,
+            fileB: images[1].fileName,
+          },
           pan: { number: panNumber, file: images[2].fileName },
           secondaryNumber,
-          ...docs
+          ...docs,
         },
       },
       { new: true }
@@ -694,6 +701,9 @@ router.get("/", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ * 
+ *    security:
+ *    - bearerAuth: []
  */
 router.patch(
   "/",
