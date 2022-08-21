@@ -9,12 +9,18 @@ const {
   WalletTransaction,
   category,
   CustomerWallet,
+  Product_Service,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
-const commonFunction = require('../utils/commonFunction');
-const { paymentStatus, orderStatusTypes, orderTypes, paymentModeTypes } = require('../enums/types');
+const commonFunction = require("../utils/commonFunction");
+const {
+  paymentStatus,
+  orderStatusTypes,
+  orderTypes,
+  paymentModeTypes,
+} = require("../enums/types");
 const { body } = require("express-validator");
 
 const verifyOrderValidator = [
@@ -221,7 +227,6 @@ router.get("/session", (req, res) => {
   return res.send(200);
 });
 
-
 /**
  * @openapi
  * /admin/SendOTP:
@@ -298,11 +303,13 @@ router.post("/createcustomer", async (req, res) => {
     //check if customer with given number exists and update otp in db, else create new customer.
     const isuserExist = await Customer.findOne({ phone: req?.body?.phone });
     if (isuserExist) {
-      return res.status(500).json({ message: "Customer number already exists" });
+      return res
+        .status(500)
+        .json({ message: "Customer number already exists" });
     } else {
       const newuser = new Customer({
         phone: req?.body?.phone,
-        isVerified: true
+        isVerified: true,
       });
       const newUserResp = await newuser.save();
       console.log(newUserResp._id);
@@ -313,10 +320,11 @@ router.post("/createcustomer", async (req, res) => {
     return res.status(200).json({ message: "Customer created successfully" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Error encountered while trying to send otp" });
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to send otp" });
   }
-}
-);
+});
 
 /**
  * @openapi
@@ -460,50 +468,65 @@ router.get("/getCustomers", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
-
-  const { OrderType, Items, PaymentMode, address, PickUpRequired, customerId, partnerId } = req.body;
-
-  if (!partnerId || !customerId) {
-    return res.status(500).json({ message: "partnerid and customerid are required" });
-  }
-
-  const OrderId = commonFunction.genrateID("ORD");
-  let Amount = 0;
-  let grandTotal = 0;
-
-  Items.map((element) => (Amount += element?.Cost));
-  grandTotal = Amount;
-
-  try {
-    let resp = {};
-
-    if (PaymentMode !== "cod") {
-      return res.status(500).json({ message: "Cod  is allowed." });
-    }
-    const newOrder = new Order({
-      Partner: partnerId,
-      Customer: customerId,
-      OrderId,
+router.post(
+  "/create/order",
+  verifyOrderValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    const {
       OrderType,
-      Status: orderStatusTypes[2],
-      PendingAmount: Amount,
-      PaymentStatus: paymentStatus[1],
-      OrderDetails: { Amount, Items },
+      Items,
       PaymentMode,
       address,
       PickUpRequired,
-    });
+      customerId,
+      partnerId,
+    } = req.body;
 
-    resp = await newOrder.save();
-    // deduct commission from partner
+    if (!partnerId || !customerId) {
+      return res
+        .status(500)
+        .json({ message: "partnerid and customerid are required" });
+    }
 
-    return res.status(200).json({ message: "Orders created successfully.", newOrder: resp });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
+    const OrderId = commonFunction.genrateID("ORD");
+    let Amount = 0;
+    let grandTotal = 0;
+
+    Items.map((element) => (Amount += element?.Cost));
+    grandTotal = Amount;
+
+    try {
+      let resp = {};
+
+      if (PaymentMode !== "cod") {
+        return res.status(500).json({ message: "Cod  is allowed." });
+      }
+      const newOrder = new Order({
+        Partner: partnerId,
+        Customer: customerId,
+        OrderId,
+        OrderType,
+        Status: orderStatusTypes[2],
+        PendingAmount: Amount,
+        PaymentStatus: paymentStatus[1],
+        OrderDetails: { Amount, Items },
+        PaymentMode,
+        address,
+        PickUpRequired,
+      });
+
+      resp = await newOrder.save();
+      // deduct commission from partner
+
+      return res
+        .status(200)
+        .json({ message: "Orders created successfully.", newOrder: resp });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Error encountered." });
+    }
   }
-}
 );
 
 /**
@@ -831,8 +854,6 @@ router.get("/Features", async (req, res) => {
   }
 });
 
-
-
 /**
  * @openapi
  * /admin/get/partners/{type}:
@@ -868,8 +889,7 @@ router.get("/get/partners/:type", async (req, res) => {
 
   if (type === "kycpending") {
     query = { isProfileCompleted: true, isVerified: false, isApproved: false };
-  }
-  else if (type === "block") {
+  } else if (type === "block") {
     query = { isPublished: false };
   } else {
     query = {};
@@ -882,7 +902,6 @@ router.get("/get/partners/:type", async (req, res) => {
     console.log(error);
   }
 });
-
 
 /**
  * @openapi
@@ -934,7 +953,9 @@ router.put("/partners/:id", async (req, res) => {
 
   try {
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
-    res.status(200).json({ message: "operations successfully", data: partners });
+    res
+      .status(200)
+      .json({ message: "operations successfully", data: partners });
   } catch (error) {
     console.log(error);
   }
@@ -979,6 +1000,68 @@ router.post("/Features", async (req, res) => {
     res.status(201).json(feature);
   } catch (error) {
     console.log(error);
+  }
+});
+
+/**
+ * @openapi
+ * /admin/service:
+ *  post:
+ *    summary: used to add new service.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                categoryId:
+ *                  type: string
+ *                  description: required
+ *                modelId:
+ *                  type: string
+ *                serviceName:
+ *                  type: string
+ *                cost:
+ *                  type: integer
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/service", async (req, res) => {
+  try {
+    const { categoryId, modelId, serviceName, cost } = req.body;
+    if (!categoryId)
+      return res.status(404).json({ message: "category is reqiured" });
+    let categorydoc = await category.findOne({ _id: categoryId });
+    if (!categorydoc) {
+      return res.status(404).json({ message: "category not found" });
+    }
+    if (categorydoc.key === "mobile" && !modelId) {
+      return res
+        .status(404)
+        .json({ message: "modelId is reqiured for mobile services" });
+    }
+    let obj = { categoryId, serviceName, cost };
+    if (modelId) obj.modelId = modelId;
+    let service = await Product_Service.create(obj);
+    res.status(201).json(service);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "internal server error" });
   }
 });
 module.exports = router;

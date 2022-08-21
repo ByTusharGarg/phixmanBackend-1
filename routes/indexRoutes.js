@@ -523,7 +523,7 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
  * @openapi
  * /{categoryId}/services/{modelid}:
  *  get:
- *    summary: get all services bu modelid
+ *    summary: get all services for specific category
  *    tags:
  *    - Index Routes
  *    parameters:
@@ -534,7 +534,6 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
  *           type: string
  *      - in: path
  *        name: modelid
- *        required: true
  *        schema:
  *           type: string
  *
@@ -554,17 +553,15 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
 router.get("/:categoryId/services/:modelid", async (req, res) => {
   const { modelid, categoryId } = req.params;
 
-  if (!modelid || !categoryId) {
-    return res
-      .status(500)
-      .json({ message: "categoryId and modelid are required" });
+  if (!categoryId) {
+    return res.status(500).json({ message: "categoryId is required" });
   }
 
   try {
-    const services = await Product_Service.findOne({
-      modelId: modelid,
-      categoryId,
-    });
+    let filter = {};
+    if (modelid) filter.modelId = modelid;
+    if (categoryId) filter.categoryId = categoryId;
+    const services = await Product_Service.findOne(filter);
     return res.status(200).json({ message: "Models lists", data: services });
   } catch (error) {
     console.log(error);

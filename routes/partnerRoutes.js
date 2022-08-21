@@ -336,7 +336,7 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests,
  *        name: Dob
  *        required: true
  *        schema:
- *           type: date
+ *           type: string
  *      - in: path
  *        name: Type
  *        required: true
