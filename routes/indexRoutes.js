@@ -177,17 +177,11 @@ router.get(
       const products = await category.find({
         servedAt: req?.params?.serviceType,
       });
-      return res.status(200).json(
-        products.map((prod) => {
-          return {
-            name: prod.name,
-            icon: prod.icon,
-            key: prod.key,
-            video: prod.video,
-            modelRequired: prod.servedAt === "store" ? true : false,
-          };
-        })
-      );
+      const data = products.map((prod) => {
+        prod["modelRequired"] = prod.key === "mobile" ? true : false;
+        return prod;
+      });
+      return res.status(200).json(data);
     } catch (error) {
       return res.status(500).json({ message: "Error encountered." });
     }
@@ -533,6 +527,11 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
  *    tags:
  *    - Index Routes
  *    parameters:
+ *      - in: path
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
  *      - in: path
  *        name: modelid
  *        required: true
