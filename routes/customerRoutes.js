@@ -544,6 +544,8 @@ router.get("/address", async (req, res) => {
  *                    type: string
  *                   state:
  *                    type: string
+ *                   type:
+ *                    type: string
  *                   cood:
  *                    type: object
  *                    properties:

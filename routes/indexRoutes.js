@@ -85,17 +85,11 @@ router.get("/", (_, res) => {
 router.get("/categories", rejectBadRequests, async (req, res) => {
   try {
     const products = await category.find();
-    return res.status(200).json(
-      products.map((prod) => {
-        return {
-          name: prod.name,
-          icon: prod.icon,
-          key: prod.key,
-          video: prod.video,
-          modelRequired: prod.servedAt === "store" ? true : false,
-        };
-      })
-    );
+    const data = products.map((prod) => {
+      prod["modelRequired"] = prod.key === "mobile" ? true : false;
+      return prod;
+    });
+    return res.status(200).json(data);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -174,26 +168,30 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/category/:serviceType", ...getServiceParamValidators, rejectBadRequests, async (req, res) => {
-  try {
-    const products = await category.find({
-      servedAt: req?.params?.serviceType,
-    });
-    return res.status(200).json(
-      products.map((prod) => {
-        return {
-          name: prod.name,
-          icon: prod.icon,
-          key: prod.key,
-          video: prod.video,
-          modelRequired: prod.servedAt === "store" ? true : false,
-        };
-      })
-    );
-  } catch (error) {
-    return res.status(500).json({ message: "Error encountered." });
+router.get(
+  "/category/:serviceType",
+  ...getServiceParamValidators,
+  rejectBadRequests,
+  async (req, res) => {
+    try {
+      const products = await category.find({
+        servedAt: req?.params?.serviceType,
+      });
+      return res.status(200).json(
+        products.map((prod) => {
+          return {
+            name: prod.name,
+            icon: prod.icon,
+            key: prod.key,
+            video: prod.video,
+            modelRequired: prod.servedAt === "store" ? true : false,
+          };
+        })
+      );
+    } catch (error) {
+      return res.status(500).json({ message: "Error encountered." });
+    }
   }
-}
 );
 
 /**
@@ -529,7 +527,7 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
 
 /**
  * @openapi
- * /model/services/{modelid}:
+ * /{categoryId}/services/{modelid}:
  *  get:
  *    summary: get all services bu modelid
  *    tags:
@@ -554,15 +552,20 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/model/services/:modelid", async (req, res) => {
-  const { modelid } = req.params;
+router.get("/:categoryId/services/:modelid", async (req, res) => {
+  const { modelid, categoryId } = req.params;
 
-  if (!modelid) {
-    return res.status(500).json({ message: "modelid is required" });
+  if (!modelid || !categoryId) {
+    return res
+      .status(500)
+      .json({ message: "categoryId and modelid are required" });
   }
 
   try {
-    const services = await Product_Service.findOne({ modelId: modelid });
+    const services = await Product_Service.findOne({
+      modelId: modelid,
+      categoryId,
+    });
     return res.status(200).json({ message: "Models lists", data: services });
   } catch (error) {
     console.log(error);

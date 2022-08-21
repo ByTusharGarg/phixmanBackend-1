@@ -5,16 +5,15 @@ const Product_Service = mongoose.model(
   "Product_Service",
   new Schema({
     categoryId: { type: Schema.Types.ObjectId, ref: "category" },
-    modelId: { type: String, required: true, unique: true },
-    modelName: { type: String, required: true, unique: true },
+    modelId: { type: String, required: true, unique: true, ref: "Model" },
     services: [
       {
-        serviceName:String,
-        cost:Number,
-        serviceId:{type:String,unique:true}
-      }
+        serviceName: String,
+        cost: Number,
+        serviceId: { type: String, unique: true },
+        isTrivial: Boolean,
+      },
     ],
-    services: [{ name: String, cost: Number, isTrivial: Boolean }],
   })
 );
 
