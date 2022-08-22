@@ -521,7 +521,52 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
 
 /**
  * @openapi
- * /{categoryId}/services/{modelid}:
+ * /services/{categoryId}:
+ *  get:
+ *    summary: get all services for specific category
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+ router.get("/services/:categoryId", async (req, res) => {
+  const { categoryId } = req.params;
+
+  if (!categoryId) {
+    return res.status(500).json({ message: "categoryId is required" });
+  }
+
+  try {
+    let filter = {};
+    if (categoryId) filter.categoryId = categoryId;
+    const services = await Product_Service.find(filter);
+    return res.status(200).json({ message: "Models lists", data: services });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /services/{categoryId}/{modelid}:
  *  get:
  *    summary: get all services for specific category
  *    tags:
@@ -550,7 +595,7 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/:categoryId/services/:modelid", async (req, res) => {
+router.get("/services/:categoryId/:modelid", async (req, res) => {
   const { modelid, categoryId } = req.params;
 
   if (!categoryId) {
