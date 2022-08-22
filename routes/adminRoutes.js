@@ -22,7 +22,7 @@ const {
   paymentModeTypes,
 } = require("../enums/types");
 const { body } = require("express-validator");
-const { makePartnerTranssaction } = require('./walletRoute');
+const { makePartnerTranssaction } = require("./walletRoute");
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -225,7 +225,7 @@ router.get("/", async (req, res) => {
  *    - bearerAuth: []
  */
 router.get("/session", (req, res) => {
-  return res.send(200);
+  return res.status(200).json({ message: "session is active" });
 });
 
 /**
@@ -943,15 +943,19 @@ router.put("/partners/:id", async (req, res) => {
   }
 
   try {
-
     if (type === "approve") {
-      let isNotVerified = await Partner.find({ _id: id, isApproved: true, isVerified: false });
+      let isNotVerified = await Partner.find({
+        _id: id,
+        isApproved: true,
+        isVerified: false,
+      });
       query = { isApproved: true, isVerified: true };
 
       if (!isNotVerified) {
-        return res.status(500).json({ message: "Account is  allready verified" });
+        return res
+          .status(500)
+          .json({ message: "Account is  allready verified" });
       }
-
     } else if (type === "block") {
       query = { isPublished: false };
     } else if (type === "unblock") {
@@ -963,11 +967,25 @@ router.put("/partners/:id", async (req, res) => {
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
 
     // Add refferal credit to partner wallet
-    if (partners && type === "approve" && query.isApproved && query.isVerified) {
-      await makePartnerTranssaction("partner", "successful", partners?._id, 100, "Referal bonus", "credit");
+    if (
+      partners &&
+      type === "approve" &&
+      query.isApproved &&
+      query.isVerified
+    ) {
+      await makePartnerTranssaction(
+        "partner",
+        "successful",
+        partners?._id,
+        100,
+        "Referal bonus",
+        "credit"
+      );
     }
 
-    res.status(200).json({ message: "operations successfully", data: partners });
+    res
+      .status(200)
+      .json({ message: "operations successfully", data: partners });
   } catch (error) {
     console.log(error);
   }
