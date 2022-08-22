@@ -275,7 +275,7 @@ router.post(
       }
 
       if (resp.message) {
-        return res.status(500).json({ ...resp });
+        return res.status(200).json({ ...resp });
       } else {
         const { accessToken, refreshToken } = tokenService.generateAuthTokens(
           {
