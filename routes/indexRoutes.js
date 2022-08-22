@@ -561,7 +561,7 @@ router.get("/:categoryId/services/:modelid", async (req, res) => {
     let filter = {};
     if (modelid) filter.modelId = modelid;
     if (categoryId) filter.categoryId = categoryId;
-    const services = await Product_Service.findOne(filter);
+    const services = await Product_Service.find(filter);
     return res.status(200).json({ message: "Models lists", data: services });
   } catch (error) {
     console.log(error);
