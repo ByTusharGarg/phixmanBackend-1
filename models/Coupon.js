@@ -18,7 +18,8 @@ const couponSchema = mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  user: { type: String, enum: ["PARTNER", "CUSTOMER"], default: "PARTNER" },
 });
 
 // 1. FRIST_TIME

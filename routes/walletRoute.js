@@ -158,7 +158,7 @@ const updateCustomerWallet = async (customerId, amount, transsactionType, curren
 };
 
 
-const makePartnerTranssaction = async (userType, status, partnerId, amount, title, transsactionType) => {
+module.exports.makePartnerTranssaction = async (userType, status, partnerId, amount, title, transsactionType) => {
     let walletId;
 
     if (!status || status === "") {
@@ -173,9 +173,6 @@ const makePartnerTranssaction = async (userType, status, partnerId, amount, titl
         // check is Partner exist in our database
         const partnerExists = await Partner.findById(partnerId);
         if (!partnerExists) {
-            // return res
-            //     .status(404)
-            //     .json({ message: "" });
             throw new Error("partner not found");
         }
 
@@ -183,9 +180,6 @@ const makePartnerTranssaction = async (userType, status, partnerId, amount, titl
         const wallet = await validateUserWallet(partnerExists._id);
 
         if (!wallet) {
-            // return res
-            //     .status(404)
-            //     .json({ message: "Wallet not found" });
             throw new Error("Wallet not found");
         }
 
@@ -196,15 +190,10 @@ const makePartnerTranssaction = async (userType, status, partnerId, amount, titl
 
         if (resp) {
             await createWalletTransaction(partnerId, userType, walletId, amount, title, transsactionType, status, "transaction successfull");
-            // return res.status(200).json({
-            //     response: "wallet funded successfully",
-            //     data: resp,
-            // });
             return resp;
         }
     } catch (error) {
         throw new Error(error.message ? error.message : "Error encountered.");
-        // return res.status(500).json({ message: error.message ? error.message : "Error encountered." });
     }
 }
 

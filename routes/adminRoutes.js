@@ -22,6 +22,7 @@ const {
   paymentModeTypes,
 } = require("../enums/types");
 const { body } = require("express-validator");
+const { makePartnerTranssaction } = require('./walletRoute');
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -941,21 +942,32 @@ router.put("/partners/:id", async (req, res) => {
     return res.status(500).json({ message: `id and type required` });
   }
 
-  if (type === "approve") {
-    query = { isApproved: true, isVerified: false };
-  } else if (type === "block") {
-    query = { isPublished: false };
-  } else if (type === "unblock") {
-    query = { isPublished: true };
-  } else {
-    res.status(200).json({ message: "Invalid type", data: partners });
-  }
-
   try {
+
+    if (type === "approve") {
+      let isNotVerified = await Partner.find({ _id: id, isApproved: true, isVerified: false });
+      query = { isApproved: true, isVerified: true };
+
+      if (!isNotVerified) {
+        return res.status(500).json({ message: "Account is  allready verified" });
+      }
+
+    } else if (type === "block") {
+      query = { isPublished: false };
+    } else if (type === "unblock") {
+      query = { isPublished: true };
+    } else {
+      res.status(200).json({ message: "Invalid type", data: partners });
+    }
+
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
-    res
-      .status(200)
-      .json({ message: "operations successfully", data: partners });
+
+    // Add refferal credit to partner wallet
+    if (partners && type === "approve" && query.isApproved && query.isVerified) {
+      await makePartnerTranssaction("partner", "successful", partners?._id, 100, "Referal bonus", "credit");
+    }
+
+    res.status(200).json({ message: "operations successfully", data: partners });
   } catch (error) {
     console.log(error);
   }
