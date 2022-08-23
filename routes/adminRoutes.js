@@ -23,6 +23,7 @@ const {
 } = require("../enums/types");
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require('./walletRoute');
+const { randomImageName, uploadFile } = require('../services/s3-service');
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -532,6 +533,243 @@ router.post(
 
 /**
  * @openapi
+ * /admin/createpartner:
+ *  post:
+ *    summary: used to create partner
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *     content:
+ *       multipart/form-data:
+ *        schema:
+ *          type: object
+ *          properties:
+ *            phone:
+ *              type: string
+ *              required: true
+ *            Name:
+ *              type: string
+ *              required: true
+ *            gender:
+ *              type: string
+ *              required: true
+ *            email:
+ *              type: string
+ *              required: true
+ *            Dob:
+ *              type: string
+ *              required: true
+ *            Type:
+ *              type: string
+ *              required: true
+ *              enum: ["store", "individual"]
+ *            Product_Service:
+ *              type: string
+ *              required: true
+ *            panNumber:
+ *              type: string
+ *              required: true
+ *            aadharNumber:
+ *              type: string
+ *              required: true
+ *            address:
+ *              type: object
+ *              required: true
+ *              properties:
+ *               street:
+ *                type: string
+ *               city:
+ *                type: string
+ *               pin:
+ *                type: string
+ *               state:
+ *                type: string
+ *               country:
+ *                type: string
+ *               cood:
+ *                type: object
+ *                properties:
+ *                 lattitude:
+ *                   type: string
+ *                 longitude:
+ *                   type: string
+ *            secondaryNumber:
+ *              type: string
+ *            aadharImageF:
+ *              type: file
+ *              required: true
+ *            aadharImageB:
+ *              type: file
+ *              required: true
+ *            pancardImage:
+ *              type: file
+ *              required: true
+ *            gstCertificate:
+ *              type: file
+ *              required: false
+ *              description: required for businesses
+ *            incorprationCertificate:
+ *              type: file
+ *              required: false
+ *              description: required for businesses
+ *            expCertificate:
+ *              type: file
+ *              required: false
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createpartner", async (req, res) => {
+  let {
+    phone,
+    Name,
+    address,
+    Dob,
+    Type,
+    Product_Service,
+    email,
+    gender,
+    panNumber,
+    aadharNumber,
+    secondaryNumber,
+  } = req.body;
+
+  let images = [];
+  let docs = {};
+
+
+  if (!phone || !Name || !Dob) {
+    return res.status(500).json({
+      message: "phone Name Dob required",
+    });
+  }
+
+  try {
+    const isPhoneExist = await Partner.findOne({ phone })
+    if (isPhoneExist) {
+      return res.status(500).json({
+        message: "Phone number allready exists",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while trying to uploading documents",
+    });
+  }
+
+  const {
+    aadharImageF,
+    aadharImageB,
+    pancardImage,
+    gstCertificate,
+    incorprationCertificate,
+    expCertificate,
+  } = req.files;
+
+  if (!aadharImageF || !aadharImageB || !pancardImage) {
+    return res.status(500).json({
+      message: "aadharImageF, aadharImageB, pancardImage documents required",
+    });
+  } else {
+    images.push({ ...aadharImageF, fileName: randomImageName() });
+    images.push({ ...aadharImageB, fileName: randomImageName() });
+    images.push({ ...pancardImage, fileName: randomImageName() });
+  }
+
+  if (Type === "store" && (!gstCertificate || !incorprationCertificate)) {
+    return res.status(500).json({
+      message: "gstCertificate incorprationCertificate documents required",
+    });
+  } else {
+    docs["incorprationCertificate"] = incorprationCertificate
+      ? randomImageName()
+      : null;
+    docs["gstCertificate"] = gstCertificate ? randomImageName() : null;
+
+    if (incorprationCertificate) {
+      images.push({ ...incorprationCertificate, fileName: randomImageName() });
+    } else {
+      images.push(undefined);
+    }
+    if (gstCertificate) {
+      images.push({ ...gstCertificate, fileName: randomImageName() });
+    } else {
+      images.push(undefined);
+    }
+  }
+
+  if (Type === "individual" && !expCertificate) {
+    return res
+      .status(500)
+      .json({ message: "expCertificate documents required" });
+  } else {
+    docs["expCertificate"] = expCertificate ? randomImageName() : null;
+
+    if (expCertificate) {
+      images.push({ ...expCertificate, fileName: randomImageName() });
+    } else {
+      images.push(undefined);
+    }
+  }
+
+  try {
+
+    let fileUrls = await Promise.all(
+      images.map((file, i) => {
+        if (file) {
+          return uploadFile(file.data, file.fileName, file.mimetype);
+        } else {
+          return;
+        }
+      })
+    );
+
+    const newPartner = new Partner({
+      phone,
+      Name,
+      Dob,
+      Type,
+      Product_Service,
+      email,
+      gender,
+      address,
+      isProfileCompleted: true,
+      isVerified: true,
+      isApproved: true,
+      aadhar: {
+        number: aadharNumber,
+        fileF: images[0].fileName,
+        fileB: images[1].fileName,
+      },
+      pan: { number: panNumber, file: images[2].fileName },
+      secondaryNumber,
+      ...docs,
+    });
+
+    const resp = await newPartner.save();
+
+    return res.status(201).json({ message: "New partner created", data: resp });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to uploading documents",
+    });
+  }
+});
+
+/**
+ * @openapi
  * /admin/getCoupons:
  *  get:
  *    summary: used to list all active Coupons.
@@ -945,10 +1183,12 @@ router.put("/partners/:id", async (req, res) => {
   try {
 
     if (type === "approve") {
-      let isNotVerified = await Partner.find({ _id: id, isApproved: true, isVerified: false });
+      let isNotVerified = await Partner.findOne({ _id: id, isApproved: true, isVerified: false });
+
+      console.log(isNotVerified);
       query = { isApproved: true, isVerified: true };
 
-      if (!isNotVerified) {
+      if (isNotVerified) {
         return res.status(500).json({ message: "Account is  allready verified" });
       }
 
@@ -957,14 +1197,24 @@ router.put("/partners/:id", async (req, res) => {
     } else if (type === "unblock") {
       query = { isPublished: true };
     } else {
-      res.status(200).json({ message: "Invalid type", data: partners });
+      return res.status(200).json({ message: "Invalid type" });
     }
 
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
 
     // Add refferal credit to partner wallet
-    if (partners && type === "approve" && query.isApproved && query.isVerified) {
-      await makePartnerTranssaction("partner", "successful", partners?._id, 100, "Referal bonus", "credit");
+    if (partners && type === "approve" && query.isApproved && query.isVerified && partners.refferdCode) {
+
+      const referaledPerson = await Partner.findOne({ uniqueReferralCode: partners.refferdCode });
+
+      // check is refferal code is valid
+      if (referaledPerson) {
+        // credit into referaled
+        await makePartnerTranssaction("partner", "successful", partners?._id, process.env.PARTNER_INVITATION_AMOUNT || 100, "Invitation Referal bonus", "credit");
+
+        // credit into refferall
+        await makePartnerTranssaction("partner", "successful", referaledPerson?._id, process.env.PARTNER_INVITATION_AMOUNT || 100, "Invited Referal bonus", "credit");
+      }
     }
 
     res.status(200).json({ message: "operations successfully", data: partners });

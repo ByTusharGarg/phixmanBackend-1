@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { offerPromoType } = require('../enums/types');
+const { offerPromoType, coupenUserType } = require('../enums/types');
 
 const couponSchema = mongoose.Schema({
   promoCode: { type: String, unique: true },
@@ -19,7 +19,7 @@ const couponSchema = mongoose.Schema({
     type: Boolean,
     default: true
   },
-  user: { type: String, enum: ["PARTNER", "CUSTOMER"], default: "PARTNER" },
+  // user: { type: String, enum: coupenUserType, default: "PARTNER" },
 });
 
 // 1. FRIST_TIME

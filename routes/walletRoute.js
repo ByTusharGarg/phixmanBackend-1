@@ -158,7 +158,7 @@ const updateCustomerWallet = async (customerId, amount, transsactionType, curren
 };
 
 
-module.exports.makePartnerTranssaction = async (userType, status, partnerId, amount, title, transsactionType) => {
+const makePartnerTranssaction = async (userType, status, partnerId, amount, title, transsactionType) => {
     let walletId;
 
     if (!status || status === "") {
@@ -575,3 +575,4 @@ router.get('/customer', checkCustomer, async (req, res) => {
 
 
 module.exports = router;
+module.exports.makePartnerTranssaction = makePartnerTranssaction;

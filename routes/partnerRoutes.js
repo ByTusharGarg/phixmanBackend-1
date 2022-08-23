@@ -401,7 +401,6 @@ router.post(
  *    - bearerAuth: []
  */
 router.post("/completeProfile", validateTempToken, async (req, res) => {
-  console.log(req.body);
   let {
     Name,
     address,
@@ -713,7 +712,6 @@ router.patch(
     try {
       let update = req?.body;
       update.isVerified = true;
-      console.log(update);
       if (req?.body?.email && req?.body?.email === "") {
         update.email = req?.body?.email.toLowerCase();
       }

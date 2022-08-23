@@ -21,7 +21,7 @@ const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED","FAILED"];
 const acceptedPaymentMethods = ["card", "upi", "app"];
 const transsactionUser = ["partner","customer"];
 const offerPromoType = ["flat","upto"];
-
+const coupenUserType = ["PARTNER", "CUSTOMER"]
 
 
 module.exports = {
@@ -41,4 +41,5 @@ module.exports = {
   acceptedPaymentMethods,
   transsactionUser,
   offerPromoType,
+  coupenUserType,
 };
