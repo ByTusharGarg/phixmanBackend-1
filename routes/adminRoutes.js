@@ -226,7 +226,7 @@ router.get("/", async (req, res) => {
  *    - bearerAuth: []
  */
 router.get("/session", (req, res) => {
-  return res.send(200);
+  return res.status(200).json({ message: "session is active" });
 });
 
 /**
@@ -1181,17 +1181,14 @@ router.put("/partners/:id", async (req, res) => {
   }
 
   try {
-
     if (type === "approve") {
-      let isNotVerified = await Partner.findOne({ _id: id, isApproved: true, isVerified: false });
+      let isNotVerified = await Partner.findOne({ _id: id, isApproved: false, isVerified: false });
 
-      console.log(isNotVerified);
       query = { isApproved: true, isVerified: true };
 
-      if (isNotVerified) {
+      if (!isNotVerified) {
         return res.status(500).json({ message: "Account is  allready verified" });
       }
-
     } else if (type === "block") {
       query = { isPublished: false };
     } else if (type === "unblock") {
@@ -1217,7 +1214,9 @@ router.put("/partners/:id", async (req, res) => {
       }
     }
 
-    res.status(200).json({ message: "operations successfully", data: partners });
+    res
+      .status(200)
+      .json({ message: "operations successfully", data: partners });
   } catch (error) {
     console.log(error);
   }
