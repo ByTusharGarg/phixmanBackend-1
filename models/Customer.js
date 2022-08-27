@@ -27,7 +27,7 @@ const Customer = mongoose.model(
         city: String,
         pin: String,
         state: String,
-        type: String,
+        type: { type: String, default: "" },
         cood: {
           lattitude: String,
           longitude: String,

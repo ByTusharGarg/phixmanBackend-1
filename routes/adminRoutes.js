@@ -1155,7 +1155,7 @@ router.get("/get/partners/:type", async (req, res) => {
  *        required: true
  *        schema:
  *          type: string
- *          enum: ["kycpending", "block","unblock"]
+ *          enum: ["approve", "block","unblock"]
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.

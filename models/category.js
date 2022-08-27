@@ -26,6 +26,7 @@ const categorySchema = new mongoose.Schema({
   minDuration: Number, //in hours
   LeadExpense: Number,
   companyComissionPercentage: Number,
+  enabled: { type: Boolean, default: true },
 });
 
 const category = mongoose.model("category", categorySchema);
