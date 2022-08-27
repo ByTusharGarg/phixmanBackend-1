@@ -993,7 +993,12 @@ router.get("/getpartnertransaction", async (req, res) => {
  */
 router.post("/categories", async (req, res) => {
   try {
-    console.log(req.body, req.files);
+    req.body.forms = JSON.parse(req.body.forms);
+    req.body.availableOn = JSON.parse(req.body.availableOn);
+    req.body.servedAt = JSON.parse(req.body.servedAt);
+    req.body.slots = JSON.parse(req.body.slots);
+    req.body.key = req.body.name.toLowerCase();
+    req.body.components = JSON.parse(req.body.components);
     for (let key in req.body) {
       if (!req.body[key]) {
         return res.status(404).json({ message: `${key} is missing` });
@@ -1002,20 +1007,7 @@ router.post("/categories", async (req, res) => {
     if (!req.files.icon) {
       return res.status(404).json({ message: "icon is missing" });
     }
-    req.body.forms = JSON.parse(req.body.forms);
-    req.body.availableOn = JSON.parse(req.body.availableOn);
-    if (!req.body.slots.startsWith("["))
-      req.body.slots = JSON.parse(`[${req.body.slots}]`);
-    else req.body.slots = JSON.parse(`[${req.body.slots}]`);
-    req.body.key = req.body.name.toLowerCase();
     req.body.icon = encodeImage(req.files.icon);
-    if (typeof req.body.components === "string") {
-      req.body.components = req.body.components.split(",");
-    }
-    if (typeof req.body.components === "string") {
-      req.body.servedAt = req.body.servedAt.split(",");
-    }
-    console.log(req.body);
     const newCategory = new category(req.body);
     await newCategory.save();
     return res

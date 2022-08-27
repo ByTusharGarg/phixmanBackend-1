@@ -3,7 +3,11 @@ const userStatusTypes = ["active", "inactive"];
 const partnerTypes = ["store", "individual"];
 const partnerStatusTypes = ["active", "inactive"];
 const storeStatusTypes = ["active", "inactive"];
-const orderTypes = ["InStore", "Home", "PickUpDrop"];
+const orderTypes = [
+    "Visit Store",
+    "Home Visit",
+    "Pick & Drop",
+  ];
 const orderStatusTypes = [
   "Initial",
   "Requested",
