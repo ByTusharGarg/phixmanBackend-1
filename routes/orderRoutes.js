@@ -1,5 +1,6 @@
 const { orderStatusTypes } = require("../enums/types");
 const { checkAdmin } = require('../middleware/AuthAdmin');
+const checkTokenOnly = require('../middleware/checkToken');
 const { Order, Counters } = require("../models");
 const router = require("express").Router();
 
@@ -34,13 +35,18 @@ router.get("/Bulk", async (req, res) => {
   }
 });
 
+
 /**
  * @openapi
- * /Order/{uuid}:
+ * /Order/{_id}:
  *  get:
- *    summary: used to fetch a specific order.
+ *    summary: used to fetch a specific order by _id.
  *    tags:
  *    - Order Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -56,9 +62,10 @@ router.get("/Bulk", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/:uuid", async (req, res) => {
+router.get("/:id",checkTokenOnly, async (req, res) => {
+  const id = req.params.id;
   try {
-    const orders = await Order.findOne({ _id: req?.params?.uuid });
+    const orders = await Order.findById(id);
     return res.status(200).json(orders);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
@@ -178,5 +185,7 @@ router.get("/status/:status/:partnerId?", checkAdmin, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
 
 module.exports = router;
