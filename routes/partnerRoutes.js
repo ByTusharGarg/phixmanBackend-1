@@ -426,19 +426,34 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     expCertificate,
   } = req.files;
 
-  if (!aadharImageF || !aadharImageB || !pancardImage) {
+  if (!aadharImageF || !aadharImageB) {
     return res.status(500).json({
-      message: "aadharImageF, aadharImageB, pancardImage documents required",
+      message: "aadharImageF, aadharImageB documents required",
     });
   } else {
     images.push({ ...aadharImageF, fileName: randomImageName() });
     images.push({ ...aadharImageB, fileName: randomImageName() });
-    images.push({ ...pancardImage, fileName: randomImageName() });
   }
 
-  if (Type === "store" && (!gstCertificate || !incorprationCertificate)) {
+  if (pancardImage) {
+    images.push({ ...pancardImage, fileName: randomImageName() });
+    docs["pan"] = { number: panNumber, file: images[2]?.fileName };
+
+  } else {
+    if (Type === "individual") {
+      return res.status(500).json({
+        message: "pancard documents required",
+      });
+    }
+
+    images.push(undefined);
+    docs["pan"] = null;
+
+  }
+
+  if (Type === "store" && (!gstCertificate)) {
     return res.status(500).json({
-      message: "gstCertificate incorprationCertificate documents required",
+      message: "gstCertificate documents required",
     });
   } else {
     docs["incorprationCertificate"] = incorprationCertificate
@@ -480,7 +495,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   }
 
   try {
-    let fileUrls = await Promise.all(
+    await Promise.all(
       images.map((file, i) => {
         if (file) {
           return uploadFile(file.data, file.fileName, file.mimetype);
@@ -489,7 +504,6 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
         }
       })
     );
-
     const resp = await Partner.findByIdAndUpdate(
       _id,
       {
@@ -507,7 +521,6 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
             fileF: images[0].fileName,
             fileB: images[1].fileName,
           },
-          pan: { number: panNumber, file: images[2].fileName },
           secondaryNumber,
           ...docs,
         },
@@ -534,9 +547,9 @@ router.use(checkPartner);
 
 /**
  * @openapi
- * /partner:
+ * /partner/myprofile:
  *  get:
- *    summary: gets user details.
+ *    summary: gets partners details.
  *    tags:
  *    - partner Routes
  *    responses:
@@ -571,8 +584,21 @@ router.use(checkPartner);
  *    security:
  *    - bearerAuth: []
  */
-router.get("/", async (req, res) => {
-  console.log(req?.partner);
+router.get("/myprofile", async (req, res) => {
+  const partnerId = req.partner._id;
+  try {
+    const profile = await Partner.findById(partnerId);
+
+    profile['aadhar']['fileF'] = await getObjectSignedUrl(profile?.aadhar?.fileF);
+    profile['aadhar']['fileB'] = await getObjectSignedUrl(profile?.aadhar?.fileB);
+    profile['expCertificate'] = await getObjectSignedUrl(profile?.expCertificate);
+
+    return res.status(200).json({ message: "user profile.", data: profile });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to fetching profile." });
+  }
   return res.status(200).json(req?.partner);
 });
 

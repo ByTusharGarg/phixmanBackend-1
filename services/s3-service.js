@@ -46,7 +46,7 @@ async function getObjectSignedUrl(key, seconds = 3600) {
     }
 
     const command = new GetObjectCommand(params);
-    
+
     const url = await getSignedUrl(s3Client, command, seconds);
 
     return url
