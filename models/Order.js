@@ -26,7 +26,7 @@ const Order = mongoose.model(
           CategoryId: { type: Schema.Types.ObjectId, ref: "category" },
           ModelId: { type: Schema.Types.ObjectId, ref: "Model" },
           ServiceId: { type: Schema.Types.ObjectId, ref: "Product_Service" },
-          Cost: { type: Number }
+          Cost: { type: Number },
         },
       ],
     },
@@ -34,9 +34,7 @@ const Order = mongoose.model(
     PaymentMode: { type: String, enum: paymentModeTypes },
     PaymentStatus: { type: String, enum: paymentStatus },
     PendingAmount: { type: Number },
-    TxnId: [
-      { type: Schema.Types.ObjectId, ref: "ordertransaction" }
-    ],
+    TxnId: [{ type: Schema.Types.ObjectId, ref: "ordertransaction" }],
     address: {
       street: String,
       city: String,
@@ -49,6 +47,10 @@ const Order = mongoose.model(
       },
     },
     PickUpRequired: { type: Boolean },
+    timeSlot: {
+      from: { type: String, default: "" },
+      to: { type: String, default: "" },
+    },
   })
 );
 

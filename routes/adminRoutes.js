@@ -22,8 +22,8 @@ const {
   paymentModeTypes,
 } = require("../enums/types");
 const { body } = require("express-validator");
-const { makePartnerTranssaction } = require('./walletRoute');
-const { randomImageName, uploadFile } = require('../services/s3-service');
+const { makePartnerTranssaction } = require("./walletRoute");
+const { randomImageName, uploadFile } = require("../services/s3-service");
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -648,7 +648,6 @@ router.post("/createpartner", async (req, res) => {
   let images = [];
   let docs = {};
 
-
   if (!phone || !Name || !Dob) {
     return res.status(500).json({
       message: "phone Name Dob required",
@@ -656,7 +655,7 @@ router.post("/createpartner", async (req, res) => {
   }
 
   try {
-    const isPhoneExist = await Partner.findOne({ phone })
+    const isPhoneExist = await Partner.findOne({ phone });
     if (isPhoneExist) {
       return res.status(500).json({
         message: "Phone number allready exists",
@@ -724,7 +723,6 @@ router.post("/createpartner", async (req, res) => {
   }
 
   try {
-
     let fileUrls = await Promise.all(
       images.map((file, i) => {
         if (file) {
@@ -993,8 +991,9 @@ router.get("/getpartnertransaction", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/categories", rejectBadRequests, async (req, res) => {
+router.post("/categories", async (req, res) => {
   try {
+    console.log(req.body, req.files);
     for (let key in req.body) {
       if (!req.body[key]) {
         return res.status(404).json({ message: `${key} is missing` });
@@ -1182,12 +1181,18 @@ router.put("/partners/:id", async (req, res) => {
 
   try {
     if (type === "approve") {
-      let isNotVerified = await Partner.findOne({ _id: id, isApproved: false, isVerified: false });
+      let isNotVerified = await Partner.findOne({
+        _id: id,
+        isApproved: false,
+        isVerified: false,
+      });
 
       query = { isApproved: true, isVerified: true };
 
       if (!isNotVerified) {
-        return res.status(500).json({ message: "Account is  allready verified" });
+        return res
+          .status(500)
+          .json({ message: "Account is  allready verified" });
       }
     } else if (type === "block") {
       query = { isPublished: false };
@@ -1200,17 +1205,38 @@ router.put("/partners/:id", async (req, res) => {
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
 
     // Add refferal credit to partner wallet
-    if (partners && type === "approve" && query.isApproved && query.isVerified && partners.refferdCode) {
-
-      const referaledPerson = await Partner.findOne({ uniqueReferralCode: partners.refferdCode });
+    if (
+      partners &&
+      type === "approve" &&
+      query.isApproved &&
+      query.isVerified &&
+      partners.refferdCode
+    ) {
+      const referaledPerson = await Partner.findOne({
+        uniqueReferralCode: partners.refferdCode,
+      });
 
       // check is refferal code is valid
       if (referaledPerson) {
         // credit into referaled
-        await makePartnerTranssaction("partner", "successful", partners?._id, process.env.PARTNER_INVITATION_AMOUNT || 100, "Invitation Referal bonus", "credit");
+        await makePartnerTranssaction(
+          "partner",
+          "successful",
+          partners?._id,
+          process.env.PARTNER_INVITATION_AMOUNT || 100,
+          "Invitation Referal bonus",
+          "credit"
+        );
 
         // credit into refferall
-        await makePartnerTranssaction("partner", "successful", referaledPerson?._id, process.env.PARTNER_INVITATION_AMOUNT || 100, "Invited Referal bonus", "credit");
+        await makePartnerTranssaction(
+          "partner",
+          "successful",
+          referaledPerson?._id,
+          process.env.PARTNER_INVITATION_AMOUNT || 100,
+          "Invited Referal bonus",
+          "credit"
+        );
       }
     }
 

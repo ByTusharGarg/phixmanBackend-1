@@ -619,6 +619,13 @@ router.post("/address", async (req, res) => {
  *                OrderType:
  *                  type: string
  *                  enum: [InStore, Home]
+ *                timeSlot:
+ *                  type: object
+ *                  properties:
+ *                    from:
+ *                      type: string
+ *                    to:
+ *                      type: string
  *                Items:
  *                  type: array
  *                  items:
@@ -631,7 +638,6 @@ router.post("/address", async (req, res) => {
  *                        type: string
  *                      Cost:
  *                        type: integer
- *
  *                PaymentMode:
  *                  type: string
  *                  enum: [cod,online]
@@ -656,7 +662,7 @@ router.post("/address", async (req, res) => {
  *                         longitude:
  *                            type: string
  *                PickUpRequired:
- *                  type: srting
+ *                  type: string
  *    responses:
  *      200:
  *          description: if otp is sent successfully
