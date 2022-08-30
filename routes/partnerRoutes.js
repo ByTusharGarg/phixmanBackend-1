@@ -414,6 +414,8 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     secondaryNumber,
   } = req.body;
 
+  // console.log(Product_Service);
+  
   let images = [];
   let docs = {};
 
@@ -511,10 +513,10 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
           Name,
           Dob,
           Type,
-          Product_Service,
+          Product_Service:JSON.parse(Product_Service),
           email,
           gender,
-          address,
+          address:JSON.parse(address),
           isProfileCompleted: true,
           aadhar: {
             number: aadharNumber,
