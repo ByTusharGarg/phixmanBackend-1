@@ -1,4 +1,4 @@
-const partnerPopNotification = require('../libs/popupnotification/partnernotification');
+const partnerPopNotification = require('../libs/popupnotification/partnerNotification');
 const checkCustomer = require('../middleware/AuthCustomer');
 const checkPartner = require('../middleware/AuthPartner');
 const router = require("express").Router();
