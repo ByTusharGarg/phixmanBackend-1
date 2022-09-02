@@ -761,6 +761,9 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
       resp = await newOrder.save();
     }
 
+    // send notifications to all partners
+
+
     return res
       .status(200)
       .json({ message: "Orders created successfully.", newOrder: resp });

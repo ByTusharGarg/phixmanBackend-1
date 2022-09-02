@@ -7,6 +7,7 @@ const walletRoutes = require("./walletRoute");
 
 const customerPaymentRoutes = require("./customerPaymentsRoutes");
 const coupenRoutes = require("./coupenRoutes");
+const notificationRoutes = require("./notificationRouter");
 
 
 
@@ -18,5 +19,6 @@ module.exports = {
   orderRoutes,
   walletRoutes,
   customerPaymentRoutes,
-  coupenRoutes
+  coupenRoutes,
+  notificationRoutes
 };

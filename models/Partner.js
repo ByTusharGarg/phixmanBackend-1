@@ -56,6 +56,10 @@ const Partner = mongoose.model(
       index: true,
       sparse: true,
     },
+    fcmToken: {
+      type: String,
+      default: null
+    },
     address: {
       street: String,
       city: String,

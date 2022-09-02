@@ -102,6 +102,8 @@ app.use("/Order", router?.orderRoutes);
 app.use("/wallet", router?.walletRoutes);
 app.use("/customerpayment", router?.customerPaymentRoutes);
 app.use("/coupen", router?.coupenRoutes);
+app.use("/notification", router?.notificationRoutes);
+
 
 
 // const server = https.createServer({}, app);

@@ -41,6 +41,10 @@ const Customer = mongoose.model(
       index: true,
       sparse: true,
     },
+    fcmToken: {
+      type: String,
+      default: null
+    },
     isActive: { type: Boolean, required: true, default: true },
     isVerified: { type: Boolean, required: true, default: false },
     isPublished: { type: Boolean, required: true, default: true },
