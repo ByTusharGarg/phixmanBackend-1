@@ -3,6 +3,7 @@ const tokenService = require("../services/token-service");
 
 const validateTempToken = async (req, res, next) => {
   try {
+
     if (!req.headers["authorization"]) {
       return res.status(401).json({ message: "authorization not found" });
     }

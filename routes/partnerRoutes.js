@@ -401,6 +401,11 @@ router.post(
  *    - bearerAuth: []
  */
 router.post("/completeProfile", validateTempToken, async (req, res) => {
+  if (!req.body || !req.files) {
+    return res.status(404).json({
+      message: "aadharImageF, aadharImageB documents required",
+    });
+  }
   let {
     Name,
     address,
@@ -415,7 +420,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   } = req.body;
 
   // console.log(Product_Service);
-  
+
   let images = [];
   let docs = {};
 
@@ -429,7 +434,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   } = req.files;
 
   if (!aadharImageF || !aadharImageB) {
-    return res.status(500).json({
+    return res.status(404).json({
       message: "aadharImageF, aadharImageB documents required",
     });
   } else {
@@ -440,21 +445,19 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   if (pancardImage) {
     images.push({ ...pancardImage, fileName: randomImageName() });
     docs["pan"] = { number: panNumber, file: images[2]?.fileName };
-
   } else {
     if (Type === "individual") {
-      return res.status(500).json({
+      return res.status(404).json({
         message: "pancard documents required",
       });
     }
 
     images.push(undefined);
     docs["pan"] = null;
-
   }
 
-  if (Type === "store" && (!gstCertificate)) {
-    return res.status(500).json({
+  if (Type === "store" && !gstCertificate) {
+    return res.status(404).json({
       message: "gstCertificate documents required",
     });
   } else {
@@ -477,7 +480,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
 
   if (Type === "individual" && !expCertificate) {
     return res
-      .status(500)
+      .status(404)
       .json({ message: "expCertificate documents required" });
   } else {
     docs["expCertificate"] = expCertificate ? randomImageName() : null;
@@ -513,10 +516,10 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
           Name,
           Dob,
           Type,
-          Product_Service:JSON.parse(Product_Service),
+          Product_Service: JSON.parse(Product_Service),
           email,
           gender,
-          address:JSON.parse(address),
+          address: JSON.parse(address),
           isProfileCompleted: true,
           aadhar: {
             number: aadharNumber,
@@ -591,9 +594,15 @@ router.get("/myprofile", async (req, res) => {
   try {
     const profile = await Partner.findById(partnerId);
 
-    profile['aadhar']['fileF'] = await getObjectSignedUrl(profile?.aadhar?.fileF);
-    profile['aadhar']['fileB'] = await getObjectSignedUrl(profile?.aadhar?.fileB);
-    profile['expCertificate'] = await getObjectSignedUrl(profile?.expCertificate);
+    profile["aadhar"]["fileF"] = await getObjectSignedUrl(
+      profile?.aadhar?.fileF
+    );
+    profile["aadhar"]["fileB"] = await getObjectSignedUrl(
+      profile?.aadhar?.fileB
+    );
+    profile["expCertificate"] = await getObjectSignedUrl(
+      profile?.expCertificate
+    );
 
     return res.status(200).json({ message: "user profile.", data: profile });
   } catch (error) {
@@ -728,7 +737,7 @@ router.get("/myprofile", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- * 
+ *
  *    security:
  *    - bearerAuth: []
  */
