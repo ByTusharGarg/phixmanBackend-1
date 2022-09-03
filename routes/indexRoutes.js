@@ -13,7 +13,6 @@ const router = require("express").Router();
 const csv = require("csvtojson");
 const { getParseModels } = require("../libs/commonFunction");
 const fs = require("fs");
-const { encodeImage } = require("../libs/imageLib");
 
 const getServiceParamValidators = [
   param("serviceType")
@@ -546,7 +545,7 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
- router.get("/services/:categoryId", async (req, res) => {
+router.get("/services/:categoryId", async (req, res) => {
   const { categoryId } = req.params;
 
   if (!categoryId) {
@@ -554,7 +553,7 @@ router.post("/bulk/uploadcsvdata", async (req, res) => {
   }
 
   try {
-    let filter = {};
+    let filter = { ispublish: true };
     if (categoryId) filter.categoryId = categoryId;
     const services = await Product_Service.find(filter);
     return res.status(200).json({ message: "Models lists", data: services });
@@ -603,9 +602,11 @@ router.get("/services/:categoryId/:modelid", async (req, res) => {
   }
 
   try {
-    let filter = {};
+    let filter = { ispublish: true };
+
     if (modelid) filter.modelId = modelid;
     if (categoryId) filter.categoryId = categoryId;
+
     const services = await Product_Service.find(filter);
     return res.status(200).json({ message: "Models lists", data: services });
   } catch (error) {
@@ -613,6 +614,63 @@ router.get("/services/:categoryId/:modelid", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
+/**
+ * @openapi
+ * /services/{_id}:
+ *  put:
+ *    summary: admin can use this route to update an service by _id.
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *           type: string
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                serviceName:
+ *                  type: string
+ *                cost:
+ *                  type: number
+ *                categoryId:
+ *                  type: number
+ *                modelId:
+ *                  type: number
+ *                ispublish:
+ *                  type: boolean
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.put("/:id", checkAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const order = await Product_Service.findByIdAndUpdate(id, req.body, { new: true })
+    return res.status(200).json(order);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 
 /**
  * @openapi

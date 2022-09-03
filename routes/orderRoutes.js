@@ -62,62 +62,15 @@ router.get("/Bulk", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/:id",checkTokenOnly, async (req, res) => {
+router.get("/:id", checkTokenOnly, async (req, res) => {
   const id = req.params.id;
   try {
     const orders = await Order.findById(id);
-    return res.status(200).json(orders);
+    return res.status(200).json({ message: "order update successfully", data: orders });
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
-// /**
-//  * @openapi
-//  * /Order:
-//  *  post:
-//  *    summary: used to create a new order.
-//  *    tags:
-//  *    - Order Routes
-//  *    responses:
-//  *      500:
-//  *          description: if internal server error occured while performing request.
-//  *          content:
-//  *            application/json:
-//  *             schema:
-//  *               type: object
-//  *               properties:
-//  *                  message:
-//  *                    type: string
-//  *                    description: a human-readable message describing the response
-//  *                    example: Error encountered.
-//  *    security:
-//  *    - bearerAuth: []
-//  */
-// router.post("/", async (req, res) => {
-//   try {
-//     let counterValue = await Counters.findOneAndUpdate(
-//       { name: "orders" },
-//       { $inc: { seq: 1 } },
-//       { new: true }
-//     );
-//     if (!counterValue) {
-//       counterValue = await Counters.create({ name: "orders" });
-//     }
-//     const order = await Order.create({
-//       ...req?.body,
-//       OrderId: `O${10000000 + counterValue?.seq}`,
-//       Status: orderStatusTypes[0],
-//       Customer: req?.Customer?._id,
-//       address: req?.body?.address,
-//     });
-//     return res.status(200).json(order);
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ message: "Error encountered." });
-//   }
-// });
-
 
 /**
  * @openapi
