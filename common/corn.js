@@ -1,7 +1,8 @@
-// Cron jobs At 12:00 Am
+// Cron job every hour
 
-cron.schedule('0 0 0 * * *', () => {
+cron.schedule('* * 59 * * *', () => {
     // code
+    
 }, {
     schedule: true,
     timezone: "Asia/Kolkata"

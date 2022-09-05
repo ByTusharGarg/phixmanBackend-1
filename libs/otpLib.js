@@ -11,7 +11,6 @@ function generateOtp(length) {
 }
 
 async function sendOtp(phone, otp) {
-  console.log(phone, otp);
   try {
     const apiKey = process.env.TWOFACTOR_API_KEY;
     let balance = await axios.get(`http://2factor.in/API/V1/${apiKey}/BAL/SMS`);

@@ -17,12 +17,12 @@ const Admin = mongoose.model(
     isVerified: {
       type: Boolean,
       required: true,
-      default: false,
+      default: true,
     },
     isPublished: {
       type: Boolean,
       required: true,
-      default: false,
+      default: true,
     },
   })
 );

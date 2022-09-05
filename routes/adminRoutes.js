@@ -24,6 +24,7 @@ const {
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
 const { randomImageName, uploadFile } = require("../services/s3-service");
+const { updatePassword } = require('../middleware/AuthAdmin');
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -171,6 +172,37 @@ router.post("/resetpassword", AdminAuth.resetPassword);
 router.post("/changepassword", AdminAuth.changePassword);
 
 router.use(AdminAuth.checkAdmin);
+
+
+/**
+ * @openapi
+ * /admin/updatepassword:
+ *  post:
+ *    summary: used to update admin password after login
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                newpassword:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.put("/updatepassword", updatePassword);
 
 /**
  * @openapi

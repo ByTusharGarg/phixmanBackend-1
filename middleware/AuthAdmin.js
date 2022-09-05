@@ -2,6 +2,7 @@ const { isEmpty, trim, isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword, comparePasswordSync } = require("../libs/passwordLib");
 const jwt = require("jsonwebtoken");
 const { Admin, Counters } = require("../models");
+const { commonMailFunctionToAll } = require('../libs/mailer/mailLib');
 
 const registerAdmin = async (req, res) => {
   req.body.name = trim(req?.body?.name);
@@ -134,6 +135,7 @@ const resetPassword = async (req, res) => {
   try {
     const resp = await Admin.findOne({ email });
     let token;
+    let url;
 
     if (resp) {
       token = jwt.sign(
@@ -141,16 +143,22 @@ const resetPassword = async (req, res) => {
         process.env.CHNAGE_PASSWORD_SECRET,
         {
           expiresIn: "8hr", // expires in 24 hours
-        }
-      );
+        });
+
+      url = `${process.env.ADMIN_UI_URL}/resetpassword/${token}`;
+      // send Email
+
+      const data = { url: url, Subject: "[Phixman] Password Reset E-mail", email: resp.email, name: resp.Name ? resp.Name : "Dear" };
+      commonMailFunctionToAll(data, "resetpassword");
     }
+
     return res.status(200).json({
       success: true,
       message: "Reset password instructions sent on your mail successfully valid till 8hr",
-      token
+      url
     });
-
   } catch (error) {
+    console.log(error);
     return res.status(500).json({
       message: "Try again later !!!",
     });
@@ -195,10 +203,32 @@ const changePassword = async (req, res) => {
   }
 }
 
+
+const updatePassword = async (req, res) => {
+  const { newpassword } = req.body;
+  if (!newpassword) {
+    return res.status(400).json({
+      message: "newpassword required",
+    })
+  }
+
+  const _id = req.admin._id;
+
+  try {
+    const resp = await Admin.findByIdAndUpdate(_id, { password: hashpassword(newpassword) }, { new: true });
+    return res.status(404).json({ message: "Password Changed successfully" });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Token expired or invalid",
+    })
+  }
+}
+
 module.exports = {
   adminLogin,
   checkAdmin,
   registerAdmin,
   changePassword,
-  resetPassword
+  resetPassword,
+  updatePassword
 };
