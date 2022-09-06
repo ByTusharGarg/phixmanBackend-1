@@ -10,6 +10,7 @@ const {
   category,
   CustomerWallet,
   Product_Service,
+  SystemInfo,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -24,7 +25,7 @@ const {
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
 const { randomImageName, uploadFile } = require("../services/s3-service");
-const { updatePassword } = require('../middleware/AuthAdmin');
+const { updatePassword } = require("../middleware/AuthAdmin");
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -1428,6 +1429,103 @@ router.post("/service", async (req, res) => {
     if (modelId) obj.modelId = modelId;
     let service = await Product_Service.create(obj);
     res.status(201).json(service);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "internal server error" });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/settings:
+ *  post:
+ *    summary: used to update system settings.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                taxName:
+ *                  type: string
+ *                  example: PHIXMAN
+ *                taxNumber:
+ *                  type: string
+ *                  example: 12345678
+ *                igst:
+ *                  type: integer
+ *                  example: 18
+ *                sgst:
+ *                  type: integer
+ *                  example: 18
+ *                email:
+ *                  type: string
+ *                  example: support@phixman.in
+ *                whatsAppNumber:
+ *                  type: string
+ *                  example: 9876543210
+ *                helplineNumber:
+ *                  type: string
+ *                  example: 9876543210
+ *                supportContactNumber:
+ *                  type: string
+ *                  example: 9876543210
+ *                surchargeIncomingPercent:
+ *                  type: integer
+ *                  example: 10
+ *                surchargeOutgoingPercent:
+ *                  type: integer
+ *                  example: 10
+ *                serviceChargeCommisionPercent:
+ *                  type: integer
+ *                  example: 10
+ *                cashCollectionDeductionPercent:
+ *                  type: integer
+ *                  example: 10
+ *                onTimeRewardCommssion:
+ *                  type: integer
+ *                  example: 10
+ *                customerRatingRewardCommissionPercent:
+ *                  type: integer
+ *                  example: 10
+ *                customerCancellationFees:
+ *                  type: integer
+ *                  example: 100
+ *                tipAmtPercentage:
+ *                  type: integer
+ *                  example: 2
+ *                taxPercentWithoutGST:
+ *                  type: integer
+ *                  example: 18
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/settings", async (req, res) => {
+  try {
+    let info = await SystemInfo.find();
+    if (info.length === 0) {
+      info = await SystemInfo.create(req.body);
+      return res.status(201).json(info);
+    }
+    info = await SystemInfo.findByIdAndUpdate(info[0]._id, req.body, {
+      new: true,
+    });
+    return res.status(200).json(info);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "internal server error" });

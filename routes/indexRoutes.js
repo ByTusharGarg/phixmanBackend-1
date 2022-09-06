@@ -8,6 +8,7 @@ const {
   Coupon,
   Model,
   Product_Service,
+  SystemInfo,
 } = require("../models");
 const router = require("express").Router();
 const csv = require("csvtojson");
@@ -615,7 +616,6 @@ router.get("/services/:categoryId/:modelid", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /services/{_id}:
@@ -663,14 +663,15 @@ router.get("/services/:categoryId/:modelid", async (req, res) => {
 router.put("/:id", checkAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const order = await Product_Service.findByIdAndUpdate(id, req.body, { new: true })
+    const order = await Product_Service.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
     return res.status(200).json(order);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -703,9 +704,9 @@ router.get("/Offers", async (req, res) => {
 
 /**
  * @openapi
- * /devices:
+ * /settings:
  *  get:
- *    summary: used to get list of brands.
+ *    summary: used to get system settings.
  *    tags:
  *    - Index Routes
  *    responses:
@@ -721,13 +722,12 @@ router.get("/Offers", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/devices", async (req, res) => {
+router.get("/settings", async (req, res) => {
   try {
-    const devices = await Product.find({});
-    return res.status(200).json(devices);
+    const info = await SystemInfo.findOne();
+    return res.status(200).json(info);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 module.exports = router;
