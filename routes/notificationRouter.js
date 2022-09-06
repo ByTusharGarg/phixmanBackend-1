@@ -2,14 +2,14 @@ const partnerPopNotification = require('../libs/popupnotification/partnerNotific
 const checkCustomer = require('../middleware/AuthCustomer');
 const checkPartner = require('../middleware/AuthPartner');
 const router = require("express").Router();
-const {Customer,Partner} = require("../models");
+const { Customer, Partner, Notification } = require("../models");
 
 let payload = {
     notification: {
         title: "hello",
         body: `welcome to phixman`
     },
-    data:{}
+    data: {}
 }
 
 // const token = "euafcmf6SaS_97UxoTpzoc:APA91bFwfz77GCc8l7VKqpEP9FwK5C42Oj34YAF3PMNJ6D7FEOhv-iyZ20frIdzAJXo1ywcO3gsXTR76mzSqG5ZXUML2s4WN3vGG26leV3loVLuf3yRd38ckN3N3Slv2Wd7FcHklvXRQ";
@@ -110,4 +110,29 @@ router.put("/customer/fcm", checkCustomer, async (req, res) => {
     }
 });
 
+
+const createNotification = async (userId, userType, title, desc) => {
+    if (!userType) {
+        throw new Error('userType is required')
+    }
+
+    if (!userId) {
+        throw new Error('userId required')
+    }
+
+    try {
+        const newNotification = new Notification({
+            partnerId: userType === "partner" ? userId : null,
+            customerId: userType === "customer" ? userId : null,
+            title,
+            desc
+        });
+        return newNotification.save();
+    } catch (error) {
+        throw new Error('Error accure while creating notification')
+    }
+};
+
+
 module.exports = router;
+module.exports.createNotification = createNotification;

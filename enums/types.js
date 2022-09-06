@@ -15,6 +15,7 @@ const orderStatusTypes = [
   "InRepair",
   "completed",
   "Cancelled",
+  "Reshedulled"
 ];
 const serviceTypes = [];
 const paymentModeTypes = ["cod","online"];

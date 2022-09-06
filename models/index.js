@@ -16,6 +16,11 @@ const CustomerWallet = require("./CustomerWallet");
 const Features = require("./Features");
 const WalletTransaction = require("./WalletTransaction");
 
+
+const Notification = require("./Notification");
+const Feedback = require("./feedback");
+
+
 module.exports = {
   Admin,
   Brand,
@@ -33,4 +38,6 @@ module.exports = {
   WalletTransaction,
   Features,
   CustomerWallet,
+  Feedback,
+  Notification
 };

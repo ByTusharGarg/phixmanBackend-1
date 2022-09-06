@@ -13,6 +13,7 @@ const Order = mongoose.model(
     Partner: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
     Customer: { type: Schema.Types.ObjectId, ref: "Customer" },
     OrderId: { type: String },
+    invoiceId: { type: String, default: null },
     OrderType: { type: String, enum: orderTypes },
     Status: {
       type: String,

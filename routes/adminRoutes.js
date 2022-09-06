@@ -173,7 +173,6 @@ router.post("/changepassword", AdminAuth.changePassword);
 
 router.use(AdminAuth.checkAdmin);
 
-
 /**
  * @openapi
  * /admin/updatepassword:
@@ -1115,6 +1114,65 @@ router.get("/Features", async (req, res) => {
     console.log(error);
   }
 });
+
+
+/**
+ * @openapi
+ * /admin/orders/{status}:
+ *  get:
+ *    summary: using this route user can get all orders of his/her.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["Requested","Accepted", "InRepair", "completed","all","Cancelled","Reshedulled"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/orders/:status", async (req, res) => {
+  let { status } = req.params;
+
+  const allowedStatus = ["all", "Requested", "Accepted", "InRepair", "completed", "Cancelled", "Reshedulled", "Initial"];
+
+  if (!allowedStatus.includes(status)) {
+    return res.status(500).json({ message: `${status} status not allowed.` });
+  }
+
+  let query = {};
+
+  if (status !== "all") {
+    query["Status"] = status;
+  }
+
+  try {
+    const orders = await Order.find(query).populate("Customer", "phone Name").populate("Partner", "phone Name")
+      .populate("OrderDetails.Items.ServiceId", "modelName").populate("OrderDetails.Items.CategoryId", "name")
+      .populate("OrderDetails.Items.ModelId", "Name").sort({ createdAt: -1 });
+
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 
 /**
  * @openapi
