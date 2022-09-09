@@ -38,14 +38,14 @@ router.get("/Bulk", async (req, res) => {
 
 /**
  * @openapi
- * /Order/{_id}:
+ * /Order/{OrderId}:
  *  get:
- *    summary: used to fetch a specific order by _id.
+ *    summary: used to fetch a specific order by OrderId.
  *    tags:
  *    - Order Routes
  *    parameters:
  *      - in: path
- *        name: _id
+ *        name: OrderId
  *        required: true
  *    responses:
  *      500:
@@ -62,11 +62,12 @@ router.get("/Bulk", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
+
 router.get("/:id", checkTokenOnly, async (req, res) => {
-  const id = req.params.id;
+  const OrderId = req.params.id;
   try {
-    const orders = await Order.findById(id);
-    return res.status(200).json({ message: "order update successfully", data: orders });
+    const orders = await Order.findOne({ OrderId });
+    return res.status(200).json({ message: "order details", data: orders });
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }

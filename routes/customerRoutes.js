@@ -22,6 +22,7 @@ const {
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
+const checkTokenOnly = require('../middleware/checkToken');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -303,6 +304,43 @@ router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (r
   }
 }
 );
+
+
+/**
+ * @openapi
+ * /Order/{_id}:
+ *  get:
+ *    summary: used to fetch a specific customer by _id.
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+ router.get("/:id", checkTokenOnly, async (req, res) => {
+  const id = req.params.id;
+  try {
+    const orders = await Customer.findById(id);
+    return res.status(200).json({ message: "customer details", data: orders });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 /**
  * middleware to check if customer has access to perform following actions
