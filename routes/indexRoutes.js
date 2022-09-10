@@ -14,12 +14,13 @@ const router = require("express").Router();
 const csv = require("csvtojson");
 const { getParseModels } = require("../libs/commonFunction");
 const fs = require("fs");
+const { orderTypes } = require("../enums/types");
 
 const getServiceParamValidators = [
   param("serviceType")
     .notEmpty()
     .withMessage("service type cannot be empty")
-    .isIn(["home", "store"])
+    .isIn(orderTypes)
     .withMessage("service type is invalid"),
 ];
 
@@ -109,7 +110,7 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *           enum: ["home","store"]
+ *           enum: ["Visit Store","Home Visit","Pick & Drop"]
  *    responses:
  *      200:
  *          description: if successfully fetch all product types.
