@@ -11,8 +11,6 @@ const {
   SystemInfo,
 } = require("../models");
 const router = require("express").Router();
-const csv = require("csvtojson");
-const { getParseModels } = require("../libs/commonFunction");
 const fs = require("fs");
 const { categoryTypes } = require("../enums/types");
 const checkTokenOnly = require("../middleware/checkToken");
@@ -124,7 +122,7 @@ router.get("/getCustomerByID/:id", async (req, res) => {
  */
 router.get("/categories", rejectBadRequests, async (req, res) => {
   try {
-    const products = await category.find();
+    const products = await category.find().populate("forms.features");
     const data = products.map((prod) => {
       prod["modelRequired"] = prod.key === "mobile" ? true : false;
       return prod;
@@ -214,9 +212,11 @@ router.get(
   rejectBadRequests,
   async (req, res) => {
     try {
-      const products = await category.find({
-        categoryType: "Home service",
-      });
+      const products = await category
+        .find({
+          categoryType: "Home service",
+        })
+        .populate("forms.features");
       console.log(products, req?.params?.serviceType);
       const data = products.map((prod) => {
         prod["modelRequired"] = prod.key === "mobile" ? true : false;
@@ -435,125 +435,6 @@ router.get("/models/:categoryId/:brandId", async (req, res) => {
   try {
     const models = await Model.find({ categoryId, brandId });
     return res.status(200).json({ message: "Models lists", data: models });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
-
-/**
- * @openapi
- * /bulk/uploadcsvdata:
- *  post:
- *    summary: used to upload models and services
- *    tags:
- *    - Index Routes
- *    parameters:
- *      - in: path
- *        name: categoryId
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: brandId
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: csvfile
- *        required: true
- *        schema:
- *           type: file
- *
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.post("/bulk/uploadcsvdata", async (req, res) => {
-  const { categoryId, brandId } = req.body;
-
-  if (!categoryId || !brandId) {
-    return res.status(500).json({ message: "categoryId brandId are required" });
-  }
-
-  try {
-    const isCategoryExists = await category.findById(categoryId);
-
-    if (!isCategoryExists) {
-      return res.status(500).json({ message: "Category not exist" });
-    }
-
-    const isBrandExists = await Brand.findById(brandId);
-
-    if (!isBrandExists) {
-      return res.status(500).json({ message: "Brands not exist" });
-    }
-
-    const file = req.files.csvfile;
-
-    // 1. concat name
-    // 2. insert models
-    // 3. apply validation
-    // 4. insert services
-    // 5. validation
-    // 6. process all data
-
-    if (!file) {
-      return res.status(400).send("No files were uploaded.");
-    }
-
-    let filepath = path.join(__dirname, `../public/csv/${file.name}`);
-
-    file.mv(filepath, async (err) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-
-      const jsonArray = await csv().fromFile(filepath);
-      const { modelsArr, services } = getParseModels(
-        jsonArray,
-        brandId,
-        categoryId,
-        isBrandExists.Name
-      );
-
-      Model.bulkWrite(
-        modelsArr.map((ele) => ({
-          updateOne: {
-            filter: { modelId: ele.modelId },
-            update: { $set: ele },
-            upsert: true,
-          },
-        }))
-      );
-
-      Product_Service.bulkWrite(
-        services.map((ele) => ({
-          updateOne: {
-            filter: { modelId: ele.modelId },
-            update: { $set: ele },
-            upsert: true,
-          },
-        }))
-      );
-
-      fs.unlinkSync(filepath);
-
-      return res.send({
-        status: "File data uploaded successfully",
-        modelCount: modelsArr.length,
-        servicesCount: services.length,
-      });
-    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
