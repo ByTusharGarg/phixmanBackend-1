@@ -922,7 +922,7 @@ router.post("/order/acceptorder", async (req, res) => {
 
     if (order.Status !== "Requested") {
       return res
-        .status(500)
+        .status(204)
         .json({ message: "order already Accepted or further processing" });
     }
 
