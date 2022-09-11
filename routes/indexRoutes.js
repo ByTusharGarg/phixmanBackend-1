@@ -14,12 +14,14 @@ const router = require("express").Router();
 const csv = require("csvtojson");
 const { getParseModels } = require("../libs/commonFunction");
 const fs = require("fs");
+const { orderTypes } = require("../enums/types");
+const checkTokenOnly = require("../middleware/checkToken");
 
 const getServiceParamValidators = [
   param("serviceType")
     .notEmpty()
     .withMessage("service type cannot be empty")
-    .isIn(["home", "store"])
+    .isIn(orderTypes)
     .withMessage("service type is invalid"),
 ];
 
@@ -27,6 +29,44 @@ router.get("/", (_, res) => {
   return res.send(
     `<code>Server is running at PORT:${process.env.PORT}. Please refer to the api documentation <a href="/api-docs">here</a></code>`
   );
+});
+
+// router.use(checkTokenOnly);
+
+/**
+ * @openapi
+ * /getCustomerByID/{_id}:
+ *  get:
+ *    summary: used to fetch a specific customer by _id.
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/getCustomerByID/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const orders = await Customer.findById(id);
+    return res.status(200).json({ message: "customer details", data: orders });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
 });
 
 /**
@@ -109,7 +149,7 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *           enum: ["home","store"]
+ *           enum: ["Visit Store","Home Visit","Pick & Drop"]
  *    responses:
  *      200:
  *          description: if successfully fetch all product types.

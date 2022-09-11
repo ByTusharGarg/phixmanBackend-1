@@ -23,14 +23,14 @@ const Customer = mongoose.model(
     },
     address: [
       {
-        street: String,
-        city: String,
-        pin: String,
-        state: String,
+        street: { type: String, default: "" },
+        city: { type: String, default: "" },
+        pin: { type: String, default: "" },
+        state: { type: String, default: "" },
         type: { type: String, default: "" },
         cood: {
-          lattitude: String,
-          longitude: String,
+          lattitude: { type: String, default: "" },
+          longitude: { type: String, default: "" },
         },
       },
     ],
@@ -43,7 +43,7 @@ const Customer = mongoose.model(
     },
     fcmToken: {
       type: String,
-      default: null
+      default: null,
     },
     isActive: { type: Boolean, required: true, default: true },
     isVerified: { type: Boolean, required: true, default: false },

@@ -22,7 +22,6 @@ const {
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
-const checkTokenOnly = require('../middleware/checkToken');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -240,107 +239,77 @@ router.post(
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/VerifyOTP", ...verifyOtpBodyValidator, rejectBadRequests, async (req, res) => {
-  let resp = {};
-  try {
-    const customer = await Customer.findOneAndUpdate(
-      {
-        phone: req?.body?.phone,
-        "otp.code": req?.body?.otp,
-        "otp.status": "active",
-      },
-      { "otp.status": "inactive" },
-      { new: true }
-    );
-
-    if (customer === null) {
-      return res.status(401).json({ message: "Invalid OTP" });
-    }
-
-    if (!customer.isVerified) {
-      // This condition runs when customer login first time
-      const up = await Customer.findOneAndUpdate(
-        { phone: req?.body?.phone },
+router.post(
+  "/VerifyOTP",
+  ...verifyOtpBodyValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    let resp = {};
+    try {
+      const customer = await Customer.findOneAndUpdate(
         {
+          phone: req?.body?.phone,
           "otp.code": req?.body?.otp,
           "otp.status": "active",
-          isVerified: true
         },
+        { "otp.status": "inactive" },
         { new: true }
       );
 
-      // generate customer wallet
-      const isWalletExists = await CustomerWallet.findOne({ customerId: customer?._id });
-      if (!isWalletExists) {
-        const newWallet = new CustomerWallet({ customerId: customer?._id });
-        await newWallet.save();
+      if (customer === null) {
+        return res.status(401).json({ message: "Invalid OTP" });
       }
-    }
 
-    if (!customer.isPublished) {
-      resp["message"] = "Account block contact admin . please wait for approval.";
-    }
+      if (!customer.isVerified) {
+        // This condition runs when customer login first time
+        const up = await Customer.findOneAndUpdate(
+          { phone: req?.body?.phone },
+          {
+            "otp.code": req?.body?.otp,
+            "otp.status": "active",
+            isVerified: true,
+          },
+          { new: true }
+        );
 
-    if (resp.message) {
-      return res.status(500).json({ ...resp });
-    } else {
-      const { accessToken, refreshToken } = tokenService.generateAuthTokens(
-        { _id: customer._id, isPublished: customer.isPublished },
-        process.env.JWT_SECRET_ACCESS_TOKEN
-      );
-      return res.status(200).json({
-        message: "Login successfully",
-        uid: customer._id,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        isApproved: customer.isApproved,
-      });
+        // generate customer wallet
+        const isWalletExists = await CustomerWallet.findOne({
+          customerId: customer?._id,
+        });
+        if (!isWalletExists) {
+          const newWallet = new CustomerWallet({ customerId: customer?._id });
+          await newWallet.save();
+        }
+      }
+
+      if (!customer.isPublished) {
+        resp["message"] =
+          "Account block contact admin . please wait for approval.";
+      }
+
+      if (resp.message) {
+        return res.status(500).json({ ...resp });
+      } else {
+        const { accessToken, refreshToken } = tokenService.generateAuthTokens(
+          { _id: customer._id, isPublished: customer.isPublished },
+          process.env.JWT_SECRET_ACCESS_TOKEN
+        );
+        return res.status(200).json({
+          message: "Login successfully",
+          uid: customer._id,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          isApproved: customer.isApproved,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ message: "Error encountered while trying to verify otp" });
     }
-  } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Error encountered while trying to verify otp" });
   }
-}
 );
-
-
-/**
- * @openapi
- * /Order/{_id}:
- *  get:
- *    summary: used to fetch a specific customer by _id.
- *    tags:
- *    - Customer Routes
- *    parameters:
- *      - in: path
- *        name: _id
- *        required: true
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
- router.get("/:id", checkTokenOnly, async (req, res) => {
-  const id = req.params.id;
-  try {
-    const orders = await Customer.findById(id);
-    return res.status(200).json({ message: "customer details", data: orders });
-  } catch (error) {
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
 
 /**
  * middleware to check if customer has access to perform following actions
@@ -518,49 +487,6 @@ router.get("/", async (req, res) => {
 /**
  * @openapi
  * /customer/address:
- *  get:
- *    summary: gets all the saved addresses for the user.
- *    tags:
- *    - Customer Routes
- *    responses:
- *      200:
- *          description: if successfully found user
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               description: customer details
- *      404:
- *          description: if user not found or auth token not supplied.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-router.get("/address", async (req, res) => {
-  return res.status(200).json(req?.Customer?.address);
-});
-
-/**
- * @openapi
- * /customer/address:
  *  post:
  *    summary: successfully added new address for the user.
  *    tags:
@@ -639,6 +565,49 @@ router.post("/address", async (req, res) => {
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
+});
+
+/**
+ * @openapi
+ * /customer/address:
+ *  get:
+ *    summary: gets all the saved addresses for the user.
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      200:
+ *          description: if successfully found user
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               description: customer details
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/address", async (req, res) => {
+  return res.status(200).json(req?.Customer?.address);
 });
 
 /**
@@ -754,62 +723,65 @@ router.post("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
-  const Customer = req.Customer._id;
-  const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
-  const OrderId = commonFunction.genrateID("ORD");
-  let Amount = 0;
-  let grandTotal = 0;
+router.post(
+  "/create/order",
+  verifyOrderValidator,
+  rejectBadRequests,
+  async (req, res) => {
+    const Customer = req.Customer._id;
+    const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
+    const OrderId = commonFunction.genrateID("ORD");
+    let Amount = 0;
+    let grandTotal = 0;
 
-  Items.map((element) => (Amount += element?.Cost));
-  grandTotal = Amount;
+    Items.map((element) => (Amount += element?.Cost));
+    grandTotal = Amount;
 
-  try {
-    let resp = {};
+    try {
+      let resp = {};
 
-    if (PaymentMode === "cod") {
-      const newOrder = new Order({
-        Customer,
-        OrderId,
-        OrderType,
-        Status: orderStatusTypes[1],
-        PendingAmount: Amount,
-        PaymentStatus: paymentStatus[1],
-        OrderDetails: { Amount, Items },
-        PaymentMode,
-        address,
-        PickUpRequired,
-      });
-      resp = await newOrder.save();
-      // deduct commission from partner
-    } else if (PaymentMode === "online") {
-      // initiate payments process
-      const newOrder = new Order({
-        Customer,
-        OrderId,
-        OrderType,
-        Status: orderStatusTypes[0],
-        PendingAmount: Amount,
-        PaymentStatus: paymentStatus[1],
-        OrderDetails: { Amount, Gradtotal: grandTotal, Items },
-        PaymentMode,
-        address,
-        PickUpRequired,
-      });
-      resp = await newOrder.save();
+      if (PaymentMode === "cod") {
+        const newOrder = new Order({
+          Customer,
+          OrderId,
+          OrderType,
+          Status: orderStatusTypes[1],
+          PendingAmount: Amount,
+          PaymentStatus: paymentStatus[1],
+          OrderDetails: { Amount, Items },
+          PaymentMode,
+          address,
+          PickUpRequired,
+        });
+        resp = await newOrder.save();
+        // deduct commission from partner
+      } else if (PaymentMode === "online") {
+        // initiate payments process
+        const newOrder = new Order({
+          Customer,
+          OrderId,
+          OrderType,
+          Status: orderStatusTypes[0],
+          PendingAmount: Amount,
+          PaymentStatus: paymentStatus[1],
+          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
+          PaymentMode,
+          address,
+          PickUpRequired,
+        });
+        resp = await newOrder.save();
+      }
+
+      // send notifications to all partners
+
+      return res
+        .status(200)
+        .json({ message: "Orders created successfully.", newOrder: resp });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Error encountered." });
     }
-
-    // send notifications to all partners
-
-
-    return res
-      .status(200)
-      .json({ message: "Orders created successfully.", newOrder: resp });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
   }
-}
 );
 
 /**

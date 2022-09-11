@@ -606,6 +606,7 @@ router.get("/myprofile", async (req, res) => {
 
     return res.status(200).json({ message: "user profile.", data: profile });
   } catch (error) {
+    console.log(error)
     return res
       .status(500)
       .json({ message: "Error encountered while trying to fetching profile." });
