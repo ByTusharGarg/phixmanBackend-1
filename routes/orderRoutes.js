@@ -1,6 +1,6 @@
 const { orderStatusTypes } = require("../enums/types");
-const { checkAdmin } = require('../middleware/AuthAdmin');
-const checkTokenOnly = require('../middleware/checkToken');
+const { checkAdmin } = require("../middleware/AuthAdmin");
+const checkTokenOnly = require("../middleware/checkToken");
 const { Order, Counters } = require("../models");
 const router = require("express").Router();
 
@@ -35,7 +35,6 @@ router.get("/Bulk", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /Order/{OrderId}:
@@ -63,7 +62,7 @@ router.get("/Bulk", async (req, res) => {
  *    - bearerAuth: []
  */
 
-router.get("/:id", checkTokenOnly, async (req, res) => {
+router.get("/:id", async (req, res) => {
   const OrderId = req.params.id;
   try {
     const orders = await Order.findOne({ OrderId });
@@ -114,21 +113,20 @@ router.get("/status/:status/:partnerId?", checkAdmin, async (req, res) => {
     return res.status(400).json({ message: "status or partner id required" });
   }
 
-  if (status !== 'all' && !orderStatusTypes.includes(status)) {
+  if (status !== "all" && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
 
   let query = {};
 
-  if (status === 'all') {
-    query = {}
-  }
-  else if (status !== 'all') {
-    query = { Status: status }
+  if (status === "all") {
+    query = {};
+  } else if (status !== "all") {
+    query = { Status: status };
   }
 
   if (partnerId) {
-    query = { ...query, Partner: partnerId }
+    query = { ...query, Partner: partnerId };
   }
 
   try {
@@ -139,7 +137,5 @@ router.get("/status/:status/:partnerId?", checkAdmin, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
-
 
 module.exports = router;
