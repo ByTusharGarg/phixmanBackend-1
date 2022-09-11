@@ -11,6 +11,7 @@ const {
   CustomerWallet,
   Product_Service,
   SystemInfo,
+  Model,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -26,6 +27,9 @@ const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
 const { randomImageName, uploadFile } = require("../services/s3-service");
 const { updatePassword } = require("../middleware/AuthAdmin");
+const path = require("path");
+const csv = require('csvtojson');
+const { getParseModels } = require("../libs/commonFunction");
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -172,7 +176,7 @@ router.post("/resetpassword", AdminAuth.resetPassword);
  */
 router.post("/changepassword", AdminAuth.changePassword);
 
-router.use(AdminAuth.checkAdmin);
+// router.use(AdminAuth.checkAdmin);
 
 /**
  * @openapi
@@ -1032,7 +1036,7 @@ router.post("/categories", async (req, res) => {
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
-    req.body.slots = JSON.parse(req.body.slots);
+    req.body.Slots = JSON.parse(req.body.Slots);
     req.body.key = req.body.name.toLowerCase();
     req.body.components = JSON.parse(req.body.components);
     for (let key in req.body) {
@@ -1120,7 +1124,6 @@ router.get("/Features", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /admin/orders/{status}:
@@ -1154,7 +1157,16 @@ router.get("/Features", async (req, res) => {
 router.get("/orders/:status", async (req, res) => {
   let { status } = req.params;
 
-  const allowedStatus = ["all", "Requested", "Accepted", "InRepair", "completed", "Cancelled", "Reshedulled", "Initial"];
+  const allowedStatus = [
+    "all",
+    "Requested",
+    "Accepted",
+    "InRepair",
+    "completed",
+    "Cancelled",
+    "Reshedulled",
+    "Initial",
+  ];
 
   if (!allowedStatus.includes(status)) {
     return res.status(500).json({ message: `${status} status not allowed.` });
@@ -1167,9 +1179,13 @@ router.get("/orders/:status", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find(query).populate("Customer", "phone Name").populate("Partner", "phone Name")
-      .populate("OrderDetails.Items.ServiceId", "modelName").populate("OrderDetails.Items.CategoryId", "name")
-      .populate("OrderDetails.Items.ModelId", "Name").sort({ createdAt: -1 });
+    const orders = await Order.find(query)
+      .populate("Customer", "phone Name")
+      .populate("Partner", "phone Name")
+      .populate("OrderDetails.Items.ServiceId", "modelName")
+      .populate("OrderDetails.Items.CategoryId", "name")
+      .populate("OrderDetails.Items.ModelId", "Name")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json(orders);
   } catch (error) {
@@ -1177,7 +1193,6 @@ router.get("/orders/:status", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -1436,6 +1451,128 @@ router.post("/service", async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "internal server error" });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/ratecard:
+ *  post:
+ *    summary: used to upload models and services
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        multipart/form-data:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                categoryId:
+ *                  type: string
+ *                  required: false
+ *                brandId:
+ *                  type: string
+ *                  required: false
+ *                csvfile:
+ *                  type: file
+ *                  required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.post("/ratecard", async (req, res) => {
+  const { categoryId, brandId } = req.body;
+
+  // if (!categoryId || !brandId) {
+  //   return res.status(500).json({ message: "categoryId brandId are required" });
+  // }
+
+  try {
+    // const isCategoryExists = await category.findById(categoryId);
+
+    // if (!isCategoryExists) {
+    //   return res.status(500).json({ message: "Category not exist" });
+    // }
+
+    // const isBrandExists = await Brand.findById(brandId);
+
+    // if (!isBrandExists) {
+    //   return res.status(500).json({ message: "Brands not exist" });
+    // }
+
+    const file = req.files.csvfile;
+
+    // 1. concat name
+    // 2. insert models
+    // 3. apply validation
+    // 4. insert services
+    // 5. validation
+    // 6. process all data
+
+    if (!file) {
+      return res.status(400).send("No files were uploaded.");
+    }
+
+    let filepath = path.join(__dirname, `../public/csv/${file.name}`);
+
+    file.mv(filepath, async (err) => {
+      try {
+        if (err) {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+
+        const jsonArray = await csv().fromFile(filepath);
+        console.log(jsonArray)
+        // const { modelsArr, services } = getParseModels(
+        //   jsonArray,
+        //   brandId,
+        //   categoryId,
+        //   isBrandExists.Name
+        // );
+
+        // Model.bulkWrite(
+        //   modelsArr.map((ele) => ({
+        //     updateOne: {
+        //       filter: { modelId: ele.modelId },
+        //       update: { $set: ele },
+        //       upsert: true,
+        //     },
+        //   }))
+        // );
+
+        Product_Service.bulkWrite(
+          jsonArray.map((ele) => ({
+            updateOne: {
+              filter: { modelId: ele.modelId },
+              update: { $set: ele },
+              upsert: true,
+            },
+          }))
+        );
+
+        fs.unlinkSync(filepath);
+
+        return res.send({
+          status: "File data uploaded successfully",
+          modelCount: modelsArr.length,
+          servicesCount: services.length,
+        });
+      } catch (error) {}
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 

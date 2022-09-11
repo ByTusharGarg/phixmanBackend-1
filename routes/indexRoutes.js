@@ -1,5 +1,4 @@
 const { param, body } = require("express-validator");
-const path = require("path");
 const { rejectBadRequests } = require("../middleware");
 const { checkAdmin } = require("../middleware/AuthAdmin");
 const {
