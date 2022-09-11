@@ -14,14 +14,14 @@ const router = require("express").Router();
 const csv = require("csvtojson");
 const { getParseModels } = require("../libs/commonFunction");
 const fs = require("fs");
-const { orderTypes } = require("../enums/types");
+const { categoryTypes } = require("../enums/types");
 const checkTokenOnly = require("../middleware/checkToken");
 
 const getServiceParamValidators = [
   param("serviceType")
     .notEmpty()
     .withMessage("service type cannot be empty")
-    .isIn(orderTypes)
+    .isIn(categoryTypes)
     .withMessage("service type is invalid"),
 ];
 
@@ -149,7 +149,7 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *           enum: ["Visit Store","Home Visit","Pick & Drop"]
+ *           enum: ["Home service","Store service","Auto care","Neha’s personal care"]
  *    responses:
  *      200:
  *          description: if successfully fetch all product types.
@@ -215,8 +215,9 @@ router.get(
   async (req, res) => {
     try {
       const products = await category.find({
-        servedAt: req?.params?.serviceType,
+        categoryType: "Home service",
       });
+      console.log(products, req?.params?.serviceType);
       const data = products.map((prod) => {
         prod["modelRequired"] = prod.key === "mobile" ? true : false;
         return prod;

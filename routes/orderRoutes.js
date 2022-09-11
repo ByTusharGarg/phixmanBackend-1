@@ -28,7 +28,12 @@ const router = require("express").Router();
  */
 router.get("/Bulk", async (req, res) => {
   try {
-    const orders = await Order.find();
+    const orders = await Order.find()
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
     return res.status(200).json(orders);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
@@ -65,7 +70,12 @@ router.get("/Bulk", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const OrderId = req.params.id;
   try {
-    const orders = await Order.findOne({ OrderId });
+    const orders = await Order.findOne({ OrderId })
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
     return res.status(200).json({ message: "order details", data: orders });
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });

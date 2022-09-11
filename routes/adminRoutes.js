@@ -949,6 +949,10 @@ router.get("/getpartnertransaction", async (req, res) => {
  *                name:
  *                  type: string
  *                  description: required
+ *                categoryType:
+ *                  type: string
+ *                  description: required
+ *                  enum: ["Home service","Store service","Auto care","Neha’s personal care"]
  *                Terms:
  *                  type: string
  *                  description: required
@@ -1032,11 +1036,11 @@ router.post("/categories", async (req, res) => {
     req.body.key = req.body.name.toLowerCase();
     req.body.components = JSON.parse(req.body.components);
     for (let key in req.body) {
-      if (!req.body[key]) {
+      if (!req?.body[key]) {
         return res.status(404).json({ message: `${key} is missing` });
       }
     }
-    if (!req.files.icon) {
+    if (!req?.files?.icon) {
       return res.status(404).json({ message: "icon is missing" });
     }
     req.body.icon = encodeImage(req.files.icon);
