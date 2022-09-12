@@ -1,6 +1,6 @@
 const { orderStatusTypes } = require("../enums/types");
-const { checkAdmin } = require('../middleware/AuthAdmin');
-const checkTokenOnly = require('../middleware/checkToken');
+const { checkAdmin } = require("../middleware/AuthAdmin");
+const checkTokenOnly = require("../middleware/checkToken");
 const { Order, Counters } = require("../models");
 const router = require("express").Router();
 
@@ -28,13 +28,17 @@ const router = require("express").Router();
  */
 router.get("/Bulk", async (req, res) => {
   try {
-    const orders = await Order.find();
+    const orders = await Order.find()
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
     return res.status(200).json(orders);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -63,10 +67,15 @@ router.get("/Bulk", async (req, res) => {
  *    - bearerAuth: []
  */
 
-router.get("/:id", checkTokenOnly, async (req, res) => {
+router.get("/:id", async (req, res) => {
   const OrderId = req.params.id;
   try {
-    const orders = await Order.findOne({ OrderId });
+    const orders = await Order.findOne({ OrderId })
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
     return res.status(200).json({ message: "order details", data: orders });
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
@@ -114,21 +123,20 @@ router.get("/status/:status/:partnerId?", checkAdmin, async (req, res) => {
     return res.status(400).json({ message: "status or partner id required" });
   }
 
-  if (status !== 'all' && !orderStatusTypes.includes(status)) {
+  if (status !== "all" && !orderStatusTypes.includes(status)) {
     return res.status(400).json({ message: "Invalid status" });
   }
 
   let query = {};
 
-  if (status === 'all') {
-    query = {}
-  }
-  else if (status !== 'all') {
-    query = { Status: status }
+  if (status === "all") {
+    query = {};
+  } else if (status !== "all") {
+    query = { Status: status };
   }
 
   if (partnerId) {
-    query = { ...query, Partner: partnerId }
+    query = { ...query, Partner: partnerId };
   }
 
   try {
@@ -139,7 +147,5 @@ router.get("/status/:status/:partnerId?", checkAdmin, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
-
 
 module.exports = router;

@@ -4,6 +4,7 @@ const Feature = mongoose.model(
   "Feature",
   new Schema({
     Name: { type: String },
+    isDisplayed: { type: Boolean, default: true },
   })
 );
 

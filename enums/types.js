@@ -1,13 +1,15 @@
 const genderTypes = ["male", "female", "non-binary"];
 const userStatusTypes = ["active", "inactive"];
-const partnerTypes = ["store", "individual"];
+const partnerTypes = ["store", "individual","sub-provider"];
 const partnerStatusTypes = ["active", "inactive"];
 const storeStatusTypes = ["active", "inactive"];
-const orderTypes = [
-    "Visit Store",
-    "Home Visit",
-    "Pick & Drop",
-  ];
+const categoryTypes = [
+  "Home service",
+  "Store service",
+  "Auto care",
+  "Neha’s personal care",
+];
+const orderTypes = ["Visit Store", "Home Visit", "Pick & Drop"];
 const orderStatusTypes = [
   "Initial",
   "Requested",
@@ -15,21 +17,21 @@ const orderStatusTypes = [
   "InRepair",
   "completed",
   "Cancelled",
-  "Reshedulled"
+  "Reshedulled",
 ];
 const serviceTypes = [];
-const paymentModeTypes = ["cod","online"];
+const paymentModeTypes = ["cod", "online"];
 const transsactionTypes = ["debit", "credit"];
 const transsactionStatus = ["successful", "pending", "failed"];
-const roles = ["customer","partner","order"]
-const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED","FAILED"];
+const roles = ["customer", "partner", "order"];
+const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED", "FAILED"];
 const acceptedPaymentMethods = ["card", "upi", "app"];
-const transsactionUser = ["partner","customer"];
-const offerPromoType = ["flat","upto"];
-const coupenUserType = ["PARTNER", "CUSTOMER"]
-
+const transsactionUser = ["partner", "customer"];
+const offerPromoType = ["flat", "upto"];
+const coupenUserType = ["PARTNER", "CUSTOMER"];
 
 module.exports = {
+  categoryTypes,
   genderTypes,
   userStatusTypes,
   partnerTypes,

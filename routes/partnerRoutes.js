@@ -262,7 +262,7 @@ router.post(
         resp["message"] = "Account block contact admin manager";
       }
 
-      if (!partner.isProfileCompleted) {
+      if (!partner.isProfileCompleted && partner.Type !== "sub-provider") {
         const docToken = tokenService.generatetempToken({
           _id: partner._id,
           tokenType: "upload_docs_token",
@@ -608,7 +608,7 @@ router.get("/myprofile", async (req, res) => {
 
     return res.status(200).json({ message: "user profile.", data: profile });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res
       .status(500)
       .json({ message: "Error encountered while trying to fetching profile." });
@@ -1019,4 +1019,120 @@ router.post("/order/changestatus", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /partner/createSubProvider:
+ *  post:
+ *    summary: used to verify otp provided by user.
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                phone:
+ *                  type: string
+ *                name:
+ *                  type: string
+ *                categories:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *                email:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createSubProvider", async (req, response) => {
+  try {
+    if (!req?.body?.phone || !req?.body?.name || !req?.body?.categories) {
+      return response.status(404).json({
+        message: "missing required fields",
+      });
+    }
+    const isPartnerExists = await Partner.findOne({ phone: req?.body?.phone });
+    console.log(isPartnerExists);
+    if (isPartnerExists) {
+      return response.status(403).json({
+        message: "partner with this number already exists",
+        type: isPartnerExists.Type,
+      });
+    }
+    const provider = await Partner.create({
+      phone: req?.body?.phone,
+      // uniqueReferralCode: generateRandomReferralCode(),
+      Name: req?.body?.name,
+      Type: "sub-provider",
+      Product_Service: req?.body?.categories,
+      isParent: req?.partner?._id,
+      email: req?.body?.email ? req?.body?.email : "",
+      isVerified: true,
+      isApproved: true,
+      isPublished: true,
+      isProfileCompleted: false,
+      isActive: true,
+    });
+    return response
+      .status(201)
+      .json({ message: "successfully created sub-provider", data: provider });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
 module.exports = router;

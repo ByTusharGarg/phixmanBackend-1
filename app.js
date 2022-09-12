@@ -68,6 +68,7 @@ app.use(
     useTempFiles: false, // flag for use temporary directory for handling file coming through api requests
     tempFileDir: "/tmp/", // temporary directory for handling file coming through api requests
     abortOnLimit: true, // abort api request if the incoming file size is larger then the specified size
+    createParentPath: true
   })
 );
 

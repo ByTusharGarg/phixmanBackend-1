@@ -11,6 +11,8 @@ const {
   CustomerWallet,
   Product_Service,
   SystemInfo,
+  Model,
+  Brand,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -27,6 +29,10 @@ const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
 const { randomImageName, uploadFile } = require("../services/s3-service");
 const { updatePassword } = require("../middleware/AuthAdmin");
+const path = require("path");
+const csv = require("csvtojson");
+const fs = require("fs");
+const { getParseModels } = require("../libs/commonFunction");
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -1062,6 +1068,10 @@ router.get("/getpartnertransaction", async (req, res) => {
  *                name:
  *                  type: string
  *                  description: required
+ *                categoryType:
+ *                  type: string
+ *                  description: required
+ *                  enum: ["Home service","Store service","Auto care","Neha’s personal care"]
  *                Terms:
  *                  type: string
  *                  description: required
@@ -1141,15 +1151,15 @@ router.post("/categories", async (req, res) => {
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
-    req.body.slots = JSON.parse(req.body.slots);
+    req.body.Slots = JSON.parse(req.body.Slots);
     req.body.key = req.body.name.toLowerCase();
     req.body.components = JSON.parse(req.body.components);
     for (let key in req.body) {
-      if (!req.body[key]) {
+      if (!req?.body[key]) {
         return res.status(404).json({ message: `${key} is missing` });
       }
     }
-    if (!req.files.icon) {
+    if (!req?.files?.icon) {
       return res.status(404).json({ message: "icon is missing" });
     }
     req.body.icon = encodeImage(req.files.icon);
@@ -1229,7 +1239,6 @@ router.get("/Features", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /admin/orders/{status}:
@@ -1263,7 +1272,16 @@ router.get("/Features", async (req, res) => {
 router.get("/orders/:status", async (req, res) => {
   let { status } = req.params;
 
-  const allowedStatus = ["all", "Requested", "Accepted", "InRepair", "completed", "Cancelled", "Reshedulled", "Initial"];
+  const allowedStatus = [
+    "all",
+    "Requested",
+    "Accepted",
+    "InRepair",
+    "completed",
+    "Cancelled",
+    "Reshedulled",
+    "Initial",
+  ];
 
   if (!allowedStatus.includes(status)) {
     return res.status(500).json({ message: `${status} status not allowed.` });
@@ -1276,9 +1294,13 @@ router.get("/orders/:status", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find(query).populate("Customer", "phone Name").populate("Partner", "phone Name")
-      .populate("OrderDetails.Items.ServiceId", "modelName").populate("OrderDetails.Items.CategoryId", "name")
-      .populate("OrderDetails.Items.ModelId", "Name").sort({ createdAt: -1 });
+    const orders = await Order.find(query)
+      .populate("Customer", "phone Name")
+      .populate("Partner", "phone Name")
+      .populate("OrderDetails.Items.ServiceId", "modelName")
+      .populate("OrderDetails.Items.CategoryId", "name")
+      .populate("OrderDetails.Items.ModelId", "Name")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json(orders);
   } catch (error) {
@@ -1286,7 +1308,6 @@ router.get("/orders/:status", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -1545,6 +1566,156 @@ router.post("/service", async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "internal server error" });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/ratecard:
+ *  post:
+ *    summary: used to upload models and services
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        multipart/form-data:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                categoryId:
+ *                  type: string
+ *                  required: true
+ *                brandId:
+ *                  type: string
+ *                  required: false
+ *                modelId:
+ *                  type: string
+ *                  required: false
+ *                csvfile:
+ *                  type: file
+ *                  required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.post("/ratecard", async (req, res) => {
+  const { categoryId, brandId, modelId } = req.body;
+
+  if (!categoryId) {
+    return res.status(500).json({ message: "categoryId is required" });
+  }
+
+  try {
+    const isCategoryExists = await category.findById(categoryId);
+
+    if (!isCategoryExists) {
+      return res.status(500).json({ message: "Category not exist" });
+    }
+
+    const file = req?.files?.csvfile;
+    if (!file) {
+      return res.status(400).send("No files were uploaded.");
+    }
+    if (
+      isCategoryExists?.name.toLowerCase() === "mobile" ||
+      isCategoryExists?.name.toLowerCase() === "tablet"
+    ) {
+      if (!modelId || !brandId) {
+        return res.status(500).json({
+          message: "brandid and modelid is required for mobile and tablet",
+        });
+      }
+      let brand = await Brand.findById(brandId);
+      if (!brand) {
+        // brand = await Brand.create({
+        //   Name: item.brand,
+        //   brandId: item.brand.toLowerCase(),
+        // });
+        return res.status(500).json({
+          message: "brandid is invalid",
+        });
+      }
+      let model = await Model.findById(modelId);
+      if (!model) {
+        // model = await Model.create({
+        //   categoryId,
+        //   Name: item.model,
+        //   modelId: item.model.toLowerCase(),
+        //   brandId: brand._id,
+        // });
+        return res.status(500).json({
+          message: "modelid is invalid",
+        });
+      }
+    }
+
+    let filepath = path.join(__dirname, `../public/csv/${file.name}`);
+
+    file.mv(filepath, async (err) => {
+      try {
+        if (err) {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+        const jsonArray = await csv().fromFile(filepath);
+        console.log(jsonArray);
+        let result = await Promise.all(
+          jsonArray.map((item) => {
+            return new Promise(async (resolve, reject) => {
+              try {
+                let obj = {};
+                obj.categoryId = categoryId;
+                obj.serviceName = item["service name"];
+                obj.cost = item.cost;
+                obj.isTrivial = item.isTrivial ? item.isTrivial : true;
+                if (
+                  isCategoryExists?.name.toLowerCase() === "mobile" ||
+                  isCategoryExists?.name.toLowerCase() === "tablet"
+                ) {
+                  obj.modelId = modelId;
+                }
+                let newservice = await Product_Service.findOneAndUpdate(
+                  { serviceName: item["service name"] },
+                  obj,
+                  { upsert: true, new: true }
+                );
+                resolve(newservice);
+              } catch (err) {
+                reject(err);
+              }
+            });
+          })
+        );
+        console.log(result);
+        fs.unlinkSync(filepath);
+
+        return res.send({
+          status: "File data uploaded successfully",
+          // modelCount: modelsArr.length,
+          // servicesCount: services.length,
+        });
+      } catch (error) {
+        console.log(error);
+        return res
+          .status(500)
+          .json({ message: "Error while processing file." });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 

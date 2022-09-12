@@ -625,7 +625,7 @@ router.get("/address", async (req, res) => {
  *              properties:
  *                OrderType:
  *                  type: string
- *                  enum: [InStore, Home]
+ *                  enum: ["Visit Store", "Home Visit", "Pick & Drop"]
  *                timeSlot:
  *                  type: object
  *                  properties:
@@ -898,7 +898,12 @@ router.get("/myorders/:status", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find(query);
+    const orders = await Order.find(query)
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
     return res.status(200).json(orders);
   } catch (error) {
     console.log(error);

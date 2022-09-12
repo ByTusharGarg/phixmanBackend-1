@@ -1,11 +1,12 @@
 const mongoose = require("mongoose");
-const { orderTypes } = require("../enums/types");
+const { orderTypes, categoryTypes } = require("../enums/types");
 const Schema = mongoose.Schema;
 const categorySchema = new mongoose.Schema({
   video: String,
   icon: String,
   name: { type: String, unique: true },
   key: String,
+  categoryType: { type: String, enum: categoryTypes, default: "Home service" },
   servedAt: [{ type: String, enum: orderTypes }],
   components: [String],
   Terms: String,
