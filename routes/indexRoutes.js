@@ -69,7 +69,7 @@ router.get("/getCustomerByID/:id", async (req, res) => {
  * @openapi
  * /getSubProvidersByStoreID/{_id}:
  *  get:
- *    summary: used to fetch a specific customer by _id.
+ *    summary: used to fetch list of sub providers by store id.
  *    tags:
  *    - Index Routes
  *    parameters:
