@@ -16,6 +16,7 @@ const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
 const commonFunction = require("../utils/commonFunction");
+const { trim, escapeRegExp } = require('lodash');
 const {
   paymentStatus,
   orderStatusTypes,
@@ -172,7 +173,119 @@ router.post("/resetpassword", AdminAuth.resetPassword);
  */
 router.post("/changepassword", AdminAuth.changePassword);
 
+
+
 router.use(AdminAuth.checkAdmin);
+
+/**
+ * @openapi
+ * /admin/partner/search?q=???:
+ *  get:
+ *    summary: This route is used to search partner by city
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get('/partner/search', async (req, res) => {
+  let q = req.query.q;
+
+  if (q.length < 3) {
+    return res.status(400).json({ status: true, message: 'Should be grater then 3' });
+  }
+  q = trim(q);
+
+  let isPublished = true;
+
+  try {
+    const regex = new RegExp(escapeRegExp(q), 'gi');
+
+    const data = await Partner.find({
+      $and: [
+        {
+          $or: [{ "address.city": regex }]
+        }
+      ], isPublished
+    }).sort({
+      'createdAt': '-1'
+    }).limit(20).select("phone Name");
+
+    return res.status(200).json({ status: true, message: "partner lists", data })
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while searching partners",
+    });
+  }
+});
+
+
+/**
+ * @openapi
+ * /admin/customer/search?q=???:
+ *  get:
+ *    summary: This route admin can used to search customer by number
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get('/customer/search', async (req, res) => {
+  let q = req.query.q;
+
+  if (q.length < 3) {
+    return res.status(400).json({ status: true, message: 'Should be grater then 3' });
+  }
+  q = trim(q);
+
+  let isPublished = true;
+
+  try {
+    const regex = new RegExp(escapeRegExp(q), 'gi');
+
+    const data = await Customer.find({
+      $and: [
+        {
+          $or: [{ phone: regex }]
+        }
+      ], isPublished
+    }).sort({
+      'createdAt': '-1'
+    }).limit(20).select("phone Name address");
+
+    return res.status(200).json({ status: true, message: "customer lists", data })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while searching partners",
+    });
+  }
+});
 
 /**
  * @openapi

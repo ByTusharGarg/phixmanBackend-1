@@ -7,6 +7,7 @@ const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypes } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
+
 const {
   base64_encode,
   generateRandomReferralCode,
@@ -509,6 +510,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
         }
       })
     );
+    // console.log(JSON.parse(address));
     const resp = await Partner.findByIdAndUpdate(
       _id,
       {
@@ -938,6 +940,9 @@ router.post("/order/acceptorder", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
+
 
 /**
  * @openapi

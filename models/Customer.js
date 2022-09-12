@@ -4,7 +4,11 @@ const Schema = mongoose.Schema;
 const Customer = mongoose.model(
   "Customer",
   new Schema({
-    Name: String,
+    Name: {
+      type: String,
+      trim: true,
+      index: true
+    },
     email: {
       type: String,
     },
