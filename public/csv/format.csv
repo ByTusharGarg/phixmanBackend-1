@@ -1,0 +1,3 @@
+service name, cost, isTrivial
+ac checkup,500,true
+ac gas refill,1500,true
