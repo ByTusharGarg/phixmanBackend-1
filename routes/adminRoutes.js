@@ -12,6 +12,7 @@ const {
   Product_Service,
   SystemInfo,
   Model,
+  Brand,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -28,7 +29,8 @@ const { makePartnerTranssaction } = require("./walletRoute");
 const { randomImageName, uploadFile } = require("../services/s3-service");
 const { updatePassword } = require("../middleware/AuthAdmin");
 const path = require("path");
-const csv = require('csvtojson');
+const csv = require("csvtojson");
+const fs = require("fs");
 const { getParseModels } = require("../libs/commonFunction");
 
 const verifyOrderValidator = [
@@ -176,7 +178,7 @@ router.post("/resetpassword", AdminAuth.resetPassword);
  */
 router.post("/changepassword", AdminAuth.changePassword);
 
-// router.use(AdminAuth.checkAdmin);
+router.use(AdminAuth.checkAdmin);
 
 /**
  * @openapi
@@ -1469,8 +1471,11 @@ router.post("/service", async (req, res) => {
  *              properties:
  *                categoryId:
  *                  type: string
- *                  required: false
+ *                  required: true
  *                brandId:
+ *                  type: string
+ *                  required: false
+ *                modelId:
  *                  type: string
  *                  required: false
  *                csvfile:
@@ -1488,39 +1493,59 @@ router.post("/service", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 
 router.post("/ratecard", async (req, res) => {
-  const { categoryId, brandId } = req.body;
+  const { categoryId, brandId, modelId } = req.body;
 
-  // if (!categoryId || !brandId) {
-  //   return res.status(500).json({ message: "categoryId brandId are required" });
-  // }
+  if (!categoryId) {
+    return res.status(500).json({ message: "categoryId is required" });
+  }
 
   try {
-    // const isCategoryExists = await category.findById(categoryId);
+    const isCategoryExists = await category.findById(categoryId);
 
-    // if (!isCategoryExists) {
-    //   return res.status(500).json({ message: "Category not exist" });
-    // }
+    if (!isCategoryExists) {
+      return res.status(500).json({ message: "Category not exist" });
+    }
 
-    // const isBrandExists = await Brand.findById(brandId);
-
-    // if (!isBrandExists) {
-    //   return res.status(500).json({ message: "Brands not exist" });
-    // }
-
-    const file = req.files.csvfile;
-
-    // 1. concat name
-    // 2. insert models
-    // 3. apply validation
-    // 4. insert services
-    // 5. validation
-    // 6. process all data
-
+    const file = req?.files?.csvfile;
     if (!file) {
       return res.status(400).send("No files were uploaded.");
+    }
+    if (
+      isCategoryExists?.name.toLowerCase() === "mobile" ||
+      isCategoryExists?.name.toLowerCase() === "tablet"
+    ) {
+      if (!modelId || !brandId) {
+        return res.status(500).json({
+          message: "brandid and modelid is required for mobile and tablet",
+        });
+      }
+      let brand = await Brand.findById(brandId);
+      if (!brand) {
+        // brand = await Brand.create({
+        //   Name: item.brand,
+        //   brandId: item.brand.toLowerCase(),
+        // });
+        return res.status(500).json({
+          message: "brandid is invalid",
+        });
+      }
+      let model = await Model.findById(modelId);
+      if (!model) {
+        // model = await Model.create({
+        //   categoryId,
+        //   Name: item.model,
+        //   modelId: item.model.toLowerCase(),
+        //   brandId: brand._id,
+        // });
+        return res.status(500).json({
+          message: "modelid is invalid",
+        });
+      }
     }
 
     let filepath = path.join(__dirname, `../public/csv/${file.name}`);
@@ -1531,44 +1556,49 @@ router.post("/ratecard", async (req, res) => {
           console.log(err);
           return res.status(500).send(err);
         }
-
         const jsonArray = await csv().fromFile(filepath);
-        console.log(jsonArray)
-        // const { modelsArr, services } = getParseModels(
-        //   jsonArray,
-        //   brandId,
-        //   categoryId,
-        //   isBrandExists.Name
-        // );
-
-        // Model.bulkWrite(
-        //   modelsArr.map((ele) => ({
-        //     updateOne: {
-        //       filter: { modelId: ele.modelId },
-        //       update: { $set: ele },
-        //       upsert: true,
-        //     },
-        //   }))
-        // );
-
-        Product_Service.bulkWrite(
-          jsonArray.map((ele) => ({
-            updateOne: {
-              filter: { modelId: ele.modelId },
-              update: { $set: ele },
-              upsert: true,
-            },
-          }))
+        console.log(jsonArray);
+        let result = await Promise.all(
+          jsonArray.map((item) => {
+            return new Promise(async (resolve, reject) => {
+              try {
+                let obj = {};
+                obj.categoryId = categoryId;
+                obj.serviceName = item["service name"];
+                obj.cost = item.cost;
+                obj.isTrivial = item.isTrivial ? item.isTrivial : true;
+                if (
+                  isCategoryExists?.name.toLowerCase() === "mobile" ||
+                  isCategoryExists?.name.toLowerCase() === "tablet"
+                ) {
+                  obj.modelId = modelId;
+                }
+                let newservice = await Product_Service.findOneAndUpdate(
+                  { serviceName: item["service name"] },
+                  obj,
+                  { upsert: true, new: true }
+                );
+                resolve(newservice);
+              } catch (err) {
+                reject(err);
+              }
+            });
+          })
         );
-
+        console.log(result);
         fs.unlinkSync(filepath);
 
         return res.send({
           status: "File data uploaded successfully",
-          modelCount: modelsArr.length,
-          servicesCount: services.length,
+          // modelCount: modelsArr.length,
+          // servicesCount: services.length,
         });
-      } catch (error) {}
+      } catch (error) {
+        console.log(error);
+        return res
+          .status(500)
+          .json({ message: "Error while processing file." });
+      }
     });
   } catch (error) {
     console.log(error);
