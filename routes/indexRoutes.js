@@ -8,6 +8,7 @@ const {
   Model,
   Product_Service,
   SystemInfo,
+  Partner,
 } = require("../models");
 const router = require("express").Router();
 const fs = require("fs");
@@ -53,14 +54,47 @@ router.get("/", (_, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
 router.get("/getCustomerByID/:id", async (req, res) => {
   const id = req.params.id;
   try {
     const orders = await Customer.findById(id);
     return res.status(200).json({ message: "customer details", data: orders });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /getSubProvidersByStoreID/{_id}:
+ *  get:
+ *    summary: used to fetch a specific customer by _id.
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/getSubProvidersByStoreID/:_id", async (req, res) => {
+  try {
+    let providers = await Partner.find({ isParent: req?.params?._id }).populate(
+      "Product_Service"
+    );
+    return res.status(200).json(providers);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
@@ -578,10 +612,8 @@ router.get("/services/:categoryId/:modelid", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
-router.put("/:id", checkAdmin, async (req, res) => {
+router.put("/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const order = await Product_Service.findByIdAndUpdate(id, req.body, {
