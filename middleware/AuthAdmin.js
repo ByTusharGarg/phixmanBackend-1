@@ -2,7 +2,7 @@ const { isEmpty, trim, isEmail, isStrong } = require("../libs/checkLib");
 const { hashpassword, comparePasswordSync } = require("../libs/passwordLib");
 const jwt = require("jsonwebtoken");
 const { Admin, Counters } = require("../models");
-const { commonMailFunctionToAll } = require('../libs/mailer/mailLib');
+const { commonMailFunctionToAll } = require("../libs/mailer/mailLib");
 
 const registerAdmin = async (req, res) => {
   req.body.name = trim(req?.body?.name);
@@ -69,6 +69,10 @@ const adminLogin = (req, res) => {
             success: true,
             message: "Authentication successful!",
             token: token,
+            user: {
+              name: admin.Name,
+              email: admin.email,
+            },
           });
         } else {
           return res.status(401).json({
@@ -129,7 +133,7 @@ const resetPassword = async (req, res) => {
   if (!email) {
     return res.status(400).json({
       message: "email required",
-    })
+    });
   }
 
   try {
@@ -143,19 +147,28 @@ const resetPassword = async (req, res) => {
         process.env.CHNAGE_PASSWORD_SECRET,
         {
           expiresIn: "8hr", // expires in 24 hours
-        });
-
+        }
+      );
+      console.log(process.env.ADMIN_UI_URL);
       url = `${process.env.ADMIN_UI_URL}/resetpassword/${token}`;
       // send Email
 
-      const data = { url: url, Subject: "[Phixman] Password Reset E-mail", email: resp.email, name: resp.Name ? resp.Name : "Dear" };
+      const data = {
+        url: url,
+        Subject: "[Phixman] Password Reset E-mail",
+        email: resp.email,
+        name: resp.Name ? resp.Name : "Dear",
+      };
       commonMailFunctionToAll(data, "resetpassword");
+      return res.status(200).json({
+        success: true,
+        message:
+          "Reset password instructions sent on your mail successfully valid till 8hr",
+        url,
+      });
     }
-
-    return res.status(200).json({
-      success: true,
-      message: "Reset password instructions sent on your mail successfully valid till 8hr",
-      url
+    return res.status(403).json({
+      message: "User not Found",
     });
   } catch (error) {
     console.log(error);
@@ -163,7 +176,7 @@ const resetPassword = async (req, res) => {
       message: "Try again later !!!",
     });
   }
-}
+};
 
 const changePassword = async (req, res) => {
   const { token, newpassword } = req.body;
@@ -171,16 +184,19 @@ const changePassword = async (req, res) => {
   if (!newpassword || !token) {
     return res.status(400).json({
       message: "token newpassword required",
-    })
+    });
   }
 
   try {
-
     const data = await jwt.verify(token, process.env.CHNAGE_PASSWORD_SECRET);
 
     if (data) {
-      if (data.type === 'admin') {
-        const resp = await Admin.findOneAndUpdate({ email: data.email }, { password: hashpassword(newpassword) }, { new: true });
+      if (data.type === "admin") {
+        const resp = await Admin.findOneAndUpdate(
+          { email: data.email },
+          { password: hashpassword(newpassword) },
+          { new: true }
+        );
         if (resp) {
           return res.status(200).json({
             message: "Password Changed successfully",
@@ -188,41 +204,44 @@ const changePassword = async (req, res) => {
         } else {
           return res.status(404).json({
             message: "Token expired or invalid",
-          })
+          });
         }
       }
     } else {
       return res.status(500).json({
         message: "Token expired or invalid",
-      })
+      });
     }
   } catch (error) {
     return res.status(500).json({
       message: "Token expired or invalid",
-    })
+    });
   }
-}
-
+};
 
 const updatePassword = async (req, res) => {
   const { newpassword } = req.body;
   if (!newpassword) {
     return res.status(400).json({
       message: "newpassword required",
-    })
+    });
   }
 
   const _id = req.admin._id;
 
   try {
-    const resp = await Admin.findByIdAndUpdate(_id, { password: hashpassword(newpassword) }, { new: true });
+    const resp = await Admin.findByIdAndUpdate(
+      _id,
+      { password: hashpassword(newpassword) },
+      { new: true }
+    );
     return res.status(404).json({ message: "Password Changed successfully" });
   } catch (error) {
     return res.status(500).json({
       message: "Token expired or invalid",
-    })
+    });
   }
-}
+};
 
 module.exports = {
   adminLogin,
@@ -230,5 +249,5 @@ module.exports = {
   registerAdmin,
   changePassword,
   resetPassword,
-  updatePassword
+  updatePassword,
 };
