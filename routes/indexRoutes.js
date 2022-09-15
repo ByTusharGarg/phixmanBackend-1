@@ -25,7 +25,7 @@ const getServiceParamValidators = [
 
 router.get("/", (_, res) => {
   return res.send(
-    `<code>Server is running at PORT:${process.env.PORT}. Please refer to the api documentation <a href="/api-docs">here</a></code>`
+    `<code>Server is running at PORT:${process.env.PORT}. Please refer to the api documentation <a href="http://phixman.in/api/docs">here</a></code>`
   );
 });
 
