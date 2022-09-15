@@ -49,7 +49,7 @@ const options = {
 };
 
 const docs = swaggerJsdoc(options);
-app.use("/api-docs", swaggerUiExpress.serve, swaggerUiExpress.setup(docs));
+app.use("/docs", swaggerUiExpress.serve, swaggerUiExpress.setup(docs));
 
 //data Parsers
 app.use(
