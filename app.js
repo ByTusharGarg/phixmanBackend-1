@@ -44,6 +44,16 @@ const options = {
         },
       },
     },
+    servers: [
+      {
+        url: "http://localhost:8000/",
+        name: "localhost",
+      },
+      {
+        url: "http://phixman.in/api/",
+        name: "UAT server",
+      },
+    ],
   },
   apis: ["./routes/*.js"], // files containing annotations as above
 };
@@ -68,7 +78,7 @@ app.use(
     useTempFiles: false, // flag for use temporary directory for handling file coming through api requests
     tempFileDir: "/tmp/", // temporary directory for handling file coming through api requests
     abortOnLimit: true, // abort api request if the incoming file size is larger then the specified size
-    createParentPath: true
+    createParentPath: true,
   })
 );
 
@@ -106,8 +116,6 @@ app.use("/coupen", router?.coupenRoutes);
 app.use("/notification", router?.notificationRoutes);
 app.use("/feedback", router?.feedbackRoutes);
 
-
-
 // const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {
   if (err) {
@@ -115,4 +123,3 @@ app.listen(process.env.PORT, function (err) {
   }
   console.log("Express Server Running at PORT: " + process.env.PORT);
 });
-
