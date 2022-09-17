@@ -7,15 +7,14 @@ const Customer = mongoose.model(
     Name: {
       type: String,
       trim: true,
-      index: true
+      index: true,
+      default: "",
     },
-    email: {
-      type: String,
-    },
+    email: { type: String, default: "" },
     phone: { type: String, required: true, unique: true },
-    Password: { type: String },
-    image: { type: String },
-    gender: { type: String, enum: genderTypes },
+    Password: { type: String, default: "" },
+    image: { type: String, default: "" },
+    gender: { type: String, enum: genderTypes, default: null },
     otp: {
       code: {
         type: String,
