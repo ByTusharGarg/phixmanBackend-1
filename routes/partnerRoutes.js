@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Partner, Wallet, Order } = require("../models");
+const { Partner, Wallet, Order, orderMetaData } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypes } = require("../enums/types");
 const tokenService = require("../services/token-service");
@@ -942,6 +942,142 @@ router.post("/order/acceptorder", async (req, res) => {
 });
 
 
+/**
+ * @openapi
+ * /partner/order/acceptorder:
+ *  post:
+ *    summary: using this route partner can accept order
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/forms/:orderId/:type", async (req, res) => {
+  let { type, orderId } = req.params;
+
+  const partnerId = req.partner._id;
+  let { jobcard, checkin } = req.body;
+
+  let images = [];
+
+
+
+  // let daojioj = { key: "component", value: ["ishiss", "jiiji"] }
+
+
+  // checkin.push(daojioj);
+
+  const { phoneImages, selfieWithproduct, signature, helpers } = req.files;
+
+  if (!type || !orderId) {
+    return res.status(500).json({ message: "type or orderId must be provided" });
+  }
+
+  // if (jobcard.length === 0) {
+  //   return res.status(500).json({ message: "Data is not provided" });
+  // }
+
+  if (!["jobcard", "checkin"].includes(type)) {
+    return res.status(500).json({ message: "type should be jobCard or checkin" });
+  }
+
+  if (signature) {
+    let sign = randomImageName();
+    images.push({ ...signature, fileName: sign });
+    jobcard.push({ key: "signature", value: sign })
+  }
+  if (selfieWithproduct) {
+    let selfieP = randomImageName();
+    images.push({ ...selfieWithproduct, fileName: selfieP });
+    jobcard.push({ key: "selfieWithproduct", value: selfieP })
+  }
+
+  if (phoneImages && phoneImages.length > 0) {
+    let value = [];
+    phoneImages.map((file, i) => {
+      let pName = randomImageName();
+      images.push({ ...file, fileName: pName });
+      value.push(pName);
+    })
+    jobcard.push({ key: "phoneImages", value })
+  }
+
+
+  if (helpers && Chelpers.length > 0) {
+    let value = [];
+    helpers.map((file, i) => {
+      let pName = randomImageName();
+      images.push({ ...file, fileName: pName });
+      value.push(pName);
+    })
+    jobcard.push({ key: "helpers", value })
+  }
+
+
+  try {
+    const isFormExists = await orderMetaData.findOne({ orderId });
+    if (isFormExists) {
+      if (type === "jobcard") {
+        return res.status(500).json({ message: "Jobcard allready exists plese delete previous one" });
+      }
+
+      await orderMetaData.findOneAndUpdate({ orderId }, { checkIn: checkin }, { new: true });
+      return res.status(200).json({ message: "phone checkin successfully" });
+    }
+
+
+    if (images.length > 0) {
+      await Promise.all(
+        images.map((file, i) => {
+          if (file) {
+            return uploadFile(file.data, file.fileName, file.mimetype);
+          } else {
+            return;
+          }
+        })
+      );
+    }
+
+    const order = await Order.findOne({ _id: orderId, Partner: partnerId })
+      .populate("OrderDetails.Items[0].ServiceId");
+
+    if (!order) {
+      return res.status(500).json({ message: "order not exists or associated" });
+    }
+
+    const newData = new orderMetaData({ orderId, jobCard: jobcard });
+    await newData.save();
+
+    if (order.Status === orderStatusTypes[2]) {
+      await Order.findByIdAndUpdate(orderId,
+        { Status: orderStatusTypes[3] },
+        { new: true }
+      );
+    }
+    return res.status(200).json({ message: "Job card created successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 
 /**

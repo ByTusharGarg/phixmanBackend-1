@@ -19,6 +19,8 @@ const SystemInfo = require("./SystemInfo");
 
 const Notification = require("./Notification");
 const Feedback = require("./feedback");
+const orderMetaData = require("./OrderMetadata");
+
 
 
 module.exports = {
@@ -41,4 +43,5 @@ module.exports = {
   Feedback,
   Notification,
   SystemInfo,
+  orderMetaData,
 };

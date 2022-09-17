@@ -9,7 +9,7 @@ const categorySchema = new mongoose.Schema({
   categoryType: { type: String, enum: categoryTypes, default: "Home service" },
   servedAt: [{ type: String, enum: orderTypes }],
   components: [String],
-  Terms: String,
+  Terms: { type: String, default: null },
   forms: [
     {
       name: String,
