@@ -3,12 +3,12 @@ const Admin = mongoose.model(
   "Admin",
   new mongoose.Schema({
     Sno: Number,
-    Name: String,
+    Name: { type: String, default: "" },
     email: {
       type: String,
       unique: true,
     },
-    password: String,
+    password: { type: String, default: "" },
     isActive: {
       type: Boolean,
       required: true,

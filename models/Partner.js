@@ -9,8 +9,8 @@ const Partner = mongoose.model(
   "Partner",
   new Schema({
     Sno: String,
-    Name: String,
-    Dob: Date,
+    Name: { type: String, default: "" },
+    Dob: { type: Date, default: null },
     Type: {
       type: String,
       enum: partnerTypes,
@@ -26,12 +26,13 @@ const Partner = mongoose.model(
     secondaryNumber: { type: String, default: null },
     email: {
       type: String,
+      default: "",
     },
     refreshToken: {
       type: String,
       default: null,
     },
-    password: { type: String },
+    password: { type: String, default: "" },
     otp: {
       code: {
         type: String,
@@ -58,7 +59,7 @@ const Partner = mongoose.model(
     },
     fcmToken: {
       type: String,
-      default: null
+      default: null,
     },
     address: {
       street: String,
