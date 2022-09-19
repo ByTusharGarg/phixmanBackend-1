@@ -19,7 +19,12 @@ const getServiceParamValidators = [
   param("serviceType")
     .notEmpty()
     .withMessage("service type cannot be empty")
-    .isIn(categoryTypes)
+    .isIn([
+      "Home_service",
+      "Store_service",
+      "Auto_care",
+      "Neha’s_personal_care",
+    ])
     .withMessage("service type is invalid"),
 ];
 
@@ -180,7 +185,7 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *           enum: ["Home service","Store service","Auto care","Neha’s personal care"]
+ *           enum: ["Home_service","Store_service","Auto_care","Neha’s_personal_care"]
  *    responses:
  *      200:
  *          description: if successfully fetch all product types.
@@ -245,18 +250,19 @@ router.get(
   rejectBadRequests,
   async (req, res) => {
     try {
+      req.params.serviceType = req?.params?.serviceType.replace("_", " ");
       const products = await category
         .find({
-          categoryType: "Home service",
+          categoryType: req?.params?.serviceType,
         })
         .populate("forms.features");
-      console.log(products, req?.params?.serviceType);
       const data = products.map((prod) => {
         prod["modelRequired"] = prod.key === "mobile" ? true : false;
         return prod;
       });
       return res.status(200).json(data);
     } catch (error) {
+      console.log(error);
       return res.status(500).json({ message: "Error encountered." });
     }
   }
