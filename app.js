@@ -17,6 +17,10 @@ const connect = require("./connect");
 // Configure Express app.
 const app = Express();
 
+// setting template engin
+app.set('view engine', 'ejs');
+
+
 // swagger documentation
 
 const options = {

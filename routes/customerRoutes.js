@@ -22,6 +22,9 @@ const {
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
+const pdf = require('pdf-creator-node');
+const fs = require('fs');
+const path = require('path');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -314,6 +317,58 @@ router.post(
 /**
  * middleware to check if customer has access to perform following actions
  */
+router.get('/generatepdf', async (req, res, next) => {
+  
+  const html = fs.readFileSync(path.join(__dirname, '../libs/mailer/template/invoice.html'), 'utf-8');
+
+  const filename = Math.random() + '_doc' + '.pdf';
+
+  let array = [
+    { serviceName: "kijikjsj" },
+    { serviceName: "okoko" },
+    { serviceName: "kijikdokdojsj" },
+  ];
+
+  const obj = {
+    prodlist: array,
+  }
+
+  const document = {
+    html: html,
+    data: {
+      products: obj
+    },
+    path: './docs/' + filename
+  }
+  let options = {
+    formate: 'A3',
+    orientation: 'portrait',
+    border: '2mm',
+    header: {
+      height: '15mm',
+      contents: '<h4 style=" color: red;font-size:20;font-weight:800;text-align:center;">CUSTOMER INVOICE</h4>'
+    },
+    footer: {
+      height: '20mm',
+      contents: {
+        first: 'Cover page',
+        2: 'Second page',
+        default: 'div style="float: right;">Signature of supplier/authorized representative</div>',
+        last: 'Last Page'
+      }
+    }
+  }
+
+  pdf.create(document, options)
+    .then(res => {
+      console.log(res);
+    }).catch(error => {
+      console.log(error);
+    });
+
+  return res.status(200).json({ message: "pdf generated successfully" });
+})
+
 router.use(checkCustomer);
 
 /**
@@ -910,5 +965,7 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
 
 module.exports = router;
