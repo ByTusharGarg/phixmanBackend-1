@@ -160,7 +160,9 @@ router.get("/getSubProvidersByStoreID/:_id", async (req, res) => {
  */
 router.get("/categories", rejectBadRequests, async (req, res) => {
   try {
-    const products = await category.find().populate("forms.features");
+    const products = await category
+      .find({ isDeleted: false })
+      .populate("forms.features");
     const data = products.map((prod) => {
       prod["modelRequired"] = prod.key === "mobile" ? true : false;
       return prod;
@@ -254,6 +256,7 @@ router.get(
       const products = await category
         .find({
           categoryType: req?.params?.serviceType,
+          isDeleted: false,
         })
         .populate("forms.features");
       const data = products.map((prod) => {
@@ -408,7 +411,10 @@ router.post("/models", async (req, res) => {
       return res.status(500).json({ message: "Brands not exist" });
     }
 
-    const isCategoryExists = await category.findById(categoryId);
+    const isCategoryExists = await category.findById({
+      _id: categoryId,
+      isDeleted: false,
+    });
 
     if (!isCategoryExists) {
       return res.status(500).json({ message: "Category not exist" });
