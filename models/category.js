@@ -28,6 +28,7 @@ const categorySchema = new mongoose.Schema({
   LeadExpense: Number,
   companyComissionPercentage: Number,
   enabled: { type: Boolean, default: true },
+  isDeleted: { type: Boolean, default: false },
 });
 
 const category = mongoose.model("category", categorySchema);

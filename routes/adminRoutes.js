@@ -18,7 +18,7 @@ const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
 const commonFunction = require("../utils/commonFunction");
-const { trim, escapeRegExp } = require('lodash');
+const { trim, escapeRegExp } = require("lodash");
 const {
   paymentStatus,
   orderStatusTypes,
@@ -179,8 +179,6 @@ router.post("/resetpassword", AdminAuth.resetPassword);
  */
 router.post("/changepassword", AdminAuth.changePassword);
 
-
-
 router.use(AdminAuth.checkAdmin);
 
 /**
@@ -206,37 +204,44 @@ router.use(AdminAuth.checkAdmin);
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get('/partner/search', async (req, res) => {
+router.get("/partner/search", async (req, res) => {
   let q = req.query.q;
 
   if (q.length < 3) {
-    return res.status(400).json({ status: true, message: 'Should be grater then 3' });
+    return res
+      .status(400)
+      .json({ status: true, message: "Should be grater then 3" });
   }
   q = trim(q);
 
   let isPublished = true;
 
   try {
-    const regex = new RegExp(escapeRegExp(q), 'gi');
+    const regex = new RegExp(escapeRegExp(q), "gi");
 
     const data = await Partner.find({
       $and: [
         {
-          $or: [{ "address.city": regex }]
-        }
-      ], isPublished
-    }).sort({
-      'createdAt': '-1'
-    }).limit(20).select("phone Name");
+          $or: [{ "address.city": regex }],
+        },
+      ],
+      isPublished,
+    })
+      .sort({
+        createdAt: "-1",
+      })
+      .limit(20)
+      .select("phone Name");
 
-    return res.status(200).json({ status: true, message: "partner lists", data })
+    return res
+      .status(200)
+      .json({ status: true, message: "partner lists", data });
   } catch (error) {
     return res.status(500).json({
       message: "Error encountered while searching partners",
     });
   }
 });
-
 
 /**
  * @openapi
@@ -261,30 +266,38 @@ router.get('/partner/search', async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get('/customer/search', async (req, res) => {
+router.get("/customer/search", async (req, res) => {
   let q = req.query.q;
 
   if (q.length < 3) {
-    return res.status(400).json({ status: true, message: 'Should be grater then 3' });
+    return res
+      .status(400)
+      .json({ status: true, message: "Should be grater then 3" });
   }
   q = trim(q);
 
   let isPublished = true;
 
   try {
-    const regex = new RegExp(escapeRegExp(q), 'gi');
+    const regex = new RegExp(escapeRegExp(q), "gi");
 
     const data = await Customer.find({
       $and: [
         {
-          $or: [{ phone: regex }]
-        }
-      ], isPublished
-    }).sort({
-      'createdAt': '-1'
-    }).limit(20).select("phone Name address");
+          $or: [{ phone: regex }],
+        },
+      ],
+      isPublished,
+    })
+      .sort({
+        createdAt: "-1",
+      })
+      .limit(20)
+      .select("phone Name address");
 
-    return res.status(200).json({ status: true, message: "customer lists", data })
+    return res
+      .status(200)
+      .json({ status: true, message: "customer lists", data });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -1176,6 +1189,88 @@ router.post("/categories", async (req, res) => {
 
 /**
  * @openapi
+ * /admin/categories:
+ *  delete:
+ *    summary: deletes categories
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                categories:
+ *                  type: array
+ *                  description: list of unique id of all categories to be deleted
+ *                  items:
+ *                    type: string
+ *                    example: 631c30d420f2e0484031e60f
+ *    responses:
+ *      200:
+ *          description: if successfull fetchs all features for a form available.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: array
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.delete("/categories", async (req, res) => {
+  try {
+    let deleted = await category.updateMany(
+      { _id: { $in: req.body.categories } },
+      { isDeleted: true },
+      { new: true }
+    );
+    return res.status(200).json({ message: "deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
  * /admin/Features:
  *  get:
  *    summary: lists all features for a form available
@@ -1550,7 +1645,10 @@ router.post("/service", async (req, res) => {
     const { categoryId, modelId, serviceName, cost } = req.body;
     if (!categoryId)
       return res.status(404).json({ message: "category is reqiured" });
-    let categorydoc = await category.findOne({ _id: categoryId });
+    let categorydoc = await category.findOne({
+      _id: categoryId,
+      isDeleted: false,
+    });
     if (!categorydoc) {
       return res.status(404).json({ message: "category not found" });
     }
@@ -1618,7 +1716,10 @@ router.post("/ratecard", async (req, res) => {
   }
 
   try {
-    const isCategoryExists = await category.findById(categoryId);
+    const isCategoryExists = await category.findOne({
+      _id: categoryId,
+      isDeleted: false,
+    });
 
     if (!isCategoryExists) {
       return res.status(500).json({ message: "Category not exist" });
