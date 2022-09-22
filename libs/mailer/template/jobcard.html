@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&family=Nunito:wght@400;700&family=Open+Sans:wght@500&family=Poppins:wght@300;400;500;600;700;800&family=Red+Hat+Display:ital,wght@0,300;0,800;1,700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400;1,500;1,700&family=Titillium+Web:wght@600&display=swap"
+        rel="stylesheet">
+</head>
+<style>
+    body {
+        font-family: 'Roboto';
+    }
+
+    .invoice-box {
+        max-width: 800px;
+        margin: auto;
+        padding: 30px;
+        border: 1px solid #eee;
+        box-shadow: 0 0 10px rgba(0, 0, 0, .15);
+        font-size: 16px;
+        line-height: 24px;
+        font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+        color: #555;
+    }
+
+    .invoice-box table tr.heading td {
+        background: #eee;
+        border-bottom: 1px solid #ddd;
+        font-weight: bold;
+    }
+
+    .flex {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .mainIntroBody {
+        display: flex;
+        flex: 1;
+    }
+
+    .mainIntroBody .bodyLeft {
+        width: 50%;
+        border-right: 1px solid black;
+    }
+
+    .mainIntroBody .bodyright {
+        width: 50%;
+    }
+
+
+    .invoice-box table {
+        width: 100%;
+        line-height: inherit;
+        text-align: left;
+    }
+
+    .invoice-box table td {
+        padding: 5px;
+        vertical-align: top;
+    }
+
+    .invoice-box table tr td:nth-child(2) {
+        text-align: right;
+    }
+
+    .invoice-box table tr.top table td {
+        padding-bottom: 20px;
+    }
+
+    .invoice-box table tr.top table td.title {
+        font-size: 45px;
+        line-height: 45px;
+        color: #333;
+    }
+
+    .invoice-box table tr.information table td {
+        padding-bottom: 40px;
+    }
+
+    .invoice-box table tr.heading td {
+        background: #eee;
+        border-bottom: 1px solid #ddd;
+        font-weight: bold;
+    }
+
+    .invoice-box table tr.details td {
+        padding-bottom: 20px;
+    }
+
+    .invoice-box table tr.item td {
+        border-bottom: 1px solid #eee;
+    }
+
+    .invoice-box table tr.item.last td {
+        border-bottom: none;
+    }
+
+    .invoice-box .mainIntroBody p.value {
+        /* width: 214px; */
+        /* Text/Body */
+        font-weight: bold !important;
+        font-family: 'Roboto';
+        font-style: normal;
+        font-weight: 400;
+        font-size: 14px;
+        color: #001313;
+        line-height: 15px;
+        /* or 129% */
+    }
+
+    .invoice-box table tr.total td:nth-child(2) {
+        border-top: 2px solid #eee;
+        font-weight: bold;
+    }
+
+    td p {
+        display: inline-block;
+    }
+    .spanValue{
+        float: right;
+        margin-left: 80px;
+    }
+</style>
+
+<body>
+    <div class="invoice-box">
+        <div class="header">
+            <hr>
+            <div class="flex">
+                <div class="lefIcon">
+                    <img src="https://phixman.com/images/phixman.png" style="width:100%; max-width:150px;">
+                </div>
+                <div class="rightHeading" style="height: 0px;">
+                    <h3>Device Receiving Form</h3>
+                </div>
+            </div>
+            <hr>
+        </div>
+        <div class="mainIntroBody">
+            <div class="bodyLeft">
+                <td colspan="2">
+                    <table>
+                        <tr>
+                            <td>
+                                <p class="value">Customer Name:  <span class="spanValue">Tarun</span></p><br>
+                                <p class="value">Customer GSTIN: <span class="spanValue">8228368975</span></p><br>
+                                <p class="value">Invoice Number: <span class="spanValue">8228368975</span></p><br>
+                                <p class="value">Delivery Address: <span class="spanValue">12345 Sunny Road Sunnyville, CA 12345</span></p><br>
+                                <p class="value">Invoice date: <span class="spanValue">Tarun</span></p><br>
+                                <p class="value">State Name & code: <span class="spanValue"> Delhi, 110085</span></p><br>
+                                <p class="value">Place of supply: <span class="spanValue">Tarun</span></p><br>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </div>
+            <div class="bodyright">
+                righ
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

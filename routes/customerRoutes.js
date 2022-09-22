@@ -318,7 +318,6 @@ router.post(
  * middleware to check if customer has access to perform following actions
  */
 router.get('/generatepdf', async (req, res, next) => {
-  
   const html = fs.readFileSync(path.join(__dirname, '../libs/mailer/template/invoice.html'), 'utf-8');
 
   const filename = Math.random() + '_doc' + '.pdf';
@@ -326,6 +325,13 @@ router.get('/generatepdf', async (req, res, next) => {
   let array = [
     { serviceName: "kijikjsj" },
     { serviceName: "okoko" },
+    { serviceName: "kijikdokdojsj" },
+    { serviceName: "kijikdokdojsj" },
+    { serviceName: "kijikdokdojsj" },
+    { serviceName: "kijikdokdojsj" },
+    { serviceName: "kijikdokdojsj" },
+    { serviceName: "kijikdokdojsj" },
+    { serviceName: "kijikdokdojsj" },
     { serviceName: "kijikdokdojsj" },
   ];
 

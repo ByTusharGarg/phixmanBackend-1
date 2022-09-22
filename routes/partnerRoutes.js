@@ -944,9 +944,9 @@ router.post("/order/acceptorder", async (req, res) => {
 
 /**
  * @openapi
- * /partner/order/acceptorder:
+ * /partner/forms/:orderId/:typs:
  *  post:
- *    summary: using this route partner can accept order
+ *    summary: using this route partner ccreate jobcard and checkin card
  *    tags:
  *    - partner Routes
  *    parameters:
@@ -955,6 +955,12 @@ router.post("/order/acceptorder", async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
+ *      - in: path
+ *        name: typs
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["jobcard", "checkin"]
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -977,8 +983,6 @@ router.post("/forms/:orderId/:type", async (req, res) => {
   let { jobcard, checkin } = req.body;
 
   let images = [];
-
-
 
   // let daojioj = { key: "component", value: ["ishiss", "jiiji"] }
 
@@ -1073,6 +1077,51 @@ router.post("/forms/:orderId/:type", async (req, res) => {
       );
     }
     return res.status(200).json({ message: "Job card created successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /partner/forms/:orderId:
+ *  get:
+ *    summary: using this route partner get jobcard and checkin card
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/forms/:orderId", async (req, res) => {
+
+  try {
+    const isFormExists = await orderMetaData.findOne({ orderId });
+
+    if (!isFormExists) {
+      return res.status(404).json({ message: "Job card not found" });
+    }
+
+    return res.status(200).json({ message: "Job card created successfully", data: isFormExists });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });

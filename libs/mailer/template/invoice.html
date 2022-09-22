@@ -3,9 +3,14 @@
 
 <head>
     <meta charset="utf-8">
-    <title>A simple, clean, and responsive HTML invoice template</title>
-
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&family=Nunito:wght@400;700&family=Open+Sans:wght@500&family=Poppins:wght@300;400;500;600;700;800&family=Red+Hat+Display:ital,wght@0,300;0,800;1,700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400;1,500;1,700&family=Titillium+Web:wght@600&display=swap"
+        rel="stylesheet">
     <style>
+        body {
+            font-family: 'Roboto';
+        }
+
         .invoice-box {
             max-width: 800px;
             margin: auto;
@@ -88,6 +93,10 @@
             }
         }
 
+        .mt10 {
+            margin-top: 10px;
+        }
+
         /** RTL **/
         .rtl {
             direction: rtl;
@@ -105,6 +114,22 @@
         .value {
             margin-left: 10px;
             font-size: 15px
+        }
+
+        .liteText {
+            /* Text/Small Italic */
+
+            font-family: 'Roboto';
+            font-style: italic;
+            font-weight: 400;
+            font-size: 12px;
+            line-height: 16px;
+            /* identical to box height, or 133% */
+
+
+            /* Phixman Admin color/ Text/ Secondary */
+
+            color: #667171;
         }
 
         .flex {
@@ -172,29 +197,47 @@
                     Taxable Value
                 </td>
             </tr>
-            {{#each products.prodlist}}
 
             <tr class="item">
-                <td>
-                    {{this.serviceName}}
+                <td style="display: flex; flex-direction: column;">
+                    {{#each products.prodlist}}
+                    <div class="mt10">
+                        {{this.serviceName}}
+                    </div>
+                    {{/each}}
                 </td>
 
                 <td style="width: 40%;">
                     <div class="flex">
-                        <b class="smalltext">Booking Amount</b> <span class="value">&nbsp;&nbsp;&nbsp; 3000</span><br>
+                        <b class="smalltext">Booking Amount</b> <span class="value">&nbsp;&nbsp;&nbsp; Rs.
+                            3000</span><br>
                     </div>
                     <div class="flex">
-                        <b class="smalltext">Estimation Amount</b> <span class="value">3000</span><br>
+                        <b class="smalltext">Estimation Amount</b> <span class="value">Rs. 3000</span><br>
                     </div>
                     <div class="flex">
                         <b class="smalltext">Disccount</b> <span
                             class="value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                            3000</span><br>
+                            Rs. 3000</span><br>
                     </div>
                     <hr>
+
+                    <div class="flex">
+                        <b class="smalltext">Tax: </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="value">
+                            Rs. 3000</span><br>
+                    </div>
+
+                    <div class="flex">
+                        <b class="smalltext liteText">CGST@9% : </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="value liteText">
+                            Rs. 3000</span><br>
+                    </div>
+
+                    <div class="flex">
+                        <b class="smalltext liteText">SGST@9% : </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="value liteText">
+                            Rs. 3000</span><br>
+                    </div>
                 </td>
             </tr>
-            {{/each}}
 
             <tr class="heading" style="margin-top: 100px;">
                 <td>
