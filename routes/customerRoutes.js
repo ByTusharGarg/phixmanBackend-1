@@ -22,9 +22,10 @@ const {
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
-const pdf = require('pdf-creator-node');
-const fs = require('fs');
-const path = require('path');
+const pdf = require("pdf-creator-node");
+const fs = require("fs");
+const path = require("path");
+const Payment = require("../libs/payments/Payment");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -317,14 +318,17 @@ router.post(
 /**
  * middleware to check if customer has access to perform following actions
  */
-router.get('/generatepdf/:orderid', async (req, res, next) => {
+router.get("/generatepdf/:orderid", async (req, res, next) => {
   // const Customer = req.Customer._id;
   const { orderid } = req.params;
 
-  const html = fs.readFileSync(path.join(__dirname, '../libs/mailer/template/invoice.html'), 'utf-8');
+  const html = fs.readFileSync(
+    path.join(__dirname, "../libs/mailer/template/invoice.html"),
+    "utf-8"
+  );
   let orderData = null;
 
-  const filename = Math.random() + '_doc' + '.pdf';
+  const filename = Math.random() + "_doc" + ".pdf";
 
   try {
     orderData = await Order.findById(orderid);
@@ -356,7 +360,7 @@ router.get('/generatepdf/:orderid', async (req, res, next) => {
   const obj = {
     prodlist: array,
     bAmt: 10,
-    eAmt: totalAmount - (gstnineP * 2),
+    eAmt: totalAmount - gstnineP * 2,
     disCount: 0,
     tax: gstnineP * 2,
     cgst: gstnineP,
@@ -369,42 +373,44 @@ router.get('/generatepdf/:orderid', async (req, res, next) => {
       address: "o9i9dud",
       date: "20/04/200",
       sNc: "20/04/200",
-      placeOfSupply: "india"
+      placeOfSupply: "india",
     },
     partner: {
       bName: "tarun",
       bGst: "N/A",
       bAddress: "o9i9dud",
-      sNc: "20/04/200"
-    }
-  }
+      sNc: "20/04/200",
+    },
+  };
 
   const document = {
     html: html,
     data: {
-      products: obj
+      products: obj,
     },
-    path: './docs/' + filename
-  }
+    path: "./docs/" + filename,
+  };
 
   let options = {
-    formate: 'A3',
-    orientation: 'portrait',
-    border: '2mm',
+    formate: "A3",
+    orientation: "portrait",
+    border: "2mm",
     header: {
-      height: '15mm',
-      contents: '<h4 style=" color: red;font-size:20;font-weight:800;text-align:center;">CUSTOMER INVOICE</h4>'
+      height: "15mm",
+      contents:
+        '<h4 style=" color: red;font-size:20;font-weight:800;text-align:center;">CUSTOMER INVOICE</h4>',
     },
     footer: {
-      height: '20mm',
+      height: "20mm",
       contents: {
-        first: 'Cover page',
-        2: 'Second page',
-        default: 'div style="float: right;">Signature of supplier/authorized representative</div>',
-        last: 'Last Page'
-      }
-    }
-  }
+        first: "Cover page",
+        2: "Second page",
+        default:
+          'div style="float: right;">Signature of supplier/authorized representative</div>',
+        last: "Last Page",
+      },
+    },
+  };
 
   // .then(res => {
   //   console.log(res);
@@ -421,8 +427,7 @@ router.get('/generatepdf/:orderid', async (req, res, next) => {
       .status(500)
       .json({ message: "Error encountered while generating pdf." });
   }
-
-})
+});
 
 router.use(checkCustomer);
 
@@ -838,7 +843,6 @@ router.post(
   verifyOrderValidator,
   rejectBadRequests,
   async (req, res) => {
-    const Customer = req.Customer._id;
     const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
     const OrderId = commonFunction.genrateID("ORD");
     let Amount = 0;
@@ -848,11 +852,11 @@ router.post(
     grandTotal = Amount;
 
     try {
-      let resp = {};
+      let resp = { message: "Orders created successfully." };
 
       if (PaymentMode === "cod") {
         const newOrder = new Order({
-          Customer,
+          Customer: req.Customer._id,
           OrderId,
           OrderType,
           Status: orderStatusTypes[1],
@@ -863,12 +867,12 @@ router.post(
           address,
           PickUpRequired,
         });
-        resp = await newOrder.save();
+        resp.order = await newOrder.save();
         // deduct commission from partner
       } else if (PaymentMode === "online") {
         // initiate payments process
         const newOrder = new Order({
-          Customer,
+          Customer: req.Customer._id,
           OrderId,
           OrderType,
           Status: orderStatusTypes[0],
@@ -879,14 +883,21 @@ router.post(
           address,
           PickUpRequired,
         });
-        resp = await newOrder.save();
+        const customer = await Customer.findById(req.Customer._id);
+        let cashfree = await Payment.createCustomerOrder({
+          customerid: customer._id,
+          email: customer.email,
+          phone: customer.phone,
+          OrderId,
+          Amount,
+        });
+        resp.order = await newOrder.save();
+        resp.cashfree = cashfree;
       }
 
       // send notifications to all partners
 
-      return res
-        .status(200)
-        .json({ message: "Orders created successfully.", newOrder: resp });
+      return res.status(200).json(resp);
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "Error encountered." });
@@ -1020,7 +1031,5 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
-
 
 module.exports = router;
