@@ -14,17 +14,16 @@ const router = require("express").Router();
 const fs = require("fs");
 const { categoryTypes } = require("../enums/types");
 const checkTokenOnly = require("../middleware/checkToken");
+const {
+  categoryTypesOptionsArray,
+  CategoryTypeOptions,
+} = require("../enums/CategoryTypesOptions");
 
 const getServiceParamValidators = [
   param("serviceType")
     .notEmpty()
     .withMessage("service type cannot be empty")
-    .isIn([
-      "Home_service",
-      "Store_service",
-      "Auto_care",
-      "Neha’s_personal_care",
-    ])
+    .isIn(categoryTypesOptionsArray)
     .withMessage("service type is invalid"),
 ];
 
@@ -184,7 +183,7 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *           enum: ["Home_service","Store_service","Auto_care","Neha’s_personal_care"]
+ *           enum: ["Home_service","Store_service","Auto_care","npc"]
  *    responses:
  *      200:
  *          description: if successfully fetch all product types.
@@ -249,14 +248,14 @@ router.get(
   rejectBadRequests,
   async (req, res) => {
     try {
-      req.params.serviceType = req?.params?.serviceType.replace("_", " ");
+      req.params.serviceType = CategoryTypeOptions[req.params.serviceType];
       const products = await category
         .find({
           categoryType: req?.params?.serviceType,
           isDeleted: false,
         })
         .populate("forms.features");
-      
+
       return res.status(200).json(products);
     } catch (error) {
       console.log(error);
