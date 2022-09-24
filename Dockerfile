@@ -4,4 +4,4 @@ COPY package.json .
 RUN npm install
 COPY .env.sample .env
 COPY . .
-CMD ["node","boot.js"]
+CMD ["node","app.js"]
