@@ -18,8 +18,7 @@ const connect = require("./connect");
 const app = Express();
 
 // setting template engin
-app.set('view engine', 'ejs');
-
+app.set("view engine", "ejs");
 
 // swagger documentation
 
@@ -75,10 +74,11 @@ app.use(
 app.use(Express.static(path.join(__dirname, "public")));
 
 // Configure Express to accepting JSON request bodies upto 50MB.
-app.use(Express.json({ limit: "50mb" }));
+// app.use(Express.json({ limit: "50mb" }));
+app.use(Express.json());
 app.use(
   fileUpload({
-    limits: { fileSize: 1 * 1024 * 1024 }, // 1 MB
+    // limits: { fileSize: 1 * 1024 * 1024 }, // 1 MB
     useTempFiles: false, // flag for use temporary directory for handling file coming through api requests
     tempFileDir: "/tmp/", // temporary directory for handling file coming through api requests
     abortOnLimit: true, // abort api request if the incoming file size is larger then the specified size
@@ -119,9 +119,6 @@ app.use("/customerpayment", router?.customerPaymentRoutes);
 app.use("/coupen", router?.coupenRoutes);
 app.use("/notification", router?.notificationRoutes);
 app.use("/feedback", router?.feedbackRoutes);
-
-
-
 
 // const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {

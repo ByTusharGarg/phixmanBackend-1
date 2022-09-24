@@ -163,11 +163,8 @@ router.get("/categories", rejectBadRequests, async (req, res) => {
     const products = await category
       .find({ isDeleted: false })
       .populate("forms.features");
-    const data = products.map((prod) => {
-      prod["modelRequired"] = prod.key === "mobile" ? true : false;
-      return prod;
-    });
-    return res.status(200).json(data);
+
+    return res.status(200).json(products);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -259,11 +256,8 @@ router.get(
           isDeleted: false,
         })
         .populate("forms.features");
-      const data = products.map((prod) => {
-        prod["modelRequired"] = prod.key === "mobile" ? true : false;
-        return prod;
-      });
-      return res.status(200).json(data);
+      
+      return res.status(200).json(products);
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "Error encountered." });

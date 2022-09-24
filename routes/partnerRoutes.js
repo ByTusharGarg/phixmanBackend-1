@@ -745,7 +745,7 @@ router.get("/myprofile", async (req, res) => {
  *    - bearerAuth: []
  */
 router.patch(
-  "/",
+  "/changeprofile",
   ...updatePartnerValidator,
   rejectBadRequests,
   async (req, res) => {
