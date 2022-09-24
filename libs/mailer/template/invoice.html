@@ -163,24 +163,22 @@
                     <table>
                         <tr>
                             <td>
-                                <b>Customer Name</b> <span class="value">Tarun</span><br>
-                                <b>Customer GSTIN</b> <span class="value">8228368975</span><br>
-                                <b>Invoice Number</b> <span class="value">8228368975</span><br>
-                                <b>Delivery Address</b> <span class="value">12345 Sunny Road<br>
-                                    Sunnyville, CA 12345</span><br>
-                                <b>Invoice date</b> <span class="value">Tarun</span><br>
-                                <b>State Name & code</b> <span class="value">Delhi, 110085</span><br>
-                                <b>Place of supply</b> <span class="value">Tarun</span><br>
+                                <b>Customer Name: </b> <span class="value">{{products.customer.name}}</span><br>
+                                <b>Customer GSTIN: </b> <span class="value">{{products.customer.gst}}</span><br>
+                                <b>Invoice Number: </b> <span class="value">{{products.customer.invoiceNum}}</span><br>
+                                <b>Delivery Address: </b> <span class="value">{{products.customer.address}}</span><br>
+                                <b>Invoice date: </b> <span class="value">{{products.customer.date}}</span><br>
+                                <b>State Name & code: </b> <span class="value">{{products.customer.sNc}}</span><br>
+                                <b>Place of supply: </b> <span class="value">{{products.customer.placeOfSupply}}</span><br>
                             </td>
 
                             <td>
                                 <span class="value" style="margin: 10px;"><b>DELIVERY SERVICE PROVIDER</b></span><br>
 
-                                <b>Business GSTIN </b> <span class="value">8228368975</span><br>
-                                <b>Business Name</b> <span class="value">8228368975</span><br>
-                                <b>Address</b> <span class="value">12345 Sunny Road<br>
-                                    Sunnyville, CA 12345</span><br>
-                                <b>State Name & code </b> <span class="value">Delhi, 110085</span><br>
+                                <b>Business GSTIN: </b> <span class="value">{{products.partner.bGst}}</span><br>
+                                <b>Business Name:</b> <span class="value">{{products.partner.bName}}</span><br>
+                                <b>Address:</b> <span class="value">{{products.partner.bAddress}}</span><br>
+                                <b>State Name & code: </b> <span class="value">{{products.partner.sNc}}</span><br>
                             </td>
                         </tr>
                     </table>
@@ -210,31 +208,37 @@
                 <td style="width: 40%;">
                     <div class="flex">
                         <b class="smalltext">Booking Amount</b> <span class="value">&nbsp;&nbsp;&nbsp; Rs.
-                            3000</span><br>
+                            {{products.bAmt}}</span><br>
                     </div>
                     <div class="flex">
-                        <b class="smalltext">Estimation Amount</b> <span class="value">Rs. 3000</span><br>
+                        <b class="smalltext">Estimation Amount</b> <span class="value">Rs. {{products.eAmt}}</span><br>
                     </div>
                     <div class="flex">
-                        <b class="smalltext">Disccount</b> <span
+                        <b class="smalltext">Discount</b> <span
                             class="value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                            Rs. 3000</span><br>
+                            Rs. {{products.disCount}}</span><br>
                     </div>
                     <hr>
 
                     <div class="flex">
-                        <b class="smalltext">Tax: </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="value">
-                            Rs. 3000</span><br>
+                        <b class="smalltext">Tax: </b>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+                            class="value">
+                            Rs. {{products.tax}}</span><br>
                     </div>
 
                     <div class="flex">
-                        <b class="smalltext liteText">CGST@9% : </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="value liteText">
-                            Rs. 3000</span><br>
+                        <b class="smalltext liteText">CGST@9% : </b>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+                            class="value liteText">
+                            Rs. {{products.cgst}}</span><br>
                     </div>
 
                     <div class="flex">
-                        <b class="smalltext liteText">SGST@9% : </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="value liteText">
-                            Rs. 3000</span><br>
+                        <b class="smalltext liteText">SGST@9% : </b>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+                            class="value liteText">
+                            Rs. {{products.sgst}}</span><br>
                     </div>
                 </td>
             </tr>
@@ -245,7 +249,7 @@
                 </td>
 
                 <td>
-                    Rs. 100
+                    Rs. {{products.totalAmt}}
                 </td>
             </tr>
         </table>

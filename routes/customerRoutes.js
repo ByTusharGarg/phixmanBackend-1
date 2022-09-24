@@ -317,10 +317,25 @@ router.post(
 /**
  * middleware to check if customer has access to perform following actions
  */
-router.get('/generatepdf', async (req, res, next) => {
+router.get('/generatepdf/:orderid', async (req, res, next) => {
+  // const Customer = req.Customer._id;
+  const { orderid } = req.params;
+
   const html = fs.readFileSync(path.join(__dirname, '../libs/mailer/template/invoice.html'), 'utf-8');
+  let orderData = null;
 
   const filename = Math.random() + '_doc' + '.pdf';
+
+  try {
+    orderData = await Order.findById(orderid);
+    if (!orderData) {
+      return res.status(404).json({ message: "order not found" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error encountered while finding orders pdf." });
+  }
 
   let array = [
     { serviceName: "kijikjsj" },
@@ -335,8 +350,33 @@ router.get('/generatepdf', async (req, res, next) => {
     { serviceName: "kijikdokdojsj" },
   ];
 
+  let totalAmount = orderData.OrderDetails.Amount;
+
+  let gstnineP = (totalAmount * 9) / 100;
   const obj = {
     prodlist: array,
+    bAmt: 10,
+    eAmt: totalAmount - (gstnineP * 2),
+    disCount: 0,
+    tax: gstnineP * 2,
+    cgst: gstnineP,
+    sgst: gstnineP,
+    totalAmt: totalAmount,
+    customer: {
+      name: "tarun",
+      gst: "N/A",
+      invoiceNum: "ooji9iod",
+      address: "o9i9dud",
+      date: "20/04/200",
+      sNc: "20/04/200",
+      placeOfSupply: "india"
+    },
+    partner: {
+      bName: "tarun",
+      bGst: "N/A",
+      bAddress: "o9i9dud",
+      sNc: "20/04/200"
+    }
   }
 
   const document = {
@@ -346,6 +386,7 @@ router.get('/generatepdf', async (req, res, next) => {
     },
     path: './docs/' + filename
   }
+
   let options = {
     formate: 'A3',
     orientation: 'portrait',
@@ -365,14 +406,22 @@ router.get('/generatepdf', async (req, res, next) => {
     }
   }
 
-  pdf.create(document, options)
-    .then(res => {
-      console.log(res);
-    }).catch(error => {
-      console.log(error);
-    });
+  // .then(res => {
+  //   console.log(res);
+  // }).catch(error => {
+  //   console.log(error);
+  // });
 
-  return res.status(200).json({ message: "pdf generated successfully" });
+  try {
+    await pdf.create(document, options);
+
+    return res.status(200).json({ message: "pdf generated successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error encountered while generating pdf." });
+  }
+
 })
 
 router.use(checkCustomer);

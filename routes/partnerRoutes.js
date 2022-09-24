@@ -944,7 +944,7 @@ router.post("/order/acceptorder", async (req, res) => {
 
 /**
  * @openapi
- * /partner/forms/:orderId/:typs:
+ * /partner/forms/:orderId/:type:
  *  post:
  *    summary: using this route partner ccreate jobcard and checkin card
  *    tags:
@@ -956,11 +956,33 @@ router.post("/order/acceptorder", async (req, res) => {
  *        schema:
  *           type: string
  *      - in: path
- *        name: typs
+ *        name: type
  *        required: true
  *        schema:
  *           type: string
  *           enum: ["jobcard", "checkin"]
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                jobCard:
+ *                  type: array
+ *                  items:
+ *                    properties:
+ *                      key:
+ *                        type: string
+ *                      value:
+ *                        type: string
+ *                checkIn:
+ *                  type: array
+ *                  items:
+ *                    properties:
+ *                      key:
+ *                        type: string
+ *                      value:
+ *                        type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -976,47 +998,46 @@ router.post("/order/acceptorder", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
+
+/*
 router.post("/forms/:orderId/:type", async (req, res) => {
   let { type, orderId } = req.params;
 
   const partnerId = req.partner._id;
   let { jobcard, checkin } = req.body;
 
+  // checkin = [];
+
   let images = [];
 
-  // let daojioj = { key: "component", value: ["ishiss", "jiiji"] }
-
+  // let daojioj = { key: "component", value: ["data", "muday"] }
 
   // checkin.push(daojioj);
 
-  const { phoneImages, selfieWithproduct, signature, helpers } = req.files;
+  // const { phoneImages, selfieWithproduct, signature, helpers } = req?.files;
 
   if (!type || !orderId) {
     return res.status(500).json({ message: "type or orderId must be provided" });
   }
 
-  // if (jobcard.length === 0) {
-  //   return res.status(500).json({ message: "Data is not provided" });
-  // }
-
   if (!["jobcard", "checkin"].includes(type)) {
     return res.status(500).json({ message: "type should be jobCard or checkin" });
   }
 
-  if (signature) {
+  if (req?.files?.signature && type === "jobcard") {
     let sign = randomImageName();
-    images.push({ ...signature, fileName: sign });
+    images.push({ ...req?.files?.signature, fileName: sign });
     jobcard.push({ key: "signature", value: sign })
   }
-  if (selfieWithproduct) {
+  if (req?.files?.selfieWithproduct && type === "jobcard") {
     let selfieP = randomImageName();
-    images.push({ ...selfieWithproduct, fileName: selfieP });
+    images.push({ ...req?.files?.selfieWithproduct, fileName: selfieP });
     jobcard.push({ key: "selfieWithproduct", value: selfieP })
   }
 
-  if (phoneImages && phoneImages.length > 0) {
+  if (req?.files?.phoneImages && req?.files?.phoneImages.length > 0 && type === "jobcard") {
     let value = [];
-    phoneImages.map((file, i) => {
+    req?.files?.phoneImages.map((file, i) => {
       let pName = randomImageName();
       images.push({ ...file, fileName: pName });
       value.push(pName);
@@ -1025,9 +1046,9 @@ router.post("/forms/:orderId/:type", async (req, res) => {
   }
 
 
-  if (helpers && Chelpers.length > 0) {
+  if (req?.files?.helpers && req?.files?.helpers.length > 0 && type === "jobcard") {
     let value = [];
-    helpers.map((file, i) => {
+    req?.files?.helpers.map((file, i) => {
       let pName = randomImageName();
       images.push({ ...file, fileName: pName });
       value.push(pName);
@@ -1038,11 +1059,10 @@ router.post("/forms/:orderId/:type", async (req, res) => {
 
   try {
     const isFormExists = await orderMetaData.findOne({ orderId });
-    if (isFormExists) {
-      if (type === "jobcard") {
-        return res.status(500).json({ message: "Jobcard allready exists plese delete previous one" });
-      }
-
+    if (isFormExists && type === "checkin") {
+      // if (type === "jobcard") {
+      //   return res.status(500).json({ message: "Jobcard allready exists plese delete previous one" });
+      // }
       await orderMetaData.findOneAndUpdate({ orderId }, { checkIn: checkin }, { new: true });
       return res.status(200).json({ message: "phone checkin successfully" });
     }
@@ -1067,8 +1087,8 @@ router.post("/forms/:orderId/:type", async (req, res) => {
       return res.status(500).json({ message: "order not exists or associated" });
     }
 
-    const newData = new orderMetaData({ orderId, jobCard: jobcard });
-    await newData.save();
+    await orderMetaData.findOneAndUpdate({ orderId }, { jobCard: jobcard }, { upsert: true });
+    // await newData.save();
 
     if (order.Status === orderStatusTypes[2]) {
       await Order.findByIdAndUpdate(orderId,
@@ -1082,6 +1102,59 @@ router.post("/forms/:orderId/:type", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+*/
+
+router.post("/forms/:orderId/:type", async (req, res) => {
+  let { type, orderId } = req.params;
+
+  const partnerId = req.partner._id;
+  let { jobCard, checkIn } = req.body;
+
+  if (!type || !orderId) {
+    return res.status(500).json({ message: "type or orderId must be provided" });
+  }
+
+  if (!["jobcard", "checkin"].includes(type)) {
+    return res.status(500).json({ message: "type should be jobCard or checkin" });
+  }
+
+  try {
+    const order = await Order.findOne({ _id: orderId, Partner: partnerId })
+    .populate("OrderDetails.Items[0].ServiceId");
+
+  if (!order) {
+    return res.status(500).json({ message: "order not exists or associated" });
+  }
+
+    const isFormExists = await orderMetaData.findOne({ orderId });
+
+    if (isFormExists && type == "checkin") {
+      if (!checkIn || checkIn.length === 0) {
+        return res.status(400).json({ message: "checkin fields required" });
+      }
+      await orderMetaData.findOneAndUpdate({ orderId }, { checkIn:checkIn }, { new: true });
+      return res.status(200).json({ message: "form checkIn successfully" });
+    }
+    
+    if (!jobCard || jobCard.length === 0) {
+      return res.status(400).json({ message: "jobCard fields required" });
+    }
+
+    await orderMetaData.findOneAndUpdate({ orderId }, { jobCard }, { upsert: true });
+
+    if (order.Status === orderStatusTypes[2]) {
+      await Order.findByIdAndUpdate(orderId,
+        { Status: orderStatusTypes[3] },
+        { new: true }
+      );
+    }
+    return res.status(200).json({ message: "Job card created successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 
 
 /**
