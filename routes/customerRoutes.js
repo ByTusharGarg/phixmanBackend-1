@@ -429,7 +429,7 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
   }
 });
 
-// router.use(checkCustomer);
+router.use(checkCustomer);
 
 /**
  * @openapi
