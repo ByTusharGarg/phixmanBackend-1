@@ -81,10 +81,15 @@ class Payment {
           "x-client-secret": this.APPSECRET,
         },
       });
-      console.log(payment)
-      //   await orderTransactionModel.findOneAndUpdate({order_id},resp)
-      return resp;
+      
+      let transaction = await orderTransactionModel.findOneAndUpdate(
+        { order_id },
+        { payment_status: payment.data[0].payment_status },
+        { new: true }
+      );
+      return transaction;
     } catch (error) {
+      console.log(error);
       throw new Error("Couldn't verify order");
     }
   }
