@@ -42,7 +42,7 @@ const verifyOtpBodyValidator = [
 
 const updatePartnerValidator = [
   body("email").isEmail().withMessage("email is invalid"),
-  body("dob").isEmail().withMessage("email is invalid"),
+  body("dob").isString().withMessage("dob is invalid"),
 ];
 
 /**
@@ -113,8 +113,8 @@ const updatePartnerValidator = [
  */
 router.post(
   "/SendOTP",
-  ...sendOtpBodyValidator,
-  rejectBadRequests,
+  // ...sendOtpBodyValidator,
+  // rejectBadRequests,
   async (req, res) => {
     //generate new otp
     let otp = generateOtp(6);

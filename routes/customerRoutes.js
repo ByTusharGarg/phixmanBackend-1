@@ -429,7 +429,7 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
   }
 });
 
-router.use(checkCustomer);
+// router.use(checkCustomer);
 
 /**
  * @openapi
@@ -843,6 +843,7 @@ router.post(
   verifyOrderValidator,
   rejectBadRequests,
   async (req, res) => {
+    console.log(req.body);
     const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
     const OrderId = commonFunction.genrateID("ORD");
     let Amount = 0;
@@ -904,6 +905,60 @@ router.post(
     }
   }
 );
+
+/**
+ * @openapi
+ * /customer/verifyOrderStatus:
+ *   post:
+ *    summary: it's use to verify order payment status.
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                order_id:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if order cancelled successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+router.post("/verifyOrderStatus", async (req, res) => {
+  try {
+    if (!req.body.order_id) {
+      return res.status(404).json({ message: "order id is required" });
+    }
+    const resp = await Payment.verifyCustomerOrder(req.body.order_id);
+    return res.status(200).json(resp);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 /**
  * @openapi
