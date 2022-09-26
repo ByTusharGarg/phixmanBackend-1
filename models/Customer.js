@@ -14,7 +14,7 @@ const Customer = mongoose.model(
     phone: { type: String, required: true, unique: true },
     Password: { type: String, default: "" },
     image: { type: String, default: "" },
-    gender: { type: String, enum: genderTypes, default: null },
+    gender: { type: String, enum: genderTypes},
     otp: {
       code: {
         type: String,

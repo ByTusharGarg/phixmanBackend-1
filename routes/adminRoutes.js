@@ -1434,15 +1434,14 @@ router.get("/orders/:status", async (req, res) => {
  *    - bearerAuth: []
  */
 router.get("/get/partners/:type", async (req, res) => {
-  let query = {};
   const { type } = req.params;
 
   if (type === "kycpending") {
-    query = { isProfileCompleted: true, isVerified: false, isApproved: false };
+    query = { isProfileCompleted: true, isVerified: false, isApproved: false, Type: { $ne: 'sub-provider' } };
   } else if (type === "block") {
-    query = { isPublished: false };
+    query = { isPublished: false, Type: { $ne: 'sub-provider' } };
   } else {
-    query = {};
+    query = { Type: { $ne: 'sub-provider' } };
   }
 
   try {
@@ -1453,14 +1452,54 @@ router.get("/get/partners/:type", async (req, res) => {
   }
 });
 
+
 /**
  * @openapi
- * /admin/partners/{type}:
+ * /admin/get/partner/{id}:
+ *  get:
+ *    summary: get partner by id
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+ router.get("/get/partner/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    let partners = await Partner.findById(id);
+    res.status(200).json({ message: "Partners data", data: partners });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+/**
+ * @openapi
+ * /admin/partners/{id}/{type}:
  *  put:
  *    summary: using this route admin can update partner like all,kycpending and block users
  *    tags:
  *    - Admin Routes
  *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
  *      - in: path
  *        name: type
  *        required: true
@@ -1484,8 +1523,7 @@ router.get("/get/partners/:type", async (req, res) => {
  */
 router.put("/partners/:id", async (req, res) => {
   let query = {};
-  const { id } = req.params;
-  const { type } = req.body;
+  const { type, id } = req.params;
 
   if (!id || !type) {
     return res.status(500).json({ message: `id and type required` });
