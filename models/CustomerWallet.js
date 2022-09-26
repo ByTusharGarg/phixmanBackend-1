@@ -1,15 +1,24 @@
 const mongoose = require("mongoose");
 
-const customerWalletSchema = mongoose.Schema({
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true, unique: true },
-    balance: {
-        type: Number,
-        default: 0
+const customerWalletSchema = mongoose.Schema(
+  {
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true,
+      unique: true,
     },
-    status:{
-        type:Boolean,
-        default:true
-    }
-}, { timestamps: true });
+    balance: {
+      type: Number,
+      default: 0,
+    },
+    status: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model("Customerwallet", customerWalletSchema);
+const Customerwallet = mongoose.model("Customerwallet", customerWalletSchema);
+module.exports = Customerwallet;

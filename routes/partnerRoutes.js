@@ -19,6 +19,12 @@ const {
   randomImageName,
   getObjectSignedUrl,
 } = require("../services/s3-service");
+const commonFunction = require("../utils/commonFunction");
+const Payment = require("../libs/payments/Payment");
+const {
+  getWallletTransactionByTransactionId,
+  getAllWallletTranssaction,
+} = require("../services/Wallet");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -941,7 +947,6 @@ router.post("/order/acceptorder", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /partner/forms/:orderId/:type:
@@ -1111,20 +1116,28 @@ router.post("/forms/:orderId/:type", async (req, res) => {
   let { jobCard, checkIn } = req.body;
 
   if (!type || !orderId) {
-    return res.status(500).json({ message: "type or orderId must be provided" });
+    return res
+      .status(500)
+      .json({ message: "type or orderId must be provided" });
   }
 
   if (!["jobcard", "checkin"].includes(type)) {
-    return res.status(500).json({ message: "type should be jobCard or checkin" });
+    return res
+      .status(500)
+      .json({ message: "type should be jobCard or checkin" });
   }
 
   try {
-    const order = await Order.findOne({ _id: orderId, Partner: partnerId })
-    .populate("OrderDetails.Items[0].ServiceId");
+    const order = await Order.findOne({
+      _id: orderId,
+      Partner: partnerId,
+    }).populate("OrderDetails.Items[0].ServiceId");
 
-  if (!order) {
-    return res.status(500).json({ message: "order not exists or associated" });
-  }
+    if (!order) {
+      return res
+        .status(500)
+        .json({ message: "order not exists or associated" });
+    }
 
     const isFormExists = await orderMetaData.findOne({ orderId });
 
@@ -1132,18 +1145,27 @@ router.post("/forms/:orderId/:type", async (req, res) => {
       if (!checkIn || checkIn.length === 0) {
         return res.status(400).json({ message: "checkin fields required" });
       }
-      await orderMetaData.findOneAndUpdate({ orderId }, { checkIn:checkIn }, { new: true });
+      await orderMetaData.findOneAndUpdate(
+        { orderId },
+        { checkIn: checkIn },
+        { new: true }
+      );
       return res.status(200).json({ message: "form checkIn successfully" });
     }
-    
+
     if (!jobCard || jobCard.length === 0) {
       return res.status(400).json({ message: "jobCard fields required" });
     }
 
-    await orderMetaData.findOneAndUpdate({ orderId }, { jobCard }, { upsert: true });
+    await orderMetaData.findOneAndUpdate(
+      { orderId },
+      { jobCard },
+      { upsert: true }
+    );
 
     if (order.Status === orderStatusTypes[2]) {
-      await Order.findByIdAndUpdate(orderId,
+      await Order.findByIdAndUpdate(
+        orderId,
         { Status: orderStatusTypes[3] },
         { new: true }
       );
@@ -1154,8 +1176,6 @@ router.post("/forms/:orderId/:type", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
-
 
 /**
  * @openapi
@@ -1186,7 +1206,6 @@ router.post("/forms/:orderId/:type", async (req, res) => {
  *    - bearerAuth: []
  */
 router.get("/forms/:orderId", async (req, res) => {
-
   try {
     const isFormExists = await orderMetaData.findOne({ orderId });
 
@@ -1194,13 +1213,14 @@ router.get("/forms/:orderId", async (req, res) => {
       return res.status(404).json({ message: "Job card not found" });
     }
 
-    return res.status(200).json({ message: "Job card created successfully", data: isFormExists });
+    return res
+      .status(200)
+      .json({ message: "Job card created successfully", data: isFormExists });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -1393,4 +1413,218 @@ router.post("/createSubProvider", async (req, response) => {
     });
   }
 });
+
+/**
+ * @openapi
+ * /partner/buycredit:
+ *  post:
+ *    summary: used to intiate a transaction for adding credit.
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                amount:
+ *                  type: number
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/buycredit", async (req, res) => {
+  try {
+    const tranId = commonFunction.genrateID("BUYCRED");
+    const creditOrder = await Payment.initiateCreditOrder(
+      tranId,
+      req?.body?.amount,
+      req?.partner?._id,
+      req?.partner?.email ? req?.partner?.email : "example@phixman.in",
+      req?.partner?.phone
+    );
+    return res.send(creditOrder);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered.",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /partner/verifycredit:
+ *  post:
+ *    summary: used to intiate a transaction for adding credit.
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                tranId:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/verifycredit", async (req, res) => {
+  try {
+    const tranId = req?.body?.tranId;
+    const transaction = await getWallletTransactionByTransactionId(tranId);
+    if (transaction?.status && transaction?.status !== "pending") {
+      return res.status(200).json({ status: transaction.status });
+    }
+    const verifyTransactionStatus = await Payment.verifyCreditOrder(
+      transaction
+    );
+    return res.status(200).json({ status: verifyTransactionStatus?.status });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered.",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /partner/wallet/transaction:
+ *  get:
+ *    summary: fetch all wallet transactions ordered by date
+ *    tags:
+ *    - partner Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/wallet/transaction", async (req, res) => {
+  const id = req.partner._id;
+  console.log(id);
+  try {
+    const data = await getAllWallletTranssaction(id, "partner");
+    return res.status(200).json({ message: "partner Transsaction list", data });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({
+        message: error.message
+          ? error.message
+          : "Error encountered while trying to fetch transaction.",
+      });
+  }
+});
+
 module.exports = router;

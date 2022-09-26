@@ -12,6 +12,6 @@ const partnerWalletSchema = mongoose.Schema({
     }
 }, { timestamps: true });
 
-const Coupon = mongoose.model("partnerwallet", partnerWalletSchema);
+const PartnerWallet = mongoose.model("partnerwallet", partnerWalletSchema);
 
-module.exports = Coupon;
+module.exports = PartnerWallet;

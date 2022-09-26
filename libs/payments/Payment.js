@@ -7,6 +7,12 @@ const {
   orderStatusTypes,
   paymentStatus,
 } = require("../../enums/types");
+const { WalletTransaction } = require("../../models");
+const {
+  getPartnerWallet,
+  updateWallletTransactionByTransactionId,
+  updatePartnerWallet,
+} = require("../../services/Wallet");
 const axios = require("axios").default;
 
 let casrfreeUrlLinks =
@@ -81,7 +87,7 @@ class Payment {
           "x-client-secret": this.APPSECRET,
         },
       });
-      
+
       let transaction = await orderTransactionModel.findOneAndUpdate(
         { order_id },
         { payment_status: payment.data[0].payment_status },
@@ -91,6 +97,75 @@ class Payment {
     } catch (error) {
       console.log(error);
       throw new Error("Couldn't verify order");
+    }
+  }
+
+  async initiateCreditOrder(order_id, Amount, id, email = "", phone = "") {
+    try {
+      const resp = await sdk.CreateOrder(
+        {
+          customer_details: {
+            customer_id: id,
+            customer_email: email,
+            customer_phone: phone,
+          },
+          order_id: order_id,
+          order_amount: Amount,
+          order_currency: "INR",
+        },
+        {
+          "x-client-id": this.APPID,
+          "x-client-secret": this.APPSECRET,
+          "x-api-version": "2022-01-01",
+        }
+      );
+      const wallet = await getPartnerWallet(id);
+      const walletTransaction = await WalletTransaction.create({
+        tranId: order_id,
+        cashfree: resp,
+        transsactionUser: "partner",
+        walletId: wallet?._id,
+        title: "add credit request",
+        transsactionType: "credit",
+        status: "pending",
+        reason: "",
+        amount: Amount,
+      });
+      return walletTransaction;
+    } catch (error) {
+      console.log(error);
+      throw new Error("Couldn't place order");
+    }
+  }
+
+  async verifyCreditOrder(transaction) {
+    try {
+      let payment = await axios.get(transaction?.cashfree?.payments?.url, {
+        headers: {
+          "x-api-version": "2022-01-01",
+          "x-client-id": this.APPID,
+          "x-client-secret": this.APPSECRET,
+        },
+      });
+
+      if (!payment?.data[0]?.payment_status) {
+        return { status: "pending" };
+      }
+      if (payment?.data[0]?.payment_status === "SUCCESS") {
+        await updatePartnerWallet(
+          transaction?.cashfree?.customer_details?.customer_id,
+          transaction?.amount,
+          "credit"
+        );
+      }
+      const updatedTrans = await updateWallletTransactionByTransactionId(
+        transaction?.tranId,
+        payment?.data[0]?.payment_status
+      );
+      return updatedTrans;
+    } catch (error) {
+      console.log(error);
+      throw new Error("Couldn't verify trans");
     }
   }
 
