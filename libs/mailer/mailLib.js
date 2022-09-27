@@ -40,7 +40,7 @@ const commonMailFunctionToAll = (dataToCompile, template) => {
   try {
     let filePath = path.resolve(__dirname + `/template/${template}.ejs`),
       compiled = ejs.compile(fs.readFileSync(filePath, 'utf8')),
-      Subject = dataToCompile.subject;
+      Subject = dataToCompile.Subject;
     return sendMail("support@phixman.in", dataToCompile.email, Subject, compiled(dataToCompile));
   } catch (e) {
     // logger.error(e);

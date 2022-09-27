@@ -59,7 +59,7 @@ router.get("/", (_, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/getCustomerByID/:id", async (req, res) => {
+router.get("/getCustomerByID/:id", checkTokenOnly, async (req, res) => {
   const id = req.params.id;
   try {
     const orders = await Customer.findById(id);

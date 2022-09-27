@@ -1189,6 +1189,165 @@ router.post("/categories", async (req, res) => {
 
 /**
  * @openapi
+ * /admin/categories/:id:
+ *  put:
+ *    summary: used to update Categories.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *    requestBody:
+ *      content:
+ *        multipart/form-data:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                icon:
+ *                  type: file
+ *                  description: required
+ *                name:
+ *                  type: string
+ *                  description: required
+ *                categoryType:
+ *                  type: string
+ *                  description: required
+ *                  enum: ["Home service","Store service","Auto care","Neha’s personal care"]
+ *                Terms:
+ *                  type: string
+ *                  description: required
+ *                forms:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    properties:
+ *                      name:
+ *                        type: string
+ *                      features:
+ *                        type: array
+ *                        items:
+ *                          type: string
+ *                availableOn:
+ *                  type: object
+ *                  properties:
+ *                    days:
+ *                      type: array
+ *                      items:
+ *                        type: string
+ *                    timing:
+ *                      type: object
+ *                      properties:
+ *                        from:
+ *                          type: string
+ *                        to:
+ *                          type: string
+ *                slots:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    properties:
+ *                      from:
+ *                        type: string
+ *                      to:
+ *                        type: string
+ *                components:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                maxDisc:
+ *                  type: Number
+ *                minDisc:
+ *                  type: Number
+ *                maxDuration:
+ *                  type: Number
+ *                minDuration:
+ *                  type: Number
+ *                LeadExpense:
+ *                  type: Number
+ *                companyComissionPercentage:
+ *                  type: Number
+ *                servedAt:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    enum: ["InStore", "Home", "PickUpDrop"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.put("/categories/:id", async (req, res) => {
+  const { id } = req.params;
+  const data = {};
+  // const { name, forms, availableOn, servedAt, Slots, key, components } = req.body;
+  // const { icon } = req.files;
+
+  try {
+    req.body.forms = JSON.parse(req.body.forms);
+    req.body.availableOn = JSON.parse(req.body.availableOn);
+    req.body.servedAt = JSON.parse(req.body.servedAt);
+    req.body.Slots = JSON.parse(req.body.Slots);
+    req.body.key = req.body.name.toLowerCase();
+    req.body.components = JSON.parse(req.body.components);
+    req.body.icon = encodeImage(req.files.icon);
+
+    // if (forms.length > 0) {
+    //   data['forms'] = JSON.parse(req.body.forms);
+    // }
+    // if (availableOn.length > 0) {
+    //   data['availableOn'] = JSON.parse(req.body.availableOn);
+    // } if (servedAt) {
+    //   data['servedAt'] = JSON.parse(req.body.servedAt);
+    // } if (Slots) {
+    //   data['Slots'] = JSON.parse(req.body.Slots);
+    // } if (key) {
+    //   data['key'] = JSON.parse(req.body.key);
+    // } if (components) {
+    //   data['components'] = JSON.parse(req.body.components);
+    // } if (icon) {
+    //   data['icon'] = JSON.parse(req.body.icon);
+    // }
+    // if (name) {
+    //   data['name'] = name;
+    // }
+    // if (categoryType) {
+    //   data['categoryType'] = categoryType;
+    // }
+
+    for (let key in data) {
+      if (!req?.body[key]) {
+        return res.status(404).json({ message: `${key} is missing` });
+      }
+    }
+
+    const updatedategory = category.findByIdAndUpdate(id, req.body, { new: true });
+
+    if (updatedategory) {
+      return res.status(200).json({ message: "Category updated successfully.", data: updatedategory });
+    } else {
+      return res.status(404).json({ message: "Category not found." });
+    }
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
  * /admin/categories:
  *  delete:
  *    summary: deletes categories
@@ -1479,7 +1638,7 @@ router.get("/get/partners/:type", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
- router.get("/get/partner/:id", async (req, res) => {
+router.get("/get/partner/:id", async (req, res) => {
   const { id } = req.params;
   try {
     let partners = await Partner.findById(id);

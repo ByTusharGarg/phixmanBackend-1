@@ -151,20 +151,20 @@ const resetPassword = async (req, res) => {
       );
       console.log(process.env.ADMIN_UI_URL);
       url = `${process.env.ADMIN_UI_URL}/resetpassword/${token}`;
-      // send Email
 
+      // send email
       const data = {
         url: url,
-        Subject: "[Phixman] Password Reset E-mail",
-        email: resp.email,
-        name: resp.Name ? resp.Name : "Dear",
+        Subject: "[Phixman] Password Reset instructions E-mail",
+        first_name: resp.Name ? resp.Name : "Dear",
+        email: resp.email
       };
-      commonMailFunctionToAll(data, "resetpassword");
+      commonMailFunctionToAll(data, "forgotPassword");
+
       return res.status(200).json({
         success: true,
-        message:
-          "Reset password instructions sent on your mail successfully valid till 8hr",
-        url,
+        message:"Reset password instructions sent on your mail successfully valid till 8hr",
+        url
       });
     }
     return res.status(403).json({
@@ -197,6 +197,16 @@ const changePassword = async (req, res) => {
           { password: hashpassword(newpassword) },
           { new: true }
         );
+
+        // send email
+        const data = {
+          Subject: "[Phixman] Password Reset Success E-mail",
+          first_name: resp.Name ? resp.Name : "Dear",
+          email: resp.email
+        };
+
+        commonMailFunctionToAll(data, "resetSuccess");
+
         if (resp) {
           return res.status(200).json({
             message: "Password Changed successfully",
