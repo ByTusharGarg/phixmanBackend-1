@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Partner, Wallet, Order, orderMetaData } = require("../models");
+const { Partner, PartnerWallet, Order, orderMetaData } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypes } = require("../enums/types");
 const tokenService = require("../services/token-service");
@@ -254,9 +254,11 @@ router.post(
         return res.status(401).json({ message: "Invalid OTP" });
       }
       // wallet creation
-      const isWalletExixts = await Wallet.findOne({ partnerId: partner?._id });
+      const isWalletExixts = await PartnerWallet.findOne({
+        partnerId: partner?._id,
+      });
       if (!isWalletExixts) {
-        const newWallet = new Wallet({ partnerId: partner?._id });
+        const newWallet = new PartnerWallet({ partnerId: partner?._id });
         await newWallet.save();
       }
 
@@ -1617,13 +1619,11 @@ router.get("/wallet/transaction", async (req, res) => {
     const data = await getAllWallletTranssaction(id, "partner");
     return res.status(200).json({ message: "partner Transsaction list", data });
   } catch (error) {
-    return res
-      .status(500)
-      .json({
-        message: error.message
-          ? error.message
-          : "Error encountered while trying to fetch transaction.",
-      });
+    return res.status(500).json({
+      message: error.message
+        ? error.message
+        : "Error encountered while trying to fetch transaction.",
+    });
   }
 });
 
