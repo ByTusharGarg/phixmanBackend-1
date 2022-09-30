@@ -13,6 +13,8 @@ const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
+const moment = require("moment");
+const fs = require("fs");
 
 const {
   orderStatusTypes,
@@ -23,7 +25,6 @@ const {
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
 const pdf = require("pdf-creator-node");
-const fs = require("fs");
 const path = require("path");
 const Payment = require("../libs/payments/Payment");
 
@@ -331,14 +332,17 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
   const filename = Math.random() + "_doc" + ".pdf";
 
   try {
-    orderData = await Order.findById(orderid);
+    orderData = await Order.findById(orderid).populate('OrderDetails.Items.ServiceId')
+      .populate('Customer').populate('Partner');
+
+    console.log(orderData.OrderDetails);
+
     if (!orderData) {
       return res.status(404).json({ message: "order not found" });
     }
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Error encountered while finding orders pdf." });
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered while finding orders pdf." });
   }
 
   let array = [
@@ -357,6 +361,7 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
   let totalAmount = orderData.OrderDetails.Amount;
 
   let gstnineP = (totalAmount * 9) / 100;
+
   const obj = {
     prodlist: array,
     bAmt: 10,
@@ -367,22 +372,23 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
     sgst: gstnineP,
     totalAmt: totalAmount,
     customer: {
-      name: "tarun",
+      name: orderData.Customer.Name || 'N/A',
       gst: "N/A",
-      invoiceNum: "ooji9iod",
-      address: "o9i9dud",
-      date: "20/04/200",
-      sNc: "20/04/200",
-      placeOfSupply: "india",
+      invoiceNum: orderData.invoiceId,
+      address: `${orderData.address.street} ${orderData.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
+      date: moment(orderData.Date, 'DD-MM-YYYY').format('MM-DD-YYYY'),
+      sNc: moment(orderData.Date, 'DD-MM-YYYY').format('MM-DD-YYYY'),
+      placeOfSupply: orderData.address.country || "N/A",
     },
     partner: {
-      bName: "tarun",
+      bName: orderData.Partner?.Name || "N/A",
       bGst: "N/A",
-      bAddress: "o9i9dud",
-      sNc: "20/04/200",
+      bAddress: `${orderData.address.street} ${orderData.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
+      sNc: moment(orderData.Date, 'DD-MM-YYYY').format('MM-DD-YYYY')
     },
   };
 
+  // console.log(obj);
   const document = {
     html: html,
     data: {
@@ -412,20 +418,23 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
     },
   };
 
-  // .then(res => {
-  //   console.log(res);
-  // }).catch(error => {
-  //   console.log(error);
-  // });
-
   try {
-    await pdf.create(document, options);
+    const data = await pdf.create(document, options)
 
-    return res.status(200).json({ message: "pdf generated successfully" });
+    res.setHeader('Content-disposition', 'inline; filename="test.pdf"');
+    res.setHeader('Content-type', 'application/pdf');
+
+    var fileData = fs.readFileSync(data.filename);
+
+    let interval = setTimeout(() => {
+      fs.unlink(data.filename, () => { });
+      clearInterval(interval);
+    }, 3000)
+
+    return res.send(fileData);
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Error encountered while generating pdf." });
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered while generating pdf." });
   }
 });
 

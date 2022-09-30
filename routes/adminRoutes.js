@@ -1303,29 +1303,6 @@ router.put("/categories/:id", async (req, res) => {
     req.body.components = JSON.parse(req.body.components);
     req.body.icon = encodeImage(req.files.icon);
 
-    // if (forms.length > 0) {
-    //   data['forms'] = JSON.parse(req.body.forms);
-    // }
-    // if (availableOn.length > 0) {
-    //   data['availableOn'] = JSON.parse(req.body.availableOn);
-    // } if (servedAt) {
-    //   data['servedAt'] = JSON.parse(req.body.servedAt);
-    // } if (Slots) {
-    //   data['Slots'] = JSON.parse(req.body.Slots);
-    // } if (key) {
-    //   data['key'] = JSON.parse(req.body.key);
-    // } if (components) {
-    //   data['components'] = JSON.parse(req.body.components);
-    // } if (icon) {
-    //   data['icon'] = JSON.parse(req.body.icon);
-    // }
-    // if (name) {
-    //   data['name'] = name;
-    // }
-    // if (categoryType) {
-    //   data['categoryType'] = categoryType;
-    // }
-
     for (let key in data) {
       if (!req?.body[key]) {
         return res.status(404).json({ message: `${key} is missing` });
@@ -1427,6 +1404,154 @@ router.delete("/categories", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+/**
+ * @openapi
+ * /admin/createspacialist:
+ *  post:
+ *    summary: used to create spacialist
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                phone:
+ *                  type: string
+ *                name:
+ *                  type: string
+ *                categories:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *                email:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createspacialist", async (req, response) => {
+  try {
+    if (!req?.body?.phone || !req?.body?.name || req?.body?.email) {
+      return response.status(404).json({
+        message: "missing phone name email required fields",
+      });
+    }
+
+    const isPartnerExists = await Partner.findOne({ phone: req?.body?.phone });
+
+    if (isPartnerExists) {
+      return response.status(403).json({
+        message: "spacialist with this number already exists",
+      });
+    }
+    const newSpacialist = await Partner.create({
+      phone: req?.body?.phone,
+      Name: req?.body?.name,
+      Type: "spacialist",
+      email: req?.body?.email ? req?.body?.email : "",
+      isVerified: true,
+      isApproved: true,
+      isPublished: true,
+      isProfileCompleted: false,
+      isActive: true
+    });
+    
+    return response
+      .status(201)
+      .json({ message: "successfully created sub-provider", data: newSpacialist });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/getspacialist:
+ *  get:
+ *    summary: used to fetch list of  all available spacialist
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/getspacialist", async (req, response) => {
+  try {
+    const data = await Partner.find({ Type: "spacialist" });
+    return response.status(200).json({ message: "spacialist lists", data });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
 
 /**
  * @openapi

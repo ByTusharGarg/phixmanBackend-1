@@ -1384,7 +1384,6 @@ router.post("/createSubProvider", async (req, response) => {
       });
     }
     const isPartnerExists = await Partner.findOne({ phone: req?.body?.phone });
-    console.log(isPartnerExists);
     if (isPartnerExists) {
       return response.status(403).json({
         message: "partner with this number already exists",
