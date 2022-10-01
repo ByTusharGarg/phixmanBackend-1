@@ -10,6 +10,7 @@ const Partner = mongoose.model(
   new Schema({
     Sno: String,
     Name: { type: String, default: "" },
+    bussinessName: { type: String, default: "" },
     Dob: { type: Date, default: null },
     Type: {
       type: String,
@@ -72,12 +73,19 @@ const Partner = mongoose.model(
         longitude: String,
       },
     },
+    workingdays:[],
+    business_hours: {
+      start_hour:Date, 
+      end_hour:Date
+    },
     aadhar: {
       number: String,
       fileF: String,
       fileB: String,
     },
-
+    experienceYears:{
+      type:Number,
+    },
     pan: {
       number: String,
       file: String,

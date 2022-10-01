@@ -329,6 +329,9 @@ router.post(
  *            Name:
  *              type: string
  *              required: true
+ *            bussinessName:
+ *              type: string
+ *              required: true
  *            gender:
  *              type: string
  *              required: true
@@ -348,9 +351,23 @@ router.post(
  *            panNumber:
  *              type: string
  *              required: true
+ *            experienceYears:
+ *              type: number
+ *              required: true
+ *            workingdays:
+ *              type: array
+ *              required: true
  *            aadharNumber:
  *              type: string
  *              required: true
+ *            business_hours:
+ *              type: object
+ *              required: true
+ *              properties:
+ *               start_hour:
+ *                type: string
+ *               end_hour:
+ *                type: string
  *            address:
  *              type: object
  *              required: true
@@ -417,12 +434,16 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   }
   let {
     Name,
+    bussinessName,
+    business_hours,
     address,
     Dob,
     Type,
     Product_Service,
     email,
     gender,
+    workingdays,
+    experienceYears,
     panNumber,
     aadharNumber,
     secondaryNumber,
@@ -455,50 +476,33 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     images.push({ ...pancardImage, fileName: randomImageName() });
     docs["pan"] = { number: panNumber, file: images[2]?.fileName };
   } else {
-    if (Type === "individual") {
-      return res.status(404).json({
-        message: "pancard documents required",
-      });
-    }
-
     images.push(undefined);
     docs["pan"] = null;
   }
 
-  if (Type === "store" && !gstCertificate) {
-    return res.status(404).json({
-      message: "gstCertificate documents required",
-    });
-  } else {
-    docs["incorprationCertificate"] = incorprationCertificate
-      ? randomImageName()
-      : null;
-    docs["gstCertificate"] = gstCertificate ? randomImageName() : null;
 
-    if (incorprationCertificate) {
-      images.push({ ...incorprationCertificate, fileName: randomImageName() });
-    } else {
-      images.push(undefined);
-    }
-    if (gstCertificate) {
-      images.push({ ...gstCertificate, fileName: randomImageName() });
-    } else {
-      images.push(undefined);
-    }
+  docs["incorprationCertificate"] = incorprationCertificate
+    ? randomImageName()
+    : null;
+  docs["gstCertificate"] = gstCertificate ? randomImageName() : null;
+
+  if (incorprationCertificate) {
+    images.push({ ...incorprationCertificate, fileName: randomImageName() });
+  } else {
+    images.push(undefined);
+  }
+  if (gstCertificate) {
+    images.push({ ...gstCertificate, fileName: randomImageName() });
+  } else {
+    images.push(undefined);
   }
 
-  if (Type === "individual" && !expCertificate) {
-    return res
-      .status(404)
-      .json({ message: "expCertificate documents required" });
-  } else {
-    docs["expCertificate"] = expCertificate ? randomImageName() : null;
 
-    if (expCertificate) {
-      images.push({ ...expCertificate, fileName: randomImageName() });
-    } else {
-      images.push(undefined);
-    }
+  docs["expCertificate"] = expCertificate ? randomImageName() : null;
+  if (expCertificate) {
+    images.push({ ...expCertificate, fileName: randomImageName() });
+  } else {
+    images.push(undefined);
   }
 
   const _id = req.tempdata._id;
@@ -524,10 +528,12 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
       {
         $set: {
           Name,
+          bussinessName,
           Dob,
           Type,
           Product_Service: JSON.parse(Product_Service),
           email,
+          experienceYears,
           gender,
           address: JSON.parse(address),
           isProfileCompleted: true,
@@ -537,7 +543,9 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
             fileB: images[1].fileName,
           },
           secondaryNumber,
-          ...docs,
+          business_hours,
+          workingdays,
+          ...docs
         },
       },
       { new: true }
@@ -602,18 +610,25 @@ router.use(checkPartner);
 router.get("/myprofile", async (req, res) => {
   const partnerId = req.partner._id;
   try {
-    const profile = await Partner.findById(partnerId);
+    const profile = await Partner.findById(partnerId).populate("Product_Service");
 
-    profile["aadhar"]["fileF"] = await getObjectSignedUrl(
-      profile?.aadhar?.fileF
-    );
-    profile["aadhar"]["fileB"] = await getObjectSignedUrl(
-      profile?.aadhar?.fileB
-    );
-    profile["expCertificate"] = await getObjectSignedUrl(
-      profile?.expCertificate
-    );
+    profile["aadhar"]["fileF"] = await getObjectSignedUrl(profile?.aadhar?.fileF);
 
+    profile["aadhar"]["fileB"] = await getObjectSignedUrl(profile?.aadhar?.fileB);
+
+    if (profile["pan"]['file']) {
+      profile["pan"]['file'] = await getObjectSignedUrl(profile.pan.file);
+    }
+    if (profile["gstCertificate"]) {
+      profile["gstCertificate"] = await getObjectSignedUrl(profile.gstCertificate);
+    }
+    if (profile["incorprationCertificate"]) {
+      profile["incorprationCertificate"] = await getObjectSignedUrl(profile.incorprationCertificate);
+    }
+    if (profile["expCertificate"]) {
+      profile["expCertificate"] = await getObjectSignedUrl(profile.expCertificate);
+    }
+    
     return res.status(200).json({ message: "user profile.", data: profile });
   } catch (error) {
     console.log(error);
@@ -621,7 +636,6 @@ router.get("/myprofile", async (req, res) => {
       .status(500)
       .json({ message: "Error encountered while trying to fetching profile." });
   }
-  return res.status(200).json(req?.partner);
 });
 
 /**
