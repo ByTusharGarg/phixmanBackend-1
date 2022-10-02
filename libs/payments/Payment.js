@@ -58,11 +58,11 @@ class Payment {
       });
       await newTransaction.save();
 
-      // const isorderExist = await ordersModel.findOne({ OrderId: existingOrderId });
-
-      // isorderExist.TxnId.push(newTransaction._id);
-
-      // await isorderExist.save();
+      await ordersModel.findOneAndUpdate(
+        { OrderId: existingOrderId },
+        { $push: { TxnId: newTransaction._id } },
+        { upsert: true, new: true }
+      );
 
       return newTransaction;
     } catch (error) {
