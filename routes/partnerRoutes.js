@@ -628,7 +628,7 @@ router.get("/myprofile", async (req, res) => {
     if (profile["expCertificate"]) {
       profile["expCertificate"] = await getObjectSignedUrl(profile.expCertificate);
     }
-    
+
     return res.status(200).json({ message: "user profile.", data: profile });
   } catch (error) {
     console.log(error);
@@ -659,6 +659,17 @@ router.get("/myprofile", async (req, res) => {
  *                  type: string
  *                dob:
  *                  type: string
+ *                bussinessName:
+ *                  type: string
+ *                workingdays:
+ *                  type: array
+ *                business_hours:
+ *                  type: object
+ *                  properties:
+ *                    start_hour:
+ *                      type: date
+ *                    state:
+ *                      end_hour: date
  *                address:
  *                  type: object
  *                  properties:
@@ -679,15 +690,21 @@ router.get("/myprofile", async (req, res) => {
  *                          type: string
  *                        longitude:
  *                          type: string
- *                image:
- *                  type: file
  *                panNumber:
  *                  type: string
  *                pan:
  *                  type: file
  *                aadharNumber:
  *                  type: string
- *                aadhar:
+ *                aadharImageF:
+ *                  type: file
+ *                aadharImageB:
+ *                  type: file
+ *                gstCertificate:
+ *                  type: file
+ *                incorprationCertificate:
+ *                  type: file
+ *                expCertificate:
  *                  type: file
  *                gender:
  *                  type: string
@@ -766,36 +783,73 @@ router.get("/myprofile", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.patch(
-  "/changeprofile",
-  ...updatePartnerValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    try {
-      let update = req?.body;
-      update.isVerified = true;
-      if (req?.body?.email && req?.body?.email === "") {
-        update.email = req?.body?.email.toLowerCase();
-      }
-      if (req?.body?.Password && req?.body?.Password === "") {
-        if (!isStrong(req?.body?.Password)) {
-          return res
-            .status(400)
-            .json({ message: "password is not strong enough." });
-        }
-        update.Password = hashpassword(req?.body?.Password);
-      }
-      if (req?.files?.image) {
-        update.image = "";
-      }
-      await Partner.findByIdAndUpdate(req.partner._id, update, { new: true });
-      return res.status(200).json({ message: "user updated successfully." });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to update user." });
-    }
+router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
+  let update = req?.body;
+  let images = [];
+  let docs = {};
+
+  if (req?.body?.phone) {
+    return res.status(400).json({ message: "phone number not allowed" });
   }
+
+  if (req?.body?.Password && req?.body?.Password === "") {
+    if (!isStrong(req?.body?.Password)) {
+      return res.status(400).json({ message: "password is not strong enough." });
+    }
+    update.Password = hashpassword(req?.body?.Password);
+  }
+
+
+  if (req?.files?.aadharImageF && req?.files?.aadharImageB && req.body.aadharNumber) {
+    let af = randomImageName();
+    let ab = randomImageName();
+
+    images.push({ ...req?.files?.aadharImageF, fileName: af });
+    images.push({ ...req?.files?.aadharImageB, fileName: randomImageName() });
+    docs["aadhar"] = { number: req.aadharNumber, fileF: af, fileB: ab };
+  }
+
+  if (req?.files?.pancardImage && req.body.panNumber) {
+    let panName = randomImageName();
+    images.push({ ...req?.files?.pancardImage, fileName: panName });
+    docs["pan"] = { number: panNumber, file: panName };
+  }
+
+  if (req?.files?.gstCertificate) {
+    let name = randomImageName();
+    images.push({ ...req?.files?.gstCertificate, fileName: name });
+    docs["gstCertificate"] = name;
+  }
+
+  if (req?.files?.incorprationCertificate) {
+    let name = randomImageName();
+    images.push({ ...req?.files?.incorprationCertificate, fileName: name });
+    docs["incorprationCertificate"] = name;
+  }
+
+  if (req?.files?.expCertificate) {
+    let name = randomImageName();
+    images.push({ ...req?.files?.expCertificate, fileName: name });
+    docs["expCertificate"] = name;
+  }
+  try {
+    await Promise.all(
+    images.map((file) => {
+        if (file) {
+          return uploadFile(file.data, file.fileName, file.mimetype);
+        } else {
+          return;
+        }
+      })
+    );
+    
+    await Partner.findByIdAndUpdate(req.partner._id, { ...update, ...docs }, { new: true });
+    return res.status(200).json({ message: "partner updated successfully." });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered while trying to update user." });
+  }
+}
 );
 
 /**
