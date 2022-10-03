@@ -89,11 +89,18 @@ router.post("/", checkTokenOnly, async (req, res) => {
 
 /**
  * @openapi
- * /feedback:
+ * /feedback/{userType}:
  *  get:
- *    summary: used to fetch a specific order by OrderId.
+ *    summary: used to fetch a feedbacks
  *    tags:
  *    - Feedback Routes
+ *    parameters:
+ *      - in: path
+ *        name: userType
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["partner","customer"]
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -110,9 +117,19 @@ router.post("/", checkTokenOnly, async (req, res) => {
  *    - bearerAuth: []
  */
 
-router.get("/", checkTokenOnly, async (req, res) => {
+router.get("/:userType", checkTokenOnly, async (req, res) => {
+    const { userType } = req.params;
+    if (!userType || (userType !== "partner" && userType !== "customer")) {
+        return res.status(400).json({ message: "userType is required or should be customer or partner" });
+    }
+    let feedbacks = null;
+
     try {
-        const feedbacks = await Feedback.find();
+        if (userType === "customer") {
+            feedbacks = await Feedback.find({ customerId: { $ne: null } }).sort({ createdAt: -1 });
+        } else {
+            feedbacks = await Feedback.find({ partnerId: { $ne: null } }).sort({ createdAt: -1 });
+        }
         return res.status(200).json({ message: "feedbacks details", data: feedbacks });
     } catch (error) {
         return res.status(500).json({ message: "Error encountered." });

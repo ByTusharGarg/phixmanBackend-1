@@ -668,8 +668,8 @@ router.get("/myprofile", async (req, res) => {
  *                  properties:
  *                    start_hour:
  *                      type: date
- *                    state:
- *                      end_hour: date
+ *                    end_hour:
+ *                      type: date
  *                address:
  *                  type: object
  *                  properties:
