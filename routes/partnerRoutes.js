@@ -657,6 +657,8 @@ router.get("/myprofile", async (req, res) => {
  *                  type: string
  *                name:
  *                  type: string
+ *                Product_Service:
+ *                  type: array
  *                dob:
  *                  type: string
  *                bussinessName:
@@ -695,6 +697,8 @@ router.get("/myprofile", async (req, res) => {
  *                pan:
  *                  type: file
  *                aadharNumber:
+ *                  type: string
+ *                secondaryNumber:
  *                  type: string
  *                aadharImageF:
  *                  type: file
@@ -834,7 +838,7 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
   }
   try {
     await Promise.all(
-    images.map((file) => {
+      images.map((file) => {
         if (file) {
           return uploadFile(file.data, file.fileName, file.mimetype);
         } else {
@@ -842,7 +846,7 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
         }
       })
     );
-    
+
     await Partner.findByIdAndUpdate(req.partner._id, { ...update, ...docs }, { new: true });
     return res.status(200).json({ message: "partner updated successfully." });
   } catch (error) {

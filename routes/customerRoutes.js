@@ -847,12 +847,8 @@ router.get("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post(
-  "/create/order",
-  verifyOrderValidator,
-  rejectBadRequests,
+router.post("/create/order", verifyOrderValidator, rejectBadRequests,
   async (req, res) => {
-    console.log(req.body);
     const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
     const OrderId = commonFunction.genrateID("ORD");
     let Amount = 0;
@@ -863,7 +859,6 @@ router.post(
 
     try {
       let resp = { message: "Orders created successfully." };
-
       if (PaymentMode === "cod") {
         const newOrder = new Order({
           Customer: req.Customer._id,
@@ -894,6 +889,7 @@ router.post(
           PickUpRequired,
         });
         const customer = await Customer.findById(req.Customer._id);
+
         let cashfree = await Payment.createCustomerOrder({
           customerid: customer._id,
           email: customer.email,
@@ -914,6 +910,120 @@ router.post(
     }
   }
 );
+
+
+/**
+ * @openapi
+ * /customer/reestimate:
+ *  post:
+ *    summary: it's use to re estimated order.
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                Items:
+ *                  type: array
+ *                  items:
+ *                    properties:
+ *                      CategoryId:
+ *                        type: string
+ *                      ModelId:
+ *                        type: string
+ *                      ServiceId:
+ *                        type: string
+ *                      Cost:
+ *                        type: integer
+ *                OrderId:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/reestimate", rejectBadRequests, async (req, res) => {
+  const { OrderId, Items } = req.body;
+
+  if (!OrderId || Items.length === 0) {
+    return res.status(404).json({ message: "please provide OrderId and Items" });
+  }
+  const consumerId = req.Customer._id;
+  let Amount = 0;
+  let grandTotal = 0;
+
+  Items.map((element) => (Amount += element?.Cost));
+  grandTotal = Amount;
+
+  try {
+    const isorderExists = await Order.findOne({ Customer: consumerId, _id: OrderId });
+    if (!isorderExists) {
+      return res.status(404).json({ message: "order not found" });
+    }
+
+    await Order.findOneAndUpdate(
+      { _id: OrderId, Customer: consumerId },
+      { $inc: { "OrderDetails.Gradtotal": grandTotal }, $inc: { "OrderDetails.Amount": Amount }, $push: { "OrderDetails.Items": [...Items] } },
+      { new: true }
+    );
+
+    return res.status(200).json({ message: "Orders successfully reestimated." });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 
 /**
  * @openapi
