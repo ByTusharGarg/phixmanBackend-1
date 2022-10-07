@@ -43,7 +43,13 @@ const Partner = mongoose.model(
         enum: partnerStatusTypes,
       },
     },
-    helpers: [String],
+    helpers: [
+      {
+        name: String,
+        phone: String,
+        avtar: String
+      }
+    ],
     gender: { type: String, enum: genderTypes },
     isActive: { type: Boolean, default: true },
     isVerified: { type: Boolean, required: true, default: false },
@@ -73,18 +79,18 @@ const Partner = mongoose.model(
         longitude: String,
       },
     },
-    workingdays:[],
+    workingdays: [],
     business_hours: {
-      start_hour:Date, 
-      end_hour:Date
+      start_hour: Date,
+      end_hour: Date
     },
     aadhar: {
       number: String,
       fileF: String,
       fileB: String,
     },
-    experienceYears:{
-      type:Number,
+    experienceYears: {
+      type: Number,
     },
     pan: {
       number: String,

@@ -18,6 +18,7 @@ const {
   categoryTypesOptionsArray,
   CategoryTypeOptions,
 } = require("../enums/CategoryTypesOptions");
+const checkPartner = require('../middleware/AuthPartner');
 
 const getServiceParamValidators = [
   param("serviceType")
@@ -101,6 +102,57 @@ router.get("/getSubProvidersByStoreID/:_id", async (req, res) => {
     return res.status(200).json(providers);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /subprovider/mystoredetails:
+ *  get:
+ *    summary: My store details
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/subprovider/mystoredetails", checkPartner, async (req, response) => {
+  const { Type, isParent } = req.partner;
+
+  if (Type !== 'sub-provider') {
+    return response.status(400).json({
+      message: "You are not allowed",
+    });
+  }
+
+  try {
+    const partnerDetails = await Partner.findById(isParent);
+
+    if (!partnerDetails) {
+      return response.status(400).json({
+        message: "no store found store",
+      });
+    }
+
+    return response.status(200).json({ message: "sub-provider store details", data: partnerDetails });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to fetching sub provider store",
+    });
   }
 });
 
