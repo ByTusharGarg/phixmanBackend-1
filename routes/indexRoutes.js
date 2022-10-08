@@ -112,10 +112,6 @@ router.get("/getSubProvidersByStoreID/:_id", async (req, res) => {
  *    summary: My store details
  *    tags:
  *    - Index Routes
- *    parameters:
- *      - in: path
- *        name: _id
- *        required: true
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.

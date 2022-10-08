@@ -24,6 +24,8 @@ const router = require("express").Router();
  *                  type: string
  *                userType:
  *                  type: string
+ *                userRatting:
+ *                  type: string
  *                phixmenRatting:
  *                  type: string
  *                userDescription:
