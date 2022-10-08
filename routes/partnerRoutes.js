@@ -1077,112 +1077,6 @@ router.post("/order/acceptorder", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-
-/*
-router.post("/forms/:orderId/:type", async (req, res) => {
-  let { type, orderId } = req.params;
-
-  const partnerId = req.partner._id;
-  let { jobcard, checkin } = req.body;
-
-  // checkin = [];
-
-  let images = [];
-
-  // let daojioj = { key: "component", value: ["data", "muday"] }
-
-  // checkin.push(daojioj);
-
-  // const { phoneImages, selfieWithproduct, signature, helpers } = req?.files;
-
-  if (!type || !orderId) {
-    return res.status(500).json({ message: "type or orderId must be provided" });
-  }
-
-  if (!["jobcard", "checkin"].includes(type)) {
-    return res.status(500).json({ message: "type should be jobCard or checkin" });
-  }
-
-  if (req?.files?.signature && type === "jobcard") {
-    let sign = randomImageName();
-    images.push({ ...req?.files?.signature, fileName: sign });
-    jobcard.push({ key: "signature", value: sign })
-  }
-  if (req?.files?.selfieWithproduct && type === "jobcard") {
-    let selfieP = randomImageName();
-    images.push({ ...req?.files?.selfieWithproduct, fileName: selfieP });
-    jobcard.push({ key: "selfieWithproduct", value: selfieP })
-  }
-
-  if (req?.files?.phoneImages && req?.files?.phoneImages.length > 0 && type === "jobcard") {
-    let value = [];
-    req?.files?.phoneImages.map((file, i) => {
-      let pName = randomImageName();
-      images.push({ ...file, fileName: pName });
-      value.push(pName);
-    })
-    jobcard.push({ key: "phoneImages", value })
-  }
-
-
-  if (req?.files?.helpers && req?.files?.helpers.length > 0 && type === "jobcard") {
-    let value = [];
-    req?.files?.helpers.map((file, i) => {
-      let pName = randomImageName();
-      images.push({ ...file, fileName: pName });
-      value.push(pName);
-    })
-    jobcard.push({ key: "helpers", value })
-  }
-
-
-  try {
-    const isFormExists = await orderMetaData.findOne({ orderId });
-    if (isFormExists && type === "checkin") {
-      // if (type === "jobcard") {
-      //   return res.status(500).json({ message: "Jobcard allready exists plese delete previous one" });
-      // }
-      await orderMetaData.findOneAndUpdate({ orderId }, { checkIn: checkin }, { new: true });
-      return res.status(200).json({ message: "phone checkin successfully" });
-    }
-
-
-    if (images.length > 0) {
-      await Promise.all(
-        images.map((file, i) => {
-          if (file) {
-            return uploadFile(file.data, file.fileName, file.mimetype);
-          } else {
-            return;
-          }
-        })
-      );
-    }
-
-    const order = await Order.findOne({ _id: orderId, Partner: partnerId })
-      .populate("OrderDetails.Items[0].ServiceId");
-
-    if (!order) {
-      return res.status(500).json({ message: "order not exists or associated" });
-    }
-
-    await orderMetaData.findOneAndUpdate({ orderId }, { jobCard: jobcard }, { upsert: true });
-    // await newData.save();
-
-    if (order.Status === orderStatusTypes[2]) {
-      await Order.findByIdAndUpdate(orderId,
-        { Status: orderStatusTypes[3] },
-        { new: true }
-      );
-    }
-    return res.status(200).json({ message: "Job card created successfully" });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
-*/
-
 router.post("/forms/:orderId/:type", async (req, res) => {
   let { type, orderId } = req.params;
 
@@ -1479,6 +1373,191 @@ router.post("/createSubProvider", async (req, response) => {
     return response
       .status(201)
       .json({ message: "successfully created sub-provider", data: provider });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /partner/createhelper:
+ *  post:
+ *    summary: used to create helper by individual member
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                avtar:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createhelper", async (req, response) => {
+  const partnerID = req?.partner?._id;
+  const { name, email, avtar } = req.body;
+
+  if (!email || !name || !avtar) {
+    return response.status(404).json({
+      message: "missing required fields",
+    });
+  }
+
+  try {
+    await Partner.findByIdAndUpdate(
+      partnerID,
+      { $push: { helpers: { name, email, avtar } } },
+      { new: true }
+    );
+
+    return response.status(201).json({ message: "successfully created helper" });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
+
+/**
+ * @openapi
+ * /partner/deletehelper/{_id}:
+ *  delete:
+ *    summary: used to delete helper by individual member
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.delete("/deletehelper/:helperid", async (req, response) => {
+  const partnerID = req?.partner?._id;
+  const { helperid } = req.params;
+  
+  try {
+    await Partner.findByIdAndUpdate(
+      partnerID,
+      { $pull: { helpers: { _id: helperid } } },
+      { new: true }
+    );
+
+    return response.status(201).json({ message: "helper successfully deleted" });
   } catch (error) {
     console.log(error);
     return response.status(500).json({

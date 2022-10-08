@@ -46,7 +46,7 @@ const Partner = mongoose.model(
     helpers: [
       {
         name: String,
-        phone: String,
+        email: String,
         avtar: String
       }
     ],
