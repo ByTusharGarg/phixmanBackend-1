@@ -60,7 +60,7 @@ const adminLogin = (req, res) => {
         if (admin && comparePasswordSync(password, admin?.password)) {
           let token = jwt.sign(
             { userID: admin._id, type: "admin" },
-            process.env.Secret,
+            process.env.JWT_SECRET_ACCESS_TOKEN,
             {
               expiresIn: "24h", // expires in 24 hours
             }
@@ -90,7 +90,7 @@ const checkAdmin = (req, res, next) => {
     if (token.startsWith("Bearer ")) {
       token = token.slice(7, token.length);
     }
-    jwt.verify(token, process.env.Secret, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET_ACCESS_TOKEN, (err, decoded) => {
       req.decoded = decoded;
       if (decoded) {
         Admin.findOne(
