@@ -1549,7 +1549,7 @@ router.post("/createhelper", async (req, response) => {
 router.delete("/deletehelper/:helperid", async (req, response) => {
   const partnerID = req?.partner?._id;
   const { helperid } = req.params;
-  
+
   try {
     await Partner.findByIdAndUpdate(
       partnerID,

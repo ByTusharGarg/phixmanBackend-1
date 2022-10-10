@@ -1,0 +1,31 @@
+{
+    "cf_link_id": 2046762,
+    "link_id": "my_link_ido0kok122",
+    "link_status": "ACTIVE",
+    "link_currency": "INR",
+    "link_amount": 100,
+    "link_amount_paid": 0,
+    "link_partial_payments": false,
+    "link_minimum_partial_amount": null,
+    "link_purpose": "Payment for PlayStation 11",
+    "link_created_at": "2022-10-09T11:27:21+05:30",
+    "customer_details": {
+      "customer_name": "tarun",
+      "country_code": null,
+      "customer_phone": "8510967005",
+      "customer_email": "john@cashfree.com"
+    },
+    "link_meta": {
+      "notify_url": "https://ee08e626ecd88c61c85f5c69c0418cb5.m.pipedream.net",
+      "payment_methods": "",
+      "upi_intent": "false"
+    },
+    "link_url": "https://payments-test.cashfree.com/links/V3pjsd23edl0",
+    "link_expiry_time": "2022-10-09T15:04:05+05:30",
+    "link_notes": {},
+    "link_auto_reminders": false,
+    "link_notify": {
+      "send_email": false,
+      "send_sms": true
+    }
+  }

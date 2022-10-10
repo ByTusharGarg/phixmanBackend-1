@@ -157,6 +157,7 @@ router.post(
       } else {
         const newuser = new Customer({
           phone: req?.body?.phone,
+          isExistingUser: false,
           otp: { code: otp, status: "active" },
           uniqueReferralCode: generateRandomReferralCode(),
         });
@@ -250,6 +251,7 @@ router.post(
   rejectBadRequests,
   async (req, res) => {
     let resp = {};
+
     try {
       const customer = await Customer.findOneAndUpdate(
         {
@@ -264,6 +266,11 @@ router.post(
       if (customer === null) {
         return res.status(401).json({ message: "Invalid OTP" });
       }
+
+      if (customer && customer.isExistingUser === false) {
+        const up = await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { isExistingUser: true });
+      }
+
 
       if (!customer.isVerified) {
         // This condition runs when customer login first time
@@ -302,6 +309,7 @@ router.post(
         return res.status(200).json({
           message: "Login successfully",
           uid: customer._id,
+          isExistingUser: customer.isExistingUser,
           accessToken: accessToken,
           refreshToken: refreshToken,
           isApproved: customer.isApproved,
@@ -334,8 +342,6 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
   try {
     orderData = await Order.findById(orderid).populate('OrderDetails.Items.ServiceId')
       .populate('Customer').populate('Partner');
-
-    console.log(orderData.OrderDetails);
 
     if (!orderData) {
       return res.status(404).json({ message: "order not found" });
@@ -388,7 +394,6 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
     },
   };
 
-  // console.log(obj);
   const document = {
     html: html,
     data: {

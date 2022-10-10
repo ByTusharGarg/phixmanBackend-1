@@ -14,7 +14,7 @@ const Customer = mongoose.model(
     phone: { type: String, required: true, unique: true },
     Password: { type: String, default: "" },
     image: { type: String, default: "" },
-    gender: { type: String, enum: genderTypes},
+    gender: { type: String, enum: genderTypes },
     otp: {
       code: {
         type: String,
@@ -47,6 +47,10 @@ const Customer = mongoose.model(
     fcmToken: {
       type: String,
       default: null,
+    },
+    isExistingUser: {
+      type: Boolean,
+      default: false
     },
     isActive: { type: Boolean, required: true, default: true },
     isVerified: { type: Boolean, required: true, default: false },

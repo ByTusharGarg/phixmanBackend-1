@@ -1508,7 +1508,7 @@ router.post("/createspacialist", async (req, response) => {
       isProfileCompleted: false,
       isActive: true
     });
-    
+
     return response
       .status(201)
       .json({ message: "successfully created sub-provider", data: newSpacialist });
@@ -2238,4 +2238,54 @@ router.post("/settings", async (req, res) => {
     return res.status(500).json({ message: "internal server error" });
   }
 });
+
+
+/**
+ * @openapi
+ * /customersorders/{_id}:
+ *  get:
+ *    summary: using this route admmin can get customer all orders.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/customersorders/:id", async (req, res) => {
+  let { id } = req.params;
+  const Customer = req.Customer._id;
+
+  try {
+    const orders = await Order.find({ Customer: id })
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
 module.exports = router;
