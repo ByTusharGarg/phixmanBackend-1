@@ -14,11 +14,25 @@ const orderStatusTypes = [
   "Initial",
   "Requested",
   "Accepted",
+  "pickup",
   "InRepair",
   "completed",
+  "delivered",
   "Cancelled",
   "Reshedulled",
 ];
+const orderStatusTypesObj = {
+  Initial:"Initial",
+  Requested:"Requested",
+  Accepted:"Accepted",
+  pickup:"pickup",
+  InRepair:"InRepair",
+  completed:"completed",
+  delivered:"delivered",
+  Cancelled:"Cancelled",
+  Reshedulled:"Reshedulled"
+};
+
 const serviceTypes = [];
 const paymentModeTypes = ["cod", "online"];
 const transsactionTypes = ["debit", "credit"];
@@ -49,4 +63,5 @@ module.exports = {
   transsactionUser,
   offerPromoType,
   coupenUserType,
+  orderStatusTypesObj
 };

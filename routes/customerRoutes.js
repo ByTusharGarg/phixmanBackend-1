@@ -21,6 +21,7 @@ const {
   orderTypes,
   paymentModeTypes,
   paymentStatus,
+  orderStatusTypesObj,
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
@@ -267,10 +268,9 @@ router.post(
         return res.status(401).json({ message: "Invalid OTP" });
       }
 
-      if (customer && customer.isExistingUser === false) {
-        const up = await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { isExistingUser: true });
-      }
-
+      // if (customer && customer.isExistingUser === false) {
+      //   const up = await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { isExistingUser: true });
+      // }
 
       if (!customer.isVerified) {
         // This condition runs when customer login first time
@@ -869,7 +869,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests,
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypes[1],
+          Status: orderStatusTypesObj['Requested'],
           PendingAmount: Amount,
           PaymentStatus: paymentStatus[1],
           OrderDetails: { Amount, Items },
@@ -885,7 +885,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests,
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypes[0],
+          Status: orderStatusTypesObj['Requested'],
           PendingAmount: Amount,
           PaymentStatus: paymentStatus[1],
           OrderDetails: { Amount, Gradtotal: grandTotal, Items },

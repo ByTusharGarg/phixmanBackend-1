@@ -1,4 +1,4 @@
-const mapping = {
+const emailDatamapping = {
     orderComplete: {
         heading1: "ORDER COMPLETED",
         heading2: "SUCCESSFUL COMPLETION",
@@ -44,4 +44,4 @@ const mapping = {
 }
 
 
-module.exports = mapping;
+module.exports = emailDatamapping;

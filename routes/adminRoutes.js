@@ -24,6 +24,7 @@ const {
   orderStatusTypes,
   orderTypes,
   paymentModeTypes,
+  orderStatusTypesObj,
 } = require("../enums/types");
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
@@ -673,7 +674,7 @@ router.post(
         Customer: customerId,
         OrderId,
         OrderType,
-        Status: orderStatusTypes[2],
+        Status:orderStatusTypesObj['Accepted'],
         PendingAmount: Amount,
         PaymentStatus: paymentStatus[1],
         OrderDetails: { Amount, Items },

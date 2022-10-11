@@ -6,6 +6,7 @@ const {
   transsactionStatus,
   orderStatusTypes,
   paymentStatus,
+  orderStatusTypesObj,
 } = require("../../enums/types");
 const { WalletTransaction } = require("../../models");
 const {
@@ -262,7 +263,7 @@ class Payment {
           { OrderId: orderId },
           {
             PaymentStatus: paymentStatus[0],
-            Status: orderStatusTypes[1],
+            Status: orderStatusTypesObj['Requested'],
             PendingAmount: leftAmount,
           }
         );
@@ -271,7 +272,7 @@ class Payment {
           { OrderId: orderId },
           {
             PaymentStatus: paymentStatus[2],
-            Status: orderStatusTypes[1],
+            Status: orderStatusTypesObj['Requested'],
             PendingAmount: leftAmount,
           }
         );

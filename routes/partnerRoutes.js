@@ -4,7 +4,7 @@ const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, PartnerWallet, Order, orderMetaData } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypes } = require("../enums/types");
+const { orderStatusTypesObj } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
 
@@ -25,6 +25,7 @@ const {
   getWallletTransactionByTransactionId,
   getAllWallletTranssaction,
 } = require("../services/Wallet");
+const emailDatamapping = require('../common/emailcontent');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -898,10 +899,6 @@ router.get("/myorders/:status", async (req, res) => {
     return res.status(500).json({ message: `${status} status not allowed.` });
   }
 
-  // if (status !== 'all' && !orderStatusTypes.includes(status)) {
-  //   return res.status(400).json({ message: "Invalid status" });
-  // }
-
   let query = { Partner: partnerId };
 
   if (status !== "all") {
@@ -1013,7 +1010,7 @@ router.post("/order/acceptorder", async (req, res) => {
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
-      { Status: orderStatusTypes[2], Partner: partnerId },
+      { Status: orderStatusTypesObj['Accepted'], Partner: partnerId },
       { new: true }
     );
     return res.status(200).json({ message: "order Accepted" });
@@ -1133,10 +1130,10 @@ router.post("/forms/:orderId/:type", async (req, res) => {
       { upsert: true }
     );
 
-    if (order.Status === orderStatusTypes[2]) {
+    if (order.Status === orderStatusTypesObj['Accepted']) {
       await Order.findByIdAndUpdate(
         orderId,
-        { Status: orderStatusTypes[3] },
+        { Status: orderStatusTypesObj['InRepair'] },
         { new: true }
       );
     }
@@ -1229,6 +1226,7 @@ router.get("/forms/:orderId", async (req, res) => {
 router.post("/order/changestatus", async (req, res) => {
   let { status, orderId } = req.body;
   const partnerId = req.partner._id;
+  let emailData = null;
 
   if (!status || !orderId) {
     return res
@@ -1236,14 +1234,15 @@ router.post("/order/changestatus", async (req, res) => {
       .json({ message: "orderId and status must be provided" });
   }
 
-  const allowedStatus = ["InRepair", "completed", "Cancelled"];
+  const allowedStatus = ["InRepair", "completed", "Cancelled", "pickup", "delivered"];
 
   if (!allowedStatus.includes(status)) {
     return res.status(500).json({ message: "status is not allowed" });
   }
 
   try {
-    const order = await Order.findOne({ Partner: partnerId, OrderId: orderId });
+    const order = await Order.findOne({ Partner: partnerId, OrderId: orderId }).populate("Customer", "email Name")
+    let first_name = order.Customer.Name ? order.Customer.Name : "Dear";
 
     if (!order) {
       return res
@@ -1255,12 +1254,47 @@ router.post("/order/changestatus", async (req, res) => {
       return res.status(200).json({ message: "This is your current status" });
     }
 
+    if (status === "InRepair") {
+      emailData = {
+        Subject: "[Phixman] Order status E-mail",
+        heading1: emailDatamapping['repairInProgress'].heading1,
+        heading2: emailDatamapping['repairInProgress'].heading2,
+        desc: `Hey ${first_name}, ` + emailDatamapping['repairInProgress'].desc,
+        buttonName: emailDatamapping['repairInProgress'].buttonName,
+        email: order.Customer.email || null
+      };
+    }
+    else if (status === "pickup") {
+      emailData = {
+        Subject: "[Phixman] Order status E-mail",
+        heading1: emailDatamapping['pickUp'].heading1,
+        heading2: emailDatamapping['pickUp'].heading2,
+        desc: `Hey ${first_name}, ` + emailDatamapping['pickUp'].desc,
+        buttonName: emailDatamapping['pickUp'].buttonName,
+        email: order.Customer.email || null
+      };
+    }
+    else if (status === "delivered") {
+      emailData = {
+        Subject: "[Phixman] Order status E-mail",
+        heading1: emailDatamapping['orderComplete'].heading1,
+        heading2: emailDatamapping['orderComplete'].heading2,
+        desc: `Hey ${first_name}, ` + emailDatamapping['orderComplete'].desc,
+        buttonName: emailDatamapping['orderComplete'].buttonName,
+        email: order.Customer.email || null
+      };
+    }
+
+    if (emailData && emailData.email) {
+      commonMailFunctionToAll(data, "common");
+    }
+
     await Order.findOneAndUpdate(
       { OrderId: orderId },
       { Status: status },
       { new: true }
     );
-    return res.status(200).json({ message: "order status changes" });
+    return res.status(200).json({ message: "order status chnages successfully" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
