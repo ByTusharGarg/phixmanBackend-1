@@ -791,7 +791,7 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
   let update = req?.body;
   let images = [];
   let docs = {};
-  if(req.body.Product_Service){
+  if (req.body.Product_Service) {
     req.body.Product_Service = JSON.stringify(req.body.Product_Service);
   }
   if (req?.body?.phone) {
@@ -812,13 +812,13 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
 
     images.push({ ...req?.files?.aadharImageF, fileName: af });
     images.push({ ...req?.files?.aadharImageB, fileName: randomImageName() });
-    docs["aadhar"] = { number: req.aadharNumber, fileF: af, fileB: ab };
+    docs["aadhar"] = { number: req.body.aadharNumber, fileF: af, fileB: ab };
   }
 
   if (req?.files?.pancardImage && req.body.panNumber) {
     let panName = randomImageName();
     images.push({ ...req?.files?.pancardImage, fileName: panName });
-    docs["pan"] = { number: panNumber, file: panName };
+    docs["pan"] = { number: req.body.panNumber, file: panName };
   }
 
   if (req?.files?.gstCertificate) {
