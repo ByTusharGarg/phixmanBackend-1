@@ -177,8 +177,9 @@ router.get("/myhelpers", checkPartner, async (req, res) => {
   const partnerId = req.partner._id;
   try {
     let data = await Partner.findById(partnerId);
-    return response.status(200).json({ message: "helpers details", data: data['helpers'] });
+    return res.status(200).json({ message: "helpers details", data: data['helpers'] });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
