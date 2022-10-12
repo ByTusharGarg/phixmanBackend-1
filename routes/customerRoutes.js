@@ -696,6 +696,80 @@ router.post("/address", async (req, res) => {
   }
 });
 
+
+/**
+ * @openapi
+ * /customer/updateprofile:
+ *  post:
+ *    summary: sUpdate consumer profile
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: object
+ *                Name:
+ *                  type: object
+ *                gender:
+ *                  type: object
+ *                image:
+ *                  type: object
+ *    responses:
+ *      200:
+ *          description: if successfully found user
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               description: customer details
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.patch("/updateprofile", async (req, res) => {
+  const cid = req.Customer._id;
+  if (req.body.phone) {
+    return res.status(400).json({ message: "phone not allowed" });
+  }
+
+  let updateQuery = req.body;
+  try {
+    const getUserProfile = await Customer.findById(cid);
+
+    if (getUserProfile.isExistingUser === false) {
+      updateQuery['isExistingUser'] = true;
+    }
+    await Customer.findByIdAndUpdate(cid, updateQuery);
+    return res.status(200).json({ message: "Profile updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 /**
  * @openapi
  * /customer/address:
@@ -871,6 +945,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests,
           OrderType,
           Status: orderStatusTypesObj['Requested'],
           PendingAmount: Amount,
+          paidamount: Amount,
           PaymentStatus: paymentStatus[1],
           OrderDetails: { Amount, Items },
           PaymentMode,

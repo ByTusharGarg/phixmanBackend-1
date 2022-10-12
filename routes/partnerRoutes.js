@@ -630,6 +630,10 @@ router.get("/myprofile", async (req, res) => {
       profile["expCertificate"] = await getObjectSignedUrl(profile.expCertificate);
     }
 
+    if (profile["profilePic"]) {
+      profile["profilePic"] = await getObjectSignedUrl(profile.profilePic);
+    }
+
     return res.status(200).json({ message: "user profile.", data: profile });
   } catch (error) {
     console.log(error);
@@ -695,7 +699,7 @@ router.get("/myprofile", async (req, res) => {
  *                          type: string
  *                panNumber:
  *                  type: string
- *                pan:
+ *                pancardImage:
  *                  type: file
  *                aadharNumber:
  *                  type: string
@@ -792,6 +796,7 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
   let update = req?.body;
   let images = [];
   let docs = {};
+
   if (req.body.Product_Service) {
     req.body.Product_Service = JSON.stringify(req.body.Product_Service);
   }
@@ -812,7 +817,7 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
     let ab = randomImageName();
 
     images.push({ ...req?.files?.aadharImageF, fileName: af });
-    images.push({ ...req?.files?.aadharImageB, fileName: randomImageName() });
+    images.push({ ...req?.files?.aadharImageB, fileName: ab });
     docs["aadhar"] = { number: req.body.aadharNumber, fileF: af, fileB: ab };
   }
 
@@ -858,6 +863,109 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
   }
 }
 );
+
+/**
+ * @openapi
+ * /partner/changeprofilepic:
+ *  patch:
+ *    summary: used to update partner profile pic
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        multipart/form-data:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                profilePic:
+ *                  type: file
+ *          encoding:
+ *              image:
+ *                  contentType: image/png, image/jpeg, image/jpg, image/gif
+ *              pan:
+ *                  contentType: image/png, image/jpeg, image/jpg, image/gif
+ *              aadhar:
+ *                  contentType: image/png, image/jpeg, image/jpg, image/gif
+ *    responses:
+ *      200:
+ *          description: if user updated successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: user updated successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.patch("/changeprofilepic", rejectBadRequests, async (req, res) => {
+  let fileName = randomImageName();
+
+  if (!req?.files?.profilePic) {
+    return res.status(400).json({ message: "profile pic required" });
+  }
+
+  try {
+    await uploadFile(req?.files.profilePic?.data, fileName, req?.files.profilePic?.mimetype);
+    await Partner.findByIdAndUpdate(req.partner._id, { profilePic: fileName });
+    return res.status(200).json({ message: "profile updated successfully." });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered while trying to update user." });
+  }
+});
 
 /**
  * @openapi
@@ -1419,6 +1527,92 @@ router.post("/createSubProvider", async (req, response) => {
 
 /**
  * @openapi
+ * /partner/deleteSubProvider/{sid}:
+ *  delete:
+ *    summary: Partner can delete sub-provider
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: sid
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.delete("/deleteSubProvider/:sid", async (req, response) => {
+  const partnerId = req?.partner?._id;
+  const { sid } = req.params;
+
+  try {
+    const provider = await Partner.findOneAndDelete({ _id: sid, isParent: partnerId });
+    if (provider) {
+      return response.status(201).json({ message: "sub-provider successfully deleted" });
+    } else {
+      return response.status(404).json({ message: "no partner associated or not found" });
+    }
+
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
+/**
+ * @openapi
  * /partner/createhelper:
  *  post:
  *    summary: used to create helper by individual member
@@ -1800,7 +1994,6 @@ router.post("/verifycredit", async (req, res) => {
  */
 router.get("/wallet/transaction", async (req, res) => {
   const id = req.partner._id;
-  console.log(id);
   try {
     const data = await getAllWallletTranssaction(id, "partner");
     return res.status(200).json({ message: "partner Transsaction list", data });
@@ -1811,6 +2004,75 @@ router.get("/wallet/transaction", async (req, res) => {
         : "Error encountered while trying to fetch transaction.",
     });
   }
+});
+
+
+
+/**
+ * @openapi
+ * /partner/recivepayment:
+ *  post:
+ *    summary: Initiate payment for recive
+ *    tags:
+ *    - partner Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/initiateRecivePayment", async (req, res) => {
+  const { paymentType, orderId } = req.body;
+  const partnerId = req.partner._id;
+  const paymentAcceptedType = ["self", "link", "qr"];
+
+  if (!paymentAcceptedType.includes(paymentType)) {
+    return res.status(400).json({ message: "Invalid paymentType" });
+  }
+
+  const id = req.partner._id;
+  console.log(id);
+
+  try {
+    const orderData = await Order.findOne({ Partner: partnerId, OrderId:orderId });
+    if (!orderData) {
+      return res.status(400).json({ message: "invalid Order data not foound" });
+    }
+
+    const leftAmount = orderData['OrderDetails']['Gradtotal'] - orderData['OrderDetails']['paidamount'];
+
+    if (paymentType === "self") {
+      const orderData = await Order.findByIdAndUpdate(orderData._id, { $inc: { paidamount: leftAmount } });
+      return res.status(200).json({ message: "Order payment on cash successfull", data });
+    }
+    else if(paymentType === "link"){
+      
+    }
+    else if(paymentType === "qr"){
+      return res.status(400).json({ message: "currently unavailable" });
+    }else{
+      return res.status(400).json({ message: "Invalid payment initialization" });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message
+        ? error.message
+        : "Error encountered while trying to fetch transaction.",
+    });
+  }
+});
+
+router.post("/verifyInitiateRecivePayment", async (req, res) => {
+  return res.status(400).json({ message: "currently unavailable" });
 });
 
 module.exports = router;
