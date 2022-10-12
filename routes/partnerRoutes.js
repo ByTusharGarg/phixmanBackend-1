@@ -2010,7 +2010,7 @@ router.get("/wallet/transaction", async (req, res) => {
 
 /**
  * @openapi
- * /partner/recivepayment:
+ * /partner/initiateRecivePayment:
  *  post:
  *    summary: Initiate payment for recive
  *    tags:
@@ -2023,27 +2023,43 @@ router.get("/wallet/transaction", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                  message:
+ *                  paymentType:
  *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
+ *                  orderId:
+ *                    type: string
+ *                  notifyMethod:
+ *                    type: object
+ *                    required: true
+ *                    properties:
+ *                     phone:
+ *                      type: string
+ *                     email:
+ *                      type: string
  *    security:
  *    - bearerAuth: []
  */
 router.post("/initiateRecivePayment", async (req, res) => {
-  const { paymentType, orderId } = req.body;
+  const { paymentType, orderId, notifyMethod } = req.body;
   const partnerId = req.partner._id;
   const paymentAcceptedType = ["self", "link", "qr"];
 
   if (!paymentAcceptedType.includes(paymentType)) {
     return res.status(400).json({ message: "Invalid paymentType" });
   }
+  const generatedOrderId = commonFunction.genrateID("ORD");
 
   const id = req.partner._id;
-  console.log(id);
+  let notifyTo = null;
+
+  if (notifyMethod['phone']) {
+    notifyTo = notifyMethod['phone']
+  }
+  else {
+    notifyTo = notifyMethod['email']
+  }
 
   try {
-    const orderData = await Order.findOne({ Partner: partnerId, OrderId:orderId });
+    const orderData = await Order.findOne({ Partner: partnerId, OrderId: orderId }).populate("Customer", "email Name");
     if (!orderData) {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
@@ -2054,12 +2070,38 @@ router.post("/initiateRecivePayment", async (req, res) => {
       const orderData = await Order.findByIdAndUpdate(orderData._id, { $inc: { paidamount: leftAmount } });
       return res.status(200).json({ message: "Order payment on cash successfull", data });
     }
-    else if(paymentType === "link"){
-      
+    else if (paymentType === "link") {
+      if (!notifyTo) {
+        return res.status(400).json({ message: "notifyMethod object required" });
+      }
+
+      let paymentObj = {
+        customerid: customer._id,
+        email: customer.email,
+        phone: customer.phone,
+        OrderId: generatedOrderId,
+        Amount: leftAmount,
+      }
+      let cashfree = await Payment.createCustomerOrder(paymentObj);
+      const paymentLink = cashfree.payment_link;
+
+      // send link to user
+      emailData = {
+        Subject: "[Phixman] Order status E-mail",
+        heading1: emailDatamapping['ppaymentLink'].heading1,
+        heading2: emailDatamapping['ppaymentLink'].heading2,
+        desc: `Hey ${first_name}, ` + emailDatamapping['ppaymentLink'].desc+` <a href='${paymentLink}'>${paymentLink}</a>`,
+        buttonName: emailDatamapping['ppaymentLink'].buttonName,
+        email: order.Customer.email || null
+      };
+
+      // commonMailFunctionToAll(data, "common");
+      // sendOtp()
+      return res.status(200).json({ message: "Payment link successfully sent", paymentLink, transactionId: generatedOrderId });
     }
-    else if(paymentType === "qr"){
+    else if (paymentType === "qr") {
       return res.status(400).json({ message: "currently unavailable" });
-    }else{
+    } else {
       return res.status(400).json({ message: "Invalid payment initialization" });
     }
   } catch (error) {
@@ -2071,8 +2113,58 @@ router.post("/initiateRecivePayment", async (req, res) => {
   }
 });
 
-router.post("/verifyInitiateRecivePayment", async (req, res) => {
-  return res.status(400).json({ message: "currently unavailable" });
+/**
+ * @openapi
+ * /customer/verifypayment:
+ *   post:
+ *    summary: it's use to verify order payment status.
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                transactionId:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if order cancelled successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+router.post("/verifypayment", async (req, res) => {
+  try {
+    if (!req.body.transactionId) {
+      return res.status(400).json({ message: "transactionId is required" });
+    }
+    const resp = await Payment.verifyCustomerOrder(req.body.transactionId);
+    return res.status(200).json(resp);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
 });
 
 module.exports = router;
