@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 const Customer = mongoose.model(
   "Customer",
   new Schema({
+    Sno: { type: String, default: "" },
     Name: {
       type: String,
       trim: true,
@@ -50,7 +51,7 @@ const Customer = mongoose.model(
     },
     isExistingUser: {
       type: Boolean,
-      default: false
+      default: false,
     },
     isActive: { type: Boolean, required: true, default: true },
     isVerified: { type: Boolean, required: true, default: false },

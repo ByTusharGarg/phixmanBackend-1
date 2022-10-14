@@ -9,12 +9,6 @@ const transsactionSchema = mongoose.Schema(
   {
     cashfree: { type: Object, default: {} },
     tranId: { type: String, default: "" },
-    // partnerId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Partner",
-    //   default: null,
-    // },
-    
     transsactionUser: { type: String, enum: transsactionUser, required: true },
     walletId: {
       type: mongoose.Schema.Types.ObjectId,

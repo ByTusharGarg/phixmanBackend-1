@@ -8,7 +8,7 @@ const Schema = mongoose.Schema;
 const Partner = mongoose.model(
   "Partner",
   new Schema({
-    Sno: String,
+    Sno: { type: String, default: "" },
     Name: { type: String, default: "" },
     bussinessName: { type: String, default: "" },
     Dob: { type: Date, default: null },
@@ -47,8 +47,8 @@ const Partner = mongoose.model(
       {
         name: String,
         email: String,
-        avtar: String
-      }
+        avtar: String,
+      },
     ],
     gender: { type: String, enum: genderTypes },
     isActive: { type: Boolean, default: true },
@@ -82,7 +82,7 @@ const Partner = mongoose.model(
     workingdays: [],
     business_hours: {
       start_hour: Date,
-      end_hour: Date
+      end_hour: Date,
     },
     aadhar: {
       number: String,

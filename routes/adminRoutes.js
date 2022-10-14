@@ -34,6 +34,7 @@ const path = require("path");
 const csv = require("csvtojson");
 const fs = require("fs");
 const { getParseModels } = require("../libs/commonFunction");
+const { getWalletTransactions } = require("../services/Wallet");
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -180,7 +181,7 @@ router.post("/resetpassword", AdminAuth.resetPassword);
  */
 router.post("/changepassword", AdminAuth.changePassword);
 
-router.use(AdminAuth.checkAdmin);
+// router.use(AdminAuth.checkAdmin);
 
 /**
  * @openapi
@@ -674,7 +675,7 @@ router.post(
         Customer: customerId,
         OrderId,
         OrderType,
-        Status:orderStatusTypesObj['Accepted'],
+        Status: orderStatusTypesObj["Accepted"],
         PendingAmount: Amount,
         PaymentStatus: paymentStatus[1],
         OrderDetails: { Amount, Items },
@@ -1310,14 +1311,18 @@ router.put("/categories/:id", async (req, res) => {
       }
     }
 
-    const updatedategory = category.findByIdAndUpdate(id, req.body, { new: true });
+    const updatedategory = category.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
 
     if (updatedategory) {
-      return res.status(200).json({ message: "Category updated successfully.", data: updatedategory });
+      return res.status(200).json({
+        message: "Category updated successfully.",
+        data: updatedategory,
+      });
     } else {
       return res.status(404).json({ message: "Category not found." });
     }
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -1507,12 +1512,13 @@ router.post("/createspacialist", async (req, response) => {
       isApproved: true,
       isPublished: true,
       isProfileCompleted: false,
-      isActive: true
+      isActive: true,
     });
 
-    return response
-      .status(201)
-      .json({ message: "successfully created sub-provider", data: newSpacialist });
+    return response.status(201).json({
+      message: "successfully created sub-provider",
+      data: newSpacialist,
+    });
   } catch (error) {
     console.log(error);
     return response.status(500).json({
@@ -1552,7 +1558,6 @@ router.get("/getspacialist", async (req, response) => {
     });
   }
 });
-
 
 /**
  * @openapi
@@ -1722,11 +1727,16 @@ router.get("/get/partners/:type", async (req, res) => {
   const { type } = req.params;
 
   if (type === "kycpending") {
-    query = { isProfileCompleted: true, isVerified: false, isApproved: false, Type: { $ne: 'sub-provider' } };
+    query = {
+      isProfileCompleted: true,
+      isVerified: false,
+      isApproved: false,
+      Type: { $ne: "sub-provider" },
+    };
   } else if (type === "block") {
-    query = { isPublished: false, Type: { $ne: 'sub-provider' } };
+    query = { isPublished: false, Type: { $ne: "sub-provider" } };
   } else {
-    query = { Type: { $ne: 'sub-provider' } };
+    query = { Type: { $ne: "sub-provider" } };
   }
 
   try {
@@ -1736,7 +1746,6 @@ router.get("/get/partners/:type", async (req, res) => {
     console.log(error);
   }
 });
-
 
 /**
  * @openapi
@@ -2240,10 +2249,9 @@ router.post("/settings", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
- * /customersorders/{_id}:
+ * /admin/customersorders/{_id}:
  *  get:
  *    summary: using this route admmin can get customer all orders.
  *    tags:
@@ -2288,5 +2296,36 @@ router.get("/customersorders/:id", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /admin/walletTransactions:
+ *  get:
+ *    summary: using this route admmin can get customer all orders.
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/walletTransactions", async (req, res) => {
+  try {
+    let trans = await getWalletTransactions();
+    return res.status(200).json(trans);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 module.exports = router;

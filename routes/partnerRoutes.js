@@ -23,7 +23,7 @@ const commonFunction = require("../utils/commonFunction");
 const Payment = require("../libs/payments/Payment");
 const {
   getWallletTransactionByTransactionId,
-  getAllWallletTranssaction,
+  getAllWallletTranssactionForUser,
 } = require("../services/Wallet");
 const emailDatamapping = require('../common/emailcontent');
 
@@ -1995,7 +1995,7 @@ router.post("/verifycredit", async (req, res) => {
 router.get("/wallet/transaction", async (req, res) => {
   const id = req.partner._id;
   try {
-    const data = await getAllWallletTranssaction(id, "partner");
+    const data = await getAllWallletTranssactionForUser(id, "partner");
     return res.status(200).json({ message: "partner Transsaction list", data });
   } catch (error) {
     return res.status(500).json({

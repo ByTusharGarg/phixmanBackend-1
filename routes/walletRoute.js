@@ -11,7 +11,7 @@ const {
 
 const checkPartner = require("../middleware/AuthPartner");
 const checkCustomer = require("../middleware/AuthCustomer");
-const { getAllWallletTranssaction } = require("../services/Wallet");
+const { getAllWallletTranssactionForUser } = require("../services/Wallet");
 
 /**
  * @openapi
@@ -38,7 +38,7 @@ const { getAllWallletTranssaction } = require("../services/Wallet");
 router.get("/transaction/customer", checkCustomer, async (req, res) => {
   const id = req.Customer._id;
   try {
-    const data = await getAllWallletTranssaction(id, "customer");
+    const data = await getAllWallletTranssactionForUser(id, "customer");
     return res
       .status(200)
       .json({ message: "customer Transsaction list", data });

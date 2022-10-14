@@ -37,7 +37,7 @@ const getCustomerWallet = async (id) => {
   }
 };
 
-const getAllWallletTranssaction = async (id, type) => {
+const getAllWallletTranssactionForUser = async (id, type) => {
   if (type !== "partner" && type !== "customer") {
     throw new Error("Invalid transsactionUser");
   }
@@ -102,7 +102,7 @@ const createWalletTransaction = async (
 
   try {
     // create wallet transaction
-    const walletTransaction = new WalletTransaction({
+    const walletTransaction = await new WalletTransaction({
       amount,
       userId: transsactionUser === "partner" ? userId : null,
       userId: transsactionUser === "customer" ? userId : null,
@@ -116,6 +116,45 @@ const createWalletTransaction = async (
     return walletTransaction.save();
   } catch (error) {
     throw new Error("Error accure");
+  }
+};
+
+const getWalletTransactions = async () => {
+  try {
+    let transactions = await WalletTransaction.find();
+    console.log(transactions);
+    let wallet;
+    const populateUserdata = async (transaction) => {
+      try {
+        console.log(transaction, transaction?.walletId);
+        if (transaction?.transsactionUser === "partner") {
+          let obj = {
+            tranId: transaction.tranId,
+            transsactionUser: transaction.transsactionUser,
+            amount: transaction.amount,
+            title: transaction.title,
+            reason: transaction.reason,
+            transsactionType: transaction.transsactionType,
+            status: transaction.status,
+            createdAt: transaction.createdAt,
+          };
+          wallet = await PartnerWallet.findById(transaction?.walletId);
+          obj.user = await Partner.findById(wallet?.partnerId);
+          console.log(wallet, transaction.user?.phone);
+          return obj;
+        }
+        return obj;
+      } catch (error) {}
+    };
+    let trans = await Promise.all(
+      transactions.map((item) => {
+        return populateUserdata(item);
+      })
+    );
+    console.log(trans);
+    return trans;
+  } catch (error) {
+    throw new Error("Error fetching wallet transactions");
   }
 };
 
@@ -299,10 +338,11 @@ const makeCustomerTranssaction = async (
 module.exports = {
   getPartnerWallet,
   getCustomerWallet,
-  getAllWallletTranssaction,
+  getAllWallletTranssactionForUser,
   getWallletTransactionByTransactionId,
   updateWallletTransactionByTransactionId,
   createWalletTransaction,
+  getWalletTransactions,
   updatePartnerWallet,
   updateCustomerWallet,
   // makePartnerTranssaction,
