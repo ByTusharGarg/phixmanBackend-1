@@ -22,7 +22,7 @@ const Order = mongoose.model(
     OrderDetails: {
       Amount: { type: Number },
       Gradtotal: { type: Number },
-      paidamount: { type: Number,default:0 },
+      paidamount: { type: Number, default: 0 },
       Items: [
         {
           CategoryId: { type: Schema.Types.ObjectId, ref: "category" },
@@ -32,7 +32,7 @@ const Order = mongoose.model(
         },
       ],
     },
-    Date: { type: Date, default: Date.now },
+    Date: { type: String },
     PaymentMode: { type: String, enum: paymentModeTypes },
     PaymentStatus: { type: String, enum: paymentStatus },
     PendingAmount: { type: Number },

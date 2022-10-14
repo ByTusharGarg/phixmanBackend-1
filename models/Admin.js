@@ -1,12 +1,22 @@
 const mongoose = require("mongoose");
+const { adminTypeArray, adminTypeObject } = require("../enums/adminTypes");
+const Schema = mongoose.Schema;
 const Admin = mongoose.model(
   "Admin",
-  new mongoose.Schema({
+  new Schema({
     Sno: Number,
     Name: { type: String, default: "" },
+    designation: { type: String, default: "" },
+    empId: { type: String, default: "" },
+    phone: { type: String, default: "" },
     email: {
       type: String,
       unique: true,
+    },
+    type: {
+      type: String,
+      default: adminTypeObject.superAdmin,
+      enum: adminTypeArray,
     },
     password: { type: String, default: "" },
     isActive: {
@@ -24,6 +34,8 @@ const Admin = mongoose.model(
       required: true,
       default: true,
     },
+    zones: [{ type: Schema.Types.ObjectId, ref: "Zone" }],
+    category: [{ type: Schema.Types.ObjectId, ref: "category" }],
   })
 );
 module.exports = Admin;

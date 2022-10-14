@@ -30,6 +30,7 @@ const categorySchema = new mongoose.Schema({
   enabled: { type: Boolean, default: true },
   isDeleted: { type: Boolean, default: false },
   modelRequired: { type: Boolean, default: false },
+  
 });
 
 const category = mongoose.model("category", categorySchema);

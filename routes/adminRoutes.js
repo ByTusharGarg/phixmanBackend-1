@@ -13,6 +13,8 @@ const {
   SystemInfo,
   Model,
   Brand,
+  Country,
+  State,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -2300,7 +2302,7 @@ router.get("/customersorders/:id", async (req, res) => {
  * @openapi
  * /admin/walletTransactions:
  *  get:
- *    summary: using this route admmin can get customer all orders.
+ *    summary: route to fetch all credit transactions.
  *    tags:
  *    - Admin Routes
  *    responses:
@@ -2328,4 +2330,155 @@ router.get("/walletTransactions", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /admin/Country/add:
+ *  post:
+ *    summary: route to add new country.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                Country:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/Country/add", async (req, res) => {
+  try {
+    let country = await Country.create({
+      Name: req.body.Country,
+      Code: req.body.Country.toLowerCase(),
+    });
+    return res.status(200).json(country);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/Country:
+ *  get:
+ *    summary: route to fetch all countries.
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/Country", async (req, res) => {
+  try {
+    let country = await Country.find();
+    return res.status(200).json(country);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/State/add:
+ *  post:
+ *    summary: route to add new states.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                State:
+ *                  type: string
+ *                Country:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/State/add", async (req, res) => {
+  try {
+    let state = await State.create({
+      Name: req.body.State.toLowerCase(),
+      Country: req.body.Country,
+    });
+    return res.status(200).json(state);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/State:
+ *  get:
+ *    summary: route to fetch all states.
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/State", async (req, res) => {
+  try {
+    let states = await State.find();
+    return res.status(200).json(states);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 module.exports = router;
