@@ -113,12 +113,12 @@ app.use("/", router.indexRoutes);
 app.use("/customer", router.customerRoutes);
 app.use("/partner", router.partnerRoutes);
 app.use("/admin", router.adminRoutes);
-app.use("/Order", router?.orderRoutes);
-app.use("/wallet", router?.walletRoutes);
-app.use("/customerpayment", router?.customerPaymentRoutes);
-app.use("/coupen", router?.coupenRoutes);
-app.use("/notification", router?.notificationRoutes);
-app.use("/feedback", router?.feedbackRoutes);
+app.use("/Order", router.orderRoutes);
+app.use("/wallet", router.walletRoutes);
+app.use("/customerpayment", router.customerPaymentRoutes);
+app.use("/coupen", router.coupenRoutes);
+app.use("/notification", router.notificationRoutes);
+app.use("/feedback", router.feedbackRoutes);
 
 // const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {
