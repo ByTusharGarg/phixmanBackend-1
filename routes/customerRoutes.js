@@ -706,7 +706,7 @@ router.post("/address", async (req, res) => {
 /**
  * @openapi
  * /customer/updateprofile:
- *  post:
+ *  patch:
  *    summary: sUpdate consumer profile
  *    tags:
  *    - Customer Routes
@@ -772,7 +772,7 @@ router.patch("/updateprofile", async (req, res) => {
     const getUserProfile = await Customer.findById(cid);
     if (req?.files?.image) {
       console.log(req.files.image);
-      update.image = encodeImage(req.files.image);
+      updateQuery.image = encodeImage(req.files.image);
     }
     if (getUserProfile.isExistingUser === false) {
       updateQuery["isExistingUser"] = true;
@@ -780,6 +780,7 @@ router.patch("/updateprofile", async (req, res) => {
     await Customer.findByIdAndUpdate(cid, updateQuery);
     return res.status(200).json({ message: "Profile updated successfully" });
   } catch (error) {
+    console.log(error)
     return res.status(500).json({ message: "Error encountered." });
   }
 });
