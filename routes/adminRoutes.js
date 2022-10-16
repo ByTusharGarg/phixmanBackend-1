@@ -183,7 +183,7 @@ router.post("/resetpassword", AdminAuth.resetPassword);
  */
 router.post("/changepassword", AdminAuth.changePassword);
 
-// router.use(AdminAuth.checkAdmin);
+router.use(AdminAuth.checkAdmin);
 
 /**
  * @openapi
