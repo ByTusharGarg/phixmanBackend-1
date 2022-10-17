@@ -28,6 +28,7 @@ const { generateRandomReferralCode } = require("../libs/commonFunction");
 const pdf = require("pdf-creator-node");
 const path = require("path");
 const Payment = require("../libs/payments/Payment");
+const { encodeImage } = require("../libs/imageLib");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -157,6 +158,7 @@ router.post(
         // sendOtp(isuserExist.phone, otp);
       } else {
         const newuser = new Customer({
+          Sno: commonFunction.genrateID("C"),
           phone: req?.body?.phone,
           isExistingUser: false,
           otp: { code: otp, status: "active" },
@@ -324,9 +326,6 @@ router.post(
   }
 );
 
-/**
- * middleware to check if customer has access to perform following actions
- */
 router.get("/generatepdf/:orderid", async (req, res, next) => {
   // const Customer = req.Customer._id;
   const { orderid } = req.params;
@@ -340,15 +339,19 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
   const filename = Math.random() + "_doc" + ".pdf";
 
   try {
-    orderData = await Order.findById(orderid).populate('OrderDetails.Items.ServiceId')
-      .populate('Customer').populate('Partner');
+    orderData = await Order.findById(orderid)
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("Customer")
+      .populate("Partner");
 
     if (!orderData) {
       return res.status(404).json({ message: "order not found" });
     }
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Error encountered while finding orders pdf." });
+    return res
+      .status(500)
+      .json({ message: "Error encountered while finding orders pdf." });
   }
 
   let array = [
@@ -378,19 +381,19 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
     sgst: gstnineP,
     totalAmt: totalAmount,
     customer: {
-      name: orderData.Customer.Name || 'N/A',
+      name: orderData.Customer.Name || "N/A",
       gst: "N/A",
       invoiceNum: orderData.invoiceId,
       address: `${orderData.address.street} ${orderData.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
-      date: moment(orderData.Date, 'DD-MM-YYYY').format('MM-DD-YYYY'),
-      sNc: moment(orderData.Date, 'DD-MM-YYYY').format('MM-DD-YYYY'),
+      date: moment(orderData.Date, "DD-MM-YYYY").format("MM-DD-YYYY"),
+      sNc: moment(orderData.Date, "DD-MM-YYYY").format("MM-DD-YYYY"),
       placeOfSupply: orderData.address.country || "N/A",
     },
     partner: {
       bName: orderData.Partner?.Name || "N/A",
       bGst: "N/A",
       bAddress: `${orderData.address.street} ${orderData.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
-      sNc: moment(orderData.Date, 'DD-MM-YYYY').format('MM-DD-YYYY')
+      sNc: moment(orderData.Date, "DD-MM-YYYY").format("MM-DD-YYYY"),
     },
   };
 
@@ -424,25 +427,30 @@ router.get("/generatepdf/:orderid", async (req, res, next) => {
   };
 
   try {
-    const data = await pdf.create(document, options)
+    const data = await pdf.create(document, options);
 
-    res.setHeader('Content-disposition', 'inline; filename="test.pdf"');
-    res.setHeader('Content-type', 'application/pdf');
+    res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
+    res.setHeader("Content-type", "application/pdf");
 
     var fileData = fs.readFileSync(data.filename);
 
     let interval = setTimeout(() => {
-      fs.unlink(data.filename, () => { });
+      fs.unlink(data.filename, () => {});
       clearInterval(interval);
-    }, 3000)
+    }, 3000);
 
     return res.send(fileData);
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Error encountered while generating pdf." });
+    return res
+      .status(500)
+      .json({ message: "Error encountered while generating pdf." });
   }
 });
 
+/**
+ * middleware to check if customer has access to perform following actions
+ */
 router.use(checkCustomer);
 
 /**
@@ -553,7 +561,7 @@ router.patch(
       }
       if (req?.files?.image) {
         console.log(req.files.image);
-        update.image = "";
+        update.image = encodeImage(req.files.image);
       }
       const customer = await Customer.findByIdAndUpdate(
         req.Customer._id,
@@ -696,28 +704,32 @@ router.post("/address", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /customer/updateprofile:
- *  post:
+ *  patch:
  *    summary: sUpdate consumer profile
  *    tags:
  *    - Customer Routes
  *    requestBody:
  *      content:
- *        application/json:
+ *        multipart/form-data:
  *          schema:
  *              type: object
  *              properties:
  *                email:
- *                  type: object
+ *                  type: string
  *                Name:
- *                  type: object
- *                gender:
- *                  type: object
+ *                  type: string
+ *                Password:
+ *                  type: string
  *                image:
- *                  type: object
+ *                  type: file
+ *                fcmToken:
+ *                  type: string
+ *                gender:
+ *                  type: string
+ *                  enum: ["male", "female", "non-binary"]
  *    responses:
  *      200:
  *          description: if successfully found user
@@ -759,13 +771,17 @@ router.patch("/updateprofile", async (req, res) => {
   let updateQuery = req.body;
   try {
     const getUserProfile = await Customer.findById(cid);
-
+    if (req?.files?.image) {
+      console.log(req.files.image);
+      updateQuery.image = encodeImage(req.files.image);
+    }
     if (getUserProfile.isExistingUser === false) {
-      updateQuery['isExistingUser'] = true;
+      updateQuery["isExistingUser"] = true;
     }
     await Customer.findByIdAndUpdate(cid, updateQuery);
     return res.status(200).json({ message: "Profile updated successfully" });
   } catch (error) {
+    console.log(error)
     return res.status(500).json({ message: "Error encountered." });
   }
 });
@@ -926,7 +942,10 @@ router.get("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create/order", verifyOrderValidator, rejectBadRequests,
+router.post(
+  "/create/order",
+  verifyOrderValidator,
+  rejectBadRequests,
   async (req, res) => {
     const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
     const OrderId = commonFunction.genrateID("ORD");
@@ -943,7 +962,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests,
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypesObj['Requested'],
+          Status: orderStatusTypesObj["Requested"],
           PendingAmount: Amount,
           paidamount: Amount,
           PaymentStatus: paymentStatus[1],
@@ -960,7 +979,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests,
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypesObj['Requested'],
+          Status: orderStatusTypesObj["Requested"],
           PendingAmount: Amount,
           PaymentStatus: paymentStatus[1],
           OrderDetails: { Amount, Gradtotal: grandTotal, Items },
@@ -990,7 +1009,6 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests,
     }
   }
 );
-
 
 /**
  * @openapi
@@ -1076,7 +1094,9 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
   const { OrderId, Items } = req.body;
 
   if (!OrderId || Items.length === 0) {
-    return res.status(404).json({ message: "please provide OrderId and Items" });
+    return res
+      .status(404)
+      .json({ message: "please provide OrderId and Items" });
   }
   const consumerId = req.Customer._id;
   let Amount = 0;
@@ -1086,24 +1106,32 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
   grandTotal = Amount;
 
   try {
-    const isorderExists = await Order.findOne({ Customer: consumerId, _id: OrderId });
+    const isorderExists = await Order.findOne({
+      Customer: consumerId,
+      _id: OrderId,
+    });
     if (!isorderExists) {
       return res.status(404).json({ message: "order not found" });
     }
 
     await Order.findOneAndUpdate(
       { _id: OrderId, Customer: consumerId },
-      { $inc: { "OrderDetails.Gradtotal": grandTotal }, $inc: { "OrderDetails.Amount": Amount }, $push: { "OrderDetails.Items": [...Items] } },
+      {
+        $inc: { "OrderDetails.Gradtotal": grandTotal },
+        $inc: { "OrderDetails.Amount": Amount },
+        $push: { "OrderDetails.Items": [...Items] },
+      },
       { new: true }
     );
 
-    return res.status(200).json({ message: "Orders successfully reestimated." });
+    return res
+      .status(200)
+      .json({ message: "Orders successfully reestimated." });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi

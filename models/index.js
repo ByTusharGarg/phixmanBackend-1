@@ -8,7 +8,7 @@ const Country = require("./Country");
 const Customer = require("./Customer");
 const CustomerWallet = require("./CustomerWallet");
 const category = require("./category");
-const City = require("./City");
+const City = require("./city");
 
 const Features = require("./Features");
 const Feedback = require("./feedback");
