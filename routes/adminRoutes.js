@@ -35,7 +35,10 @@ const { updatePassword } = require("../middleware/AuthAdmin");
 const path = require("path");
 const csv = require("csvtojson");
 const fs = require("fs");
-const { getParseModels } = require("../libs/commonFunction");
+const {
+  getParseModels,
+  generateRandomReferralCode,
+} = require("../libs/commonFunction");
 const { getWalletTransactions } = require("../services/Wallet");
 
 const verifyOrderValidator = [
@@ -104,8 +107,10 @@ router.post("/Register", AdminAuth.registerAdmin);
  *              properties:
  *                username:
  *                  type: string
+ *                  example: devops@phixman.in
  *                password:
  *                  type: string
+ *                  example: admin123
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -187,161 +192,6 @@ router.use(AdminAuth.checkAdmin);
 
 /**
  * @openapi
- * /admin/partner/search?q=???:
- *  get:
- *    summary: This route is used to search partner by city
- *    tags:
- *    - Admin Routes
- *    requestBody:
- *      content:
- *        application/json:
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.get("/partner/search", async (req, res) => {
-  let q = req.query.q;
-
-  if (q.length < 3) {
-    return res
-      .status(400)
-      .json({ status: true, message: "Should be grater then 3" });
-  }
-  q = trim(q);
-
-  let isPublished = true;
-
-  try {
-    const regex = new RegExp(escapeRegExp(q), "gi");
-
-    const data = await Partner.find({
-      $and: [
-        {
-          $or: [{ "address.city": regex }],
-        },
-      ],
-      isPublished,
-    })
-      .sort({
-        createdAt: "-1",
-      })
-      .limit(20)
-      .select("phone Name");
-
-    return res
-      .status(200)
-      .json({ status: true, message: "partner lists", data });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Error encountered while searching partners",
-    });
-  }
-});
-
-/**
- * @openapi
- * /admin/customer/search?q=???:
- *  get:
- *    summary: This route admin can used to search customer by number
- *    tags:
- *    - Admin Routes
- *    requestBody:
- *      content:
- *        application/json:
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.get("/customer/search", async (req, res) => {
-  let q = req.query.q;
-
-  if (q.length < 3) {
-    return res
-      .status(400)
-      .json({ status: true, message: "Should be grater then 3" });
-  }
-  q = trim(q);
-
-  let isPublished = true;
-
-  try {
-    const regex = new RegExp(escapeRegExp(q), "gi");
-
-    const data = await Customer.find({
-      $and: [
-        {
-          $or: [{ phone: regex }],
-        },
-      ],
-      isPublished,
-    })
-      .sort({
-        createdAt: "-1",
-      })
-      .limit(20)
-      .select("phone Name address");
-
-    return res
-      .status(200)
-      .json({ status: true, message: "customer lists", data });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      message: "Error encountered while searching partners",
-    });
-  }
-});
-
-/**
- * @openapi
- * /admin/updatepassword:
- *  post:
- *    summary: used to update admin password after login
- *    tags:
- *    - Admin Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          schema:
- *              type: object
- *              properties:
- *                newpassword:
- *                  type: string
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.put("/updatepassword", updatePassword);
-
-/**
- * @openapi
  * /admin:
  *  get:
  *    summary: used to list all admins.
@@ -399,9 +249,41 @@ router.get("/session", (req, res) => {
 
 /**
  * @openapi
- * /admin/SendOTP:
+ * /admin/updatepassword:
+ *  patch:
+ *    summary: used to update admin password after login
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                newpassword:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.patch("/updatepassword", updatePassword);
+
+/**
+ * @openapi
+ * /admin/customer/create:
  *  post:
- *    summary: request server to genrate and send otp on given number.
+ *    summary: request server to add a new customer.
  *    tags:
  *    - Admin Routes
  *    requestBody:
@@ -412,6 +294,31 @@ router.get("/session", (req, res) => {
  *              properties:
  *                phone:
  *                  type: string
+ *                  example: 9958497352
+ *                Name:
+ *                  type: string
+ *                  example: Test User
+ *                email:
+ *                  type: string
+ *                  example: example@phixman.in
+ *                address:
+ *                  type: object
+ *                  properties:
+ *                   street:
+ *                    type: string
+ *                    example: vikaspuri
+ *                   city:
+ *                    type: string
+ *                    example: New Delhi
+ *                   pin:
+ *                    type: string
+ *                    example: 110018
+ *                   state:
+ *                    type: string
+ *                    example: Delhi
+ *                   country:
+ *                    type: string
+ *                    example: India
  *    responses:
  *      200:
  *          description: if otp is sent successfully
@@ -462,10 +369,10 @@ router.get("/session", (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
-router.post("/createcustomer", async (req, res) => {
-  console.log(req.body.phone.length);
-  // return
+router.post("/customer/create", async (req, res) => {
   if (!req?.body?.phone || req.body.phone.length < 10) {
     return res.status(200).json({ message: "invalid number or required" });
   }
@@ -476,23 +383,95 @@ router.post("/createcustomer", async (req, res) => {
       return res
         .status(500)
         .json({ message: "Customer number already exists" });
-    } else {
-      const newuser = new Customer({
-        phone: req?.body?.phone,
-        isVerified: true,
-      });
-      const newUserResp = await newuser.save();
-      console.log(newUserResp._id);
-      // generate customer wallet
-      const newWallet = new CustomerWallet({ customerId: newUserResp?._id });
-      await newWallet.save();
     }
-    return res.status(200).json({ message: "Customer created successfully" });
+    const newuser = await Customer.create({
+      Sno: commonFunction.genrateID("C"),
+      phone: req?.body?.phone,
+      Name: req?.body?.Name,
+      email: req?.body?.email,
+      address: req?.body?.address,
+      isVerified: true,
+      isPublished: true,
+      isActive: true,
+      isExistingUser: true,
+      uniqueReferralCode: generateRandomReferralCode(),
+    });
+    console.log(newuser._id);
+    // generate customer wallet
+    await CustomerWallet.create({ customerId: newuser?._id });
+    return res
+      .status(200)
+      .json({ message: "Customer created successfully", data: newuser });
   } catch (error) {
     console.log(error);
     return res
       .status(500)
       .json({ message: "Error encountered while trying to send otp" });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/customer/search:
+ *  get:
+ *    summary: This route admin can used to search customer by number
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: phone
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/customer/search", async (req, res) => {
+  let { phone } = req.query;
+
+  if (phone && phone?.length > 3) {
+    return res
+      .status(400)
+      .json({ status: true, message: "Should be grater then 3" });
+  }
+  phone = trim(phone);
+
+  let isPublished = true;
+
+  try {
+    const regex = new RegExp(escapeRegExp(phone), "gi");
+
+    const data = await Customer.find({
+      $and: [
+        {
+          $or: [{ phone: regex }],
+        },
+      ],
+      isPublished,
+    })
+      .sort({
+        createdAt: "-1",
+      })
+      .limit(20)
+      .select("phone Name address");
+
+    return res
+      .status(200)
+      .json({ status: true, message: "customer lists", data });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while searching partners",
+    });
   }
 });
 
@@ -523,6 +502,51 @@ router.get("/getCustomers", async (req, res) => {
     const customers = await Customer.find({}, { otp: 0 });
     return res.status(200).json(customers);
   } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/customersorders/{_id}:
+ *  get:
+ *    summary: using this route admmin can get orders by customer id.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/customersorders/:id", async (req, res) => {
+  let { id } = req.params;
+
+  try {
+    const orders = await Order.find({ Customer: id })
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
@@ -698,6 +722,71 @@ router.post(
     }
   }
 );
+
+/**
+ * @openapi
+ * /admin/getOrders:
+ *  get:
+ *    summary: used to list orders.
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/getOrders", async (req, res) => {
+  try {
+    const orders = await Order.find({});
+    return res.status(200).json(orders);
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/Order:
+ *  get:
+ *    summary: used to get order by id.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: id
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/Order", async (req, res) => {
+  try {
+    const orders = await Order.findById(req.query.id);
+    return res.status(200).json(orders);
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 /**
  * @openapi
@@ -936,6 +1025,413 @@ router.post("/createpartner", async (req, res) => {
 
 /**
  * @openapi
+ * /admin/partner/search:
+ *  get:
+ *    summary: This route is used to search partner by city
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: city
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/partner/search", async (req, res) => {
+  try {
+    let { city } = req.query;
+
+    if (city && city.length > 3) {
+      return res
+        .status(400)
+        .json({ status: true, message: "Should be grater then 3" });
+    }
+    city = trim(city);
+    const regex = new RegExp(escapeRegExp(city), "gi");
+
+    const data = await Partner.find({
+      $and: [
+        {
+          $or: [{ "address.city": regex }],
+        },
+      ],
+      isPublished: true,
+    })
+      .sort({
+        createdAt: "-1",
+      })
+      .limit(20)
+      .select("phone Name");
+
+    return res
+      .status(200)
+      .json({ status: true, message: "partner lists", data });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while searching partners",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/createspacialist:
+ *  post:
+ *    summary: used to create spacialist
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                phone:
+ *                  type: string
+ *                name:
+ *                  type: string
+ *                categories:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *                email:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createspacialist", async (req, response) => {
+  try {
+    if (!req?.body?.phone || !req?.body?.name || req?.body?.email) {
+      return response.status(404).json({
+        message: "missing phone name email required fields",
+      });
+    }
+
+    const isPartnerExists = await Partner.findOne({ phone: req?.body?.phone });
+
+    if (isPartnerExists) {
+      return response.status(403).json({
+        message: "spacialist with this number already exists",
+      });
+    }
+    const newSpacialist = await Partner.create({
+      phone: req?.body?.phone,
+      Name: req?.body?.name,
+      Type: "spacialist",
+      email: req?.body?.email ? req?.body?.email : "",
+      isVerified: true,
+      isApproved: true,
+      isPublished: true,
+      isProfileCompleted: false,
+      isActive: true,
+    });
+
+    return response.status(201).json({
+      message: "successfully created sub-provider",
+      data: newSpacialist,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/getspacialist:
+ *  get:
+ *    summary: used to fetch list of  all available spacialist
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/getspacialist", async (req, response) => {
+  try {
+    const data = await Partner.find({ Type: "spacialist" });
+    return response.status(200).json({ message: "spacialist lists", data });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/get/partners/{type}:
+ *  get:
+ *    summary: using this route admin can see partners actions like all,kycpending and block users
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: type
+ *        required: true
+ *        schema:
+ *          type: string
+ *          enum: ["kycpending", "block","all"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/get/partners/:type", async (req, res) => {
+  const { type } = req.params;
+
+  if (type === "kycpending") {
+    query = {
+      isProfileCompleted: true,
+      isVerified: false,
+      isApproved: false,
+      Type: { $ne: "sub-provider" },
+    };
+  } else if (type === "block") {
+    query = { isPublished: false, Type: { $ne: "sub-provider" } };
+  } else {
+    query = { Type: { $ne: "sub-provider" } };
+  }
+
+  try {
+    let partners = await Partner.find(query);
+    res.status(200).json({ message: "Partners list", data: partners });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+/**
+ * @openapi
+ * /admin/get/partner/{id}:
+ *  get:
+ *    summary: get partner by id
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/get/partner/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    let partners = await Partner.findById(id);
+    res.status(200).json({ message: "Partners data", data: partners });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+/**
+ * @openapi
+ * /admin/partners/{id}/{type}:
+ *  put:
+ *    summary: using this route admin can update partner like all,kycpending and block users
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *      - in: path
+ *        name: type
+ *        required: true
+ *        schema:
+ *          type: string
+ *          enum: ["approve", "block","unblock"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.put("/partners/:id", async (req, res) => {
+  let query = {};
+  const { type, id } = req.params;
+
+  if (!id || !type) {
+    return res.status(500).json({ message: `id and type required` });
+  }
+
+  try {
+    if (type === "approve") {
+      let isNotVerified = await Partner.findOne({
+        _id: id,
+        isApproved: false,
+        isVerified: false,
+      });
+
+      query = { isApproved: true, isVerified: true };
+
+      if (!isNotVerified) {
+        return res
+          .status(500)
+          .json({ message: "Account is  allready verified" });
+      }
+    } else if (type === "block") {
+      query = { isPublished: false };
+    } else if (type === "unblock") {
+      query = { isPublished: true };
+    } else {
+      return res.status(200).json({ message: "Invalid type" });
+    }
+
+    let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
+
+    // Add refferal credit to partner wallet
+    if (
+      partners &&
+      type === "approve" &&
+      query.isApproved &&
+      query.isVerified &&
+      partners.refferdCode
+    ) {
+      const referaledPerson = await Partner.findOne({
+        uniqueReferralCode: partners.refferdCode,
+      });
+
+      // check is refferal code is valid
+      if (referaledPerson) {
+        // credit into referaled
+        await makePartnerTranssaction(
+          "partner",
+          "successful",
+          partners?._id,
+          process.env.PARTNER_INVITATION_AMOUNT || 100,
+          "Invitation Referal bonus",
+          "credit"
+        );
+
+        // credit into refferall
+        await makePartnerTranssaction(
+          "partner",
+          "successful",
+          referaledPerson?._id,
+          process.env.PARTNER_INVITATION_AMOUNT || 100,
+          "Invited Referal bonus",
+          "credit"
+        );
+      }
+    }
+
+    res
+      .status(200)
+      .json({ message: "operations successfully", data: partners });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+/**
+ * @openapi
  * /admin/getCoupons:
  *  get:
  *    summary: used to list all active Coupons.
@@ -960,37 +1456,6 @@ router.get("/getCoupons", async (req, res) => {
   try {
     const coupons = await Coupon.find({});
     return res.status(200).json(coupons);
-  } catch (error) {
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
-
-/**
- * @openapi
- * /admin/getOrders:
- *  get:
- *    summary: used to list orders.
- *    tags:
- *    - Admin Routes
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-router.get("/getOrders", async (req, res) => {
-  try {
-    const orders = await Order.find({});
-    return res.status(200).json(orders);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
@@ -1415,154 +1880,6 @@ router.delete("/categories", async (req, res) => {
 
 /**
  * @openapi
- * /admin/createspacialist:
- *  post:
- *    summary: used to create spacialist
- *    tags:
- *    - Admin Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          schema:
- *              type: object
- *              properties:
- *                phone:
- *                  type: string
- *                name:
- *                  type: string
- *                categories:
- *                  type: array
- *                  items:
- *                    type: string
- *                    example: 630a2cd91fb0df4a3cb75593
- *                email:
- *                  type: string
- *    responses:
- *      200:
- *          description: if user exists and otp is sent successfully
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: OTP verified successfully.
- *      400:
- *         description: if the parameters given were invalid
- *         content:
- *           application/json:
- *             schema:
- *               required:
- *               - errors
- *               type: object
- *               properties:
- *                 errors:
- *                   type: array
- *                   description: a list of validation errors
- *                   items:
- *                     type: object
- *                     properties:
- *                       value:
- *                         type: object
- *                         description: the value received for the parameter
- *                       msg:
- *                         type: string
- *                         description: a message describing the validation error
- *                       param:
- *                         type: string
- *                         description: the parameter for which the validation error occurred
- *                       location:
- *                         type: string
- *                         description: the location at which the validation error occurred (e.g. query, body)
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-router.post("/createspacialist", async (req, response) => {
-  try {
-    if (!req?.body?.phone || !req?.body?.name || req?.body?.email) {
-      return response.status(404).json({
-        message: "missing phone name email required fields",
-      });
-    }
-
-    const isPartnerExists = await Partner.findOne({ phone: req?.body?.phone });
-
-    if (isPartnerExists) {
-      return response.status(403).json({
-        message: "spacialist with this number already exists",
-      });
-    }
-    const newSpacialist = await Partner.create({
-      phone: req?.body?.phone,
-      Name: req?.body?.name,
-      Type: "spacialist",
-      email: req?.body?.email ? req?.body?.email : "",
-      isVerified: true,
-      isApproved: true,
-      isPublished: true,
-      isProfileCompleted: false,
-      isActive: true,
-    });
-
-    return response.status(201).json({
-      message: "successfully created sub-provider",
-      data: newSpacialist,
-    });
-  } catch (error) {
-    console.log(error);
-    return response.status(500).json({
-      message: "Error encountered while trying to create new sub provider",
-    });
-  }
-});
-
-/**
- * @openapi
- * /admin/getspacialist:
- *  get:
- *    summary: used to fetch list of  all available spacialist
- *    tags:
- *    - Admin Routes
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.get("/getspacialist", async (req, response) => {
-  try {
-    const data = await Partner.find({ Type: "spacialist" });
-    return response.status(200).json({ message: "spacialist lists", data });
-  } catch (error) {
-    console.log(error);
-    return response.status(500).json({
-      message: "Error encountered while trying to create new sub provider",
-    });
-  }
-});
-
-/**
- * @openapi
  * /admin/Features:
  *  get:
  *    summary: lists all features for a form available
@@ -1628,274 +1945,6 @@ router.get("/Features", async (req, res) => {
 
 /**
  * @openapi
- * /admin/orders/{status}:
- *  get:
- *    summary: using this route user can get all orders of his/her.
- *    tags:
- *    - Admin Routes
- *    parameters:
- *      - in: path
- *        name: status
- *        required: true
- *        schema:
- *           type: string
- *           enum: ["Requested","Accepted", "InRepair", "completed","all","Cancelled","Reshedulled"]
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-
-router.get("/orders/:status", async (req, res) => {
-  let { status } = req.params;
-
-  const allowedStatus = [
-    "all",
-    "Requested",
-    "Accepted",
-    "InRepair",
-    "completed",
-    "Cancelled",
-    "Reshedulled",
-    "Initial",
-  ];
-
-  if (!allowedStatus.includes(status)) {
-    return res.status(500).json({ message: `${status} status not allowed.` });
-  }
-
-  let query = {};
-
-  if (status !== "all") {
-    query["Status"] = status;
-  }
-
-  try {
-    const orders = await Order.find(query)
-      .populate("Customer", "phone Name")
-      .populate("Partner", "phone Name")
-      .populate("OrderDetails.Items.ServiceId", "modelName")
-      .populate("OrderDetails.Items.CategoryId", "name")
-      .populate("OrderDetails.Items.ModelId", "Name")
-      .sort({ createdAt: -1 });
-
-    return res.status(200).json(orders);
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
-
-/**
- * @openapi
- * /admin/get/partners/{type}:
- *  get:
- *    summary: using this route admin can see partners actions like all,kycpending and block users
- *    tags:
- *    - Admin Routes
- *    parameters:
- *      - in: path
- *        name: type
- *        required: true
- *        schema:
- *          type: string
- *          enum: ["kycpending", "block","all"]
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-router.get("/get/partners/:type", async (req, res) => {
-  const { type } = req.params;
-
-  if (type === "kycpending") {
-    query = {
-      isProfileCompleted: true,
-      isVerified: false,
-      isApproved: false,
-      Type: { $ne: "sub-provider" },
-    };
-  } else if (type === "block") {
-    query = { isPublished: false, Type: { $ne: "sub-provider" } };
-  } else {
-    query = { Type: { $ne: "sub-provider" } };
-  }
-
-  try {
-    let partners = await Partner.find(query);
-    res.status(200).json({ message: "Partners list", data: partners });
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-/**
- * @openapi
- * /admin/get/partner/{id}:
- *  get:
- *    summary: get partner by id
- *    tags:
- *    - Admin Routes
- *    parameters:
- *      - in: path
- *        name: id
- *        required: true
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-router.get("/get/partner/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    let partners = await Partner.findById(id);
-    res.status(200).json({ message: "Partners data", data: partners });
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-/**
- * @openapi
- * /admin/partners/{id}/{type}:
- *  put:
- *    summary: using this route admin can update partner like all,kycpending and block users
- *    tags:
- *    - Admin Routes
- *    parameters:
- *      - in: path
- *        name: id
- *        required: true
- *      - in: path
- *        name: type
- *        required: true
- *        schema:
- *          type: string
- *          enum: ["approve", "block","unblock"]
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-router.put("/partners/:id", async (req, res) => {
-  let query = {};
-  const { type, id } = req.params;
-
-  if (!id || !type) {
-    return res.status(500).json({ message: `id and type required` });
-  }
-
-  try {
-    if (type === "approve") {
-      let isNotVerified = await Partner.findOne({
-        _id: id,
-        isApproved: false,
-        isVerified: false,
-      });
-
-      query = { isApproved: true, isVerified: true };
-
-      if (!isNotVerified) {
-        return res
-          .status(500)
-          .json({ message: "Account is  allready verified" });
-      }
-    } else if (type === "block") {
-      query = { isPublished: false };
-    } else if (type === "unblock") {
-      query = { isPublished: true };
-    } else {
-      return res.status(200).json({ message: "Invalid type" });
-    }
-
-    let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
-
-    // Add refferal credit to partner wallet
-    if (
-      partners &&
-      type === "approve" &&
-      query.isApproved &&
-      query.isVerified &&
-      partners.refferdCode
-    ) {
-      const referaledPerson = await Partner.findOne({
-        uniqueReferralCode: partners.refferdCode,
-      });
-
-      // check is refferal code is valid
-      if (referaledPerson) {
-        // credit into referaled
-        await makePartnerTranssaction(
-          "partner",
-          "successful",
-          partners?._id,
-          process.env.PARTNER_INVITATION_AMOUNT || 100,
-          "Invitation Referal bonus",
-          "credit"
-        );
-
-        // credit into refferall
-        await makePartnerTranssaction(
-          "partner",
-          "successful",
-          referaledPerson?._id,
-          process.env.PARTNER_INVITATION_AMOUNT || 100,
-          "Invited Referal bonus",
-          "credit"
-        );
-      }
-    }
-
-    res
-      .status(200)
-      .json({ message: "operations successfully", data: partners });
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-/**
- * @openapi
  * /admin/Features:
  *  post:
  *    summary: used to add Features.
@@ -1933,6 +1982,75 @@ router.post("/Features", async (req, res) => {
     res.status(201).json(feature);
   } catch (error) {
     console.log(error);
+  }
+});
+
+/**
+ * @openapi
+ * /admin/orders/{status}:
+ *  get:
+ *    summary: using this route admin can get all orders by status.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["Requested","Accepted", "InRepair", "completed","all","Cancelled","Reshedulled"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/orders/:status", async (req, res) => {
+  let { status } = req.params;
+
+  const allowedStatus = [
+    "all",
+    "Requested",
+    "Accepted",
+    "InRepair",
+    "completed",
+    "Cancelled",
+    "Reshedulled",
+    "Initial",
+  ];
+
+  if (!allowedStatus.includes(status)) {
+    return res.status(500).json({ message: `${status} status not allowed.` });
+  }
+
+  let query = {};
+
+  if (status !== "all") {
+    query["Status"] = status;
+  }
+
+  try {
+    const orders = await Order.find(query)
+      .populate("Customer", "phone Name")
+      .populate("Partner", "phone Name")
+      .populate("OrderDetails.Items.ServiceId", "modelName")
+      .populate("OrderDetails.Items.CategoryId", "name")
+      .populate("OrderDetails.Items.ModelId", "Name")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 
@@ -2248,53 +2366,6 @@ router.post("/settings", async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-/**
- * @openapi
- * /admin/customersorders/{_id}:
- *  get:
- *    summary: using this route admmin can get customer all orders.
- *    tags:
- *    - Admin Routes
- *    parameters:
- *      - in: path
- *        name: _id
- *        required: true
- *        schema:
- *           type: string
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-
-router.get("/customersorders/:id", async (req, res) => {
-  let { id } = req.params;
-  const Customer = req.Customer._id;
-
-  try {
-    const orders = await Order.find({ Customer: id })
-      .populate("Partner")
-      .populate("Customer")
-      .populate("OrderDetails.Items.ServiceId")
-      .populate("OrderDetails.Items.CategoryId")
-      .populate("OrderDetails.Items.ModelId");
-    return res.status(200).json(orders);
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
   }
 });
 

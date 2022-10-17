@@ -158,6 +158,7 @@ router.post(
         // sendOtp(isuserExist.phone, otp);
       } else {
         const newuser = new Customer({
+          Sno: commonFunction.genrateID("C"),
           phone: req?.body?.phone,
           isExistingUser: false,
           otp: { code: otp, status: "active" },
