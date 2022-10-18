@@ -438,7 +438,7 @@ router.post("/customer/create", async (req, res) => {
 router.get("/customer/search", async (req, res) => {
   let { phone } = req.query;
 
-  if (phone && phone?.length > 3) {
+  if (phone && phone?.length < 3) {
     return res
       .status(400)
       .json({ status: true, message: "Should be grater then 3" });
@@ -1052,7 +1052,7 @@ router.get("/partner/search", async (req, res) => {
   try {
     let { city } = req.query;
 
-    if (city && city.length > 3) {
+    if (city && city.length < 3) {
       return res
         .status(400)
         .json({ status: true, message: "Should be grater then 3" });
