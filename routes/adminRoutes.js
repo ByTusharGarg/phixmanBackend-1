@@ -15,6 +15,8 @@ const {
   Brand,
   Country,
   State,
+  City,
+  Zone,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -2528,6 +2530,9 @@ router.post("/State/add", async (req, res) => {
  *    summary: route to fetch all states.
  *    tags:
  *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: country
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -2545,11 +2550,196 @@ router.post("/State/add", async (req, res) => {
  */
 router.get("/State", async (req, res) => {
   try {
-    let states = await State.find();
+    let filter = {};
+    if (req?.query?.country) {
+      filter.Country = req?.query?.country;
+    }
+    let states = await State.find().populate("Country");
     return res.status(200).json(states);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+/**
+ * @openapi
+ * /admin/City/add:
+ *  post:
+ *    summary: route to add new cities.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                State:
+ *                  type: string
+ *                City:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/City/add", async (req, res) => {
+  try {
+    let state = await City.create({
+      Name: req.body.City.toLowerCase(),
+      State: req.body.State,
+    });
+    return res.status(200).json(state);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/City:
+ *  get:
+ *    summary: route to fetch all states.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: state
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/City", async (req, res) => {
+  try {
+    let filter = {};
+    if (req?.query?.state) {
+      filter.State = req?.query?.state;
+    }
+    let states = await City.find(filter).populate({
+      path: "State",
+      populate: { path: "Country" },
+    });
+    return res.status(200).json(states);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/Zone/add:
+ *  post:
+ *    summary: route to add new cities.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                Name:
+ *                  type: string
+ *                City:
+ *                  type: string
+ *                PinCodes:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/Zone/add", async (req, res) => {
+  try {
+    let state = await Zone.create({
+      ZoneId: commonFunction.genrateID("ZONE"),
+      City: req.body.City,
+      Name: req.body.Name,
+      PinCodes: req.body.PinCodes,
+    });
+    return res.status(200).json(state);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/Zone:
+ *  get:
+ *    summary: route to fetch all states.
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/Zone", async (req, res) => {
+  try {
+    let states = await Zone.find()
+      .populate({
+        path: "City",
+        select: "-__v",
+        populate: {
+          path: "State",
+          select: "-__v",
+          populate: { path: "Country", select: "-Code -__v" },
+        },
+      })
+      .select("-__v");
+    return res.status(200).json(states);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 module.exports = router;
