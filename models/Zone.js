@@ -7,6 +7,7 @@ const schema = new Schema({
   City: { type: Schema.Types.ObjectId, ref: "City" },
   PinCodes: [{ type: String }],
   isActive: { type: Boolean, default: true },
+  isDeleted: { type: Boolean, default: false },
 });
 
 const Zone = mongoose.model("Zone", schema);

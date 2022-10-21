@@ -1,7 +1,8 @@
-const adminTypeArray = ["Super Admin", "Sub Admin"];
+const adminTypeArray = ["SUPERADMIN", "SUBADMIN"];
+
 const adminTypeObject = {
-  superAdmin: "Super Admin",
-  subAdmin: "Sub Admin",
+  SUPERADMIN: "SUPERADMIN",
+  SUBADMIN: "SUBADMIN",
 };
 
 module.exports = { adminTypeArray, adminTypeObject };

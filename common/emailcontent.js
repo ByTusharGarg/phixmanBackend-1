@@ -41,6 +41,12 @@ const emailDatamapping = {
         desc: "Hey <first_name>, Welcome! Use this code on checkout to get 10% off. Hurry, offer ends in 24 hours. Shop now",
         buttonName: "SHOP NOW"
     },
+    createdAdmin: {
+        heading1: "THANKS FOR SIGNING UP",
+        heading2: "WELCOME TO PHIXMAN ADMIN PORTAL",
+        desc: ` Hey <first_name>, Welcome! Use temprory password for login and`,
+        buttonName: "LOGIN"
+    },
     ppaymentLink: {
         heading1: "PAYMENT LINK",
         heading2: "COMPLETE THE PAYMENT BY CLICKING THIS LINK",

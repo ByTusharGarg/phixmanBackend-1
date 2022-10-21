@@ -192,6 +192,51 @@ router.post("/changepassword", AdminAuth.changePassword);
 
 router.use(AdminAuth.checkAdmin);
 
+
+/**
+ * @openapi
+ * /admin/createadmin:
+ *  post:
+ *    summary: used to create new admin by superadmmin.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                type:
+ *                  type: string
+ *                zones:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *                category:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.post("/createadmin", AdminAuth.createAdmin);
+
 /**
  * @openapi
  * /admin:
@@ -2724,7 +2769,7 @@ router.post("/Zone/add", async (req, res) => {
  */
 router.get("/Zone", async (req, res) => {
   try {
-    let states = await Zone.find()
+    let states = await Zone.find({ isActive: true, isDeleted: false })
       .populate({
         path: "City",
         select: "-__v",
@@ -2736,6 +2781,102 @@ router.get("/Zone", async (req, res) => {
       })
       .select("-__v");
     return res.status(200).json(states);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
+ * /admin/zone/{_id}:
+ *  patch:
+ *    summary: Activate/deactivate or edit zone or delete zone using this api
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *           type: string
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                Name:
+ *                  type: string
+ *                City:
+ *                  type: string
+ *                PinCodes:
+ *                  type: array
+ *                  items:
+ *                      type: string
+ *                isActive:
+ *                  type: string
+ *                isDeleted:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if user exists and otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP verified successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.patch("/Zone/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    let resp = await Zone.findByIdAndUpdate(id, req.body, { new: true });
+    return res.status(200).json({ message: "zone updated", data: resp });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });

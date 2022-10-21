@@ -151,10 +151,7 @@ router.post(
         await newuser.save();
       }
       sendOtp(req?.body?.phone, otp);
-
-      return res
-        .status(200)
-        .json({ message: "OTP has been sent successfully", otp });
+      return res.status(200).json({ message: "OTP has been sent successfully", otp });
     } catch (error) {
       console.log(error);
       return res
@@ -2090,7 +2087,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
         Subject: "[Phixman] Order status E-mail",
         heading1: emailDatamapping['ppaymentLink'].heading1,
         heading2: emailDatamapping['ppaymentLink'].heading2,
-        desc: `Hey ${first_name}, ` + emailDatamapping['ppaymentLink'].desc+` <a href='${paymentLink}'>${paymentLink}</a>`,
+        desc: `Hey ${first_name}, ` + emailDatamapping['ppaymentLink'].desc + ` <a href='${paymentLink}'>${paymentLink}</a>`,
         buttonName: emailDatamapping['ppaymentLink'].buttonName,
         email: order.Customer.email || null
       };

@@ -3,6 +3,9 @@ const { hashpassword, comparePasswordSync } = require("../libs/passwordLib");
 const jwt = require("jsonwebtoken");
 const { Admin, Counters } = require("../models");
 const { commonMailFunctionToAll } = require("../libs/mailer/mailLib");
+const { generateRandomNumChar } = require('../libs/commonFunction');
+const { adminTypeArray } = require('../enums/adminTypes');
+const emailDatamapping = require('../common/emailcontent');
 
 const registerAdmin = async (req, res) => {
   req.body.name = trim(req?.body?.name);
@@ -36,15 +39,79 @@ const registerAdmin = async (req, res) => {
       password: hashpassword(req?.body?.pswd),
     });
     //send activation mail here
+
     return res.status(201).json({
       message: "Admin Registration successfull",
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({
       message: "Try again later !!!",
     });
   }
 };
+
+
+const createAdmin = async (req, res) => {
+  const { name, email, type, zones, category } = req.body;
+  if (!adminTypeArray.includes(type)) {
+    return res.status(400).json({ message: "invalid admin type" });
+  }
+
+  if (!isEmail(email)) {
+    return res.status(404).json({
+      message: "InValid Email",
+    });
+  }
+
+  try {
+    let counterValue = await Counters.findOneAndUpdate(
+      { name: "admins" },
+      { $inc: { seq: 1 } },
+      { new: true }
+    );
+    if (!counterValue) {
+      counterValue = await Counters.create({ name: "admins" });
+    }
+    const pass = generateRandomNumChar(8);
+    await Admin.create({
+      Sno: counterValue.seq,
+      Name: name,
+      email: email,
+      type: type,
+      password: hashpassword(pass),
+      category: category,
+      zones: zones
+    });
+
+    // send mail
+
+    emailData = {
+      Subject: "[Phixman] Admin informaton E-mail",
+      heading1: emailDatamapping['createdAdmin'].heading1,
+      heading2: emailDatamapping['createdAdmin'].heading2,
+      desc: `Hey ${name}, ` + emailDatamapping['createdAdmin'].desc + `
+        email: ${email}
+        password: ${pass}
+      `,
+      buttonName: emailDatamapping['createdAdmin'].buttonName,
+      email: email
+    };
+    // console.log(emailData);
+    commonMailFunctionToAll(emailData, "common");
+
+    //send activation mail here
+    return res.status(201).json({
+      message: "Admin successfull created",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Try again later !!!",
+    });
+  }
+};
+
 const adminLogin = (req, res) => {
   if (isEmpty(req.body.username) || isEmpty(req.body.password)) {
     return res.json({
@@ -59,7 +126,7 @@ const adminLogin = (req, res) => {
       (err, admin) => {
         if (admin && comparePasswordSync(password, admin?.password)) {
           let token = jwt.sign(
-            { userID: admin._id, type: "admin" },
+            { userID: admin._id, type: admin.type },
             process.env.JWT_SECRET_ACCESS_TOKEN,
             {
               expiresIn: "24h", // expires in 24 hours
@@ -69,6 +136,7 @@ const adminLogin = (req, res) => {
             success: true,
             message: "Authentication successful!",
             token: token,
+            role: admin.type,
             user: {
               name: admin.Name,
               email: admin.email,
@@ -163,7 +231,7 @@ const resetPassword = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message:"Reset password instructions sent on your mail successfully valid till 8hr",
+        message: "Reset password instructions sent on your mail successfully valid till 8hr",
         url
       });
     }
@@ -260,4 +328,5 @@ module.exports = {
   changePassword,
   resetPassword,
   updatePassword,
+  createAdmin,
 };
