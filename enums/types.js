@@ -44,6 +44,9 @@ const transsactionUser = ["partner", "customer"];
 const offerPromoType = ["flat", "upto"];
 const coupenUserType = ["PARTNER", "CUSTOMER"];
 
+const panalityEnnum = ["CANCEL"];
+
+
 module.exports = {
   categoryTypes,
   genderTypes,
@@ -63,5 +66,6 @@ module.exports = {
   transsactionUser,
   offerPromoType,
   coupenUserType,
-  orderStatusTypesObj
+  orderStatusTypesObj,
+  panalityEnnum,
 };

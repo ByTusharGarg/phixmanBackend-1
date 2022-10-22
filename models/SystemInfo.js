@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { panalityEnnum } = require('../enums/types');
 const Schema = mongoose.Schema;
 
 const SystemInfo = mongoose.model(
@@ -21,6 +22,13 @@ const SystemInfo = mongoose.model(
     customerCancellationFees: Number,
     tipAmtPercentage: Number,
     taxPercentWithoutGST: Number,
+    ispanality: { type: Boolean, default: false },
+    palalityMenu: [
+      {
+        name: { type: String, enum: panalityEnnum },
+        amount: { type: Number }
+      }
+    ]
   })
 );
 

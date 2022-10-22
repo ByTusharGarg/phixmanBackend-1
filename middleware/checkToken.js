@@ -1,5 +1,4 @@
 const { isEmpty, trim } = require("../libs/checkLib");
-const { Customer } = require("../models");
 const { verifyAccessToken } = require('../services/token-service');
 
 async function checkTokenOnly(req, res, next) {

@@ -68,8 +68,21 @@ const generateRandomReferralCode = () => {
     });
 }
 
+const generateRandomNumChar = (len = 8) => {
+    var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@abcdefghijklmnopqrstuvwxyz";
+    var string_length = len;
+    var randomstring = '';
+    for (var i = 0; i < string_length - 2; i++) {
+        var rnum = Math.floor(Math.random() * chars.length);
+        randomstring += chars.substring(rnum, rnum + 1);
+    }
+    randomstring += "@1";
+    return randomstring;
+}
+
 module.exports = {
     getParseModels,
     base64_encode,
-    generateRandomReferralCode
+    generateRandomReferralCode,
+    generateRandomNumChar
 }

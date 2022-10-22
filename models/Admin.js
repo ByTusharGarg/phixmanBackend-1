@@ -15,7 +15,7 @@ const Admin = mongoose.model(
     },
     type: {
       type: String,
-      default: adminTypeObject.superAdmin,
+      default: adminTypeObject.SUPERADMIN,
       enum: adminTypeArray,
     },
     password: { type: String, default: "" },
@@ -35,7 +35,7 @@ const Admin = mongoose.model(
       default: true,
     },
     zones: [{ type: Schema.Types.ObjectId, ref: "Zone" }],
-    category: [{ type: Schema.Types.ObjectId, ref: "category" }],
+    category: [{ type: Schema.Types.ObjectId, ref: "category" }]
   })
 );
 module.exports = Admin;
