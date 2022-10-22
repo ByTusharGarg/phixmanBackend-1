@@ -2768,7 +2768,7 @@ router.post("/Zone/add", async (req, res) => {
  */
 router.get("/Zone", async (req, res) => {
   try {
-    let states = await Zone.find({ isActive: true, isDeleted: false })
+    let states = await Zone.find({ isDeleted: false })
       .populate({
         path: "City",
         select: "-__v",
