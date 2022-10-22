@@ -1286,4 +1286,62 @@ router.get("/myorders/:status", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /customer/order:
+ *  get:
+ *    summary: using this route user can get a specific orders by id.
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+
+router.get("/order", async(req,res) => {
+  try{
+  let{
+    query: {orderId},
+    Customer:{_id}
+  } = req;
+
+  const foundUser = await Customer.findById({_id})
+  if(!foundUser){ return res.status(404).send('User does not exist')}
+
+  const foundOrder = await Order.findOne({Customer:_id, _id:orderId})
+  if(!foundOrder) { return res.status(404).send('No orders found')}
+
+  return res.send({
+    status: 200,
+    message: "Orders found",
+    data: foundOrder
+  })}
+  catch(err){
+    console.log("An error occured",err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    })
+  }
+})
+
 module.exports = router;
