@@ -13,8 +13,7 @@ const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
-const moment = require("moment");
-const fs = require("fs");
+
 
 const {
   orderStatusTypes,
@@ -25,8 +24,6 @@ const {
 } = require("../enums/types");
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
-const pdf = require("pdf-creator-node");
-const path = require("path");
 const Payment = require("../libs/payments/Payment");
 const { encodeImage } = require("../libs/imageLib");
 
@@ -326,127 +323,6 @@ router.post(
   }
 );
 
-router.get("/generatepdf/:orderid", async (req, res, next) => {
-  // const Customer = req.Customer._id;
-  const { orderid } = req.params;
-
-  const html = fs.readFileSync(
-    path.join(__dirname, "../libs/mailer/template/invoice.html"),
-    "utf-8"
-  );
-  let orderData = null;
-
-  const filename = Math.random() + "_doc" + ".pdf";
-
-  try {
-    orderData = await Order.findById(orderid)
-      .populate("OrderDetails.Items.ServiceId")
-      .populate("Customer")
-      .populate("Partner");
-
-    if (!orderData) {
-      return res.status(404).json({ message: "order not found" });
-    }
-  } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Error encountered while finding orders pdf." });
-  }
-
-  let array = [
-    { serviceName: "kijikjsj" },
-    { serviceName: "okoko" },
-    { serviceName: "kijikdokdojsj" },
-    { serviceName: "kijikdokdojsj" },
-    { serviceName: "kijikdokdojsj" },
-    { serviceName: "kijikdokdojsj" },
-    { serviceName: "kijikdokdojsj" },
-    { serviceName: "kijikdokdojsj" },
-    { serviceName: "kijikdokdojsj" },
-    { serviceName: "kijikdokdojsj" },
-  ];
-
-  let totalAmount = orderData.OrderDetails.Amount;
-
-  let gstnineP = (totalAmount * 9) / 100;
-
-  const obj = {
-    prodlist: array,
-    bAmt: 10,
-    eAmt: totalAmount - gstnineP * 2,
-    disCount: 0,
-    tax: gstnineP * 2,
-    cgst: gstnineP,
-    sgst: gstnineP,
-    totalAmt: totalAmount,
-    customer: {
-      name: orderData.Customer.Name || "N/A",
-      gst: "N/A",
-      invoiceNum: orderData.invoiceId,
-      address: `${orderData.address.street} ${orderData.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
-      date: moment(orderData.Date, "DD-MM-YYYY").format("MM-DD-YYYY"),
-      sNc: moment(orderData.Date, "DD-MM-YYYY").format("MM-DD-YYYY"),
-      placeOfSupply: orderData.address.country || "N/A",
-    },
-    partner: {
-      bName: orderData.Partner?.Name || "N/A",
-      bGst: "N/A",
-      bAddress: `${orderData.address.street} ${orderData.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
-      sNc: moment(orderData.Date, "DD-MM-YYYY").format("MM-DD-YYYY"),
-    },
-  };
-
-  const document = {
-    html: html,
-    data: {
-      products: obj,
-    },
-    path: "./docs/" + filename,
-  };
-
-  let options = {
-    formate: "A3",
-    orientation: "portrait",
-    border: "2mm",
-    header: {
-      height: "15mm",
-      contents:
-        '<h4 style=" color: red;font-size:20;font-weight:800;text-align:center;">CUSTOMER INVOICE</h4>',
-    },
-    footer: {
-      height: "20mm",
-      contents: {
-        first: "Cover page",
-        2: "Second page",
-        default:
-          'div style="float: right;">Signature of supplier/authorized representative</div>',
-        last: "Last Page",
-      },
-    },
-  };
-
-  try {
-    const data = await pdf.create(document, options);
-
-    res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
-    res.setHeader("Content-type", "application/pdf");
-
-    var fileData = fs.readFileSync(data.filename);
-
-    let interval = setTimeout(() => {
-      fs.unlink(data.filename, () => {});
-      clearInterval(interval);
-    }, 3000);
-
-    return res.send(fileData);
-  } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Error encountered while generating pdf." });
-  }
-});
 
 /**
  * middleware to check if customer has access to perform following actions
@@ -1231,22 +1107,23 @@ router.post("/verifyOrderStatus", async (req, res) => {
 router.post("/cancel", async (req, res) => {
   const { id } = req.body;
   const Customer = req.Customer._id;
-  const orderStatusTypes = ["Requested", "Accepted"];
+  const orderStatusTypes = ["Initial", "Requested"];
 
   try {
     const isOrdrrBelongs = await Order.find({ _id: id, Customer });
 
-    if (!isOrdrrBelongs) {
-      return res.status(500).json({ message: "This order not belongs to you" });
+    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
+      return res.status(400).json({ message: "This order can't be Cancelled" });
     }
 
-    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
-      return res.status(500).json({ message: "This order can't be Cancelled" });
+    if (!isOrdrrBelongs) {
+      return res.status(400).json({ message: "This order not belongs to you" });
     }
+
 
     await Order.findByIdAndUpdate(
       isOrdrrBelongs._id,
-      { Status: "Cancelled" },
+      { Status: orderStatusTypesObj.Cancelled },
       { new: true }
     );
 

@@ -25,7 +25,6 @@ const commonFunction = require("../utils/commonFunction");
 const { trim, escapeRegExp } = require("lodash");
 const {
   paymentStatus,
-  orderStatusTypes,
   orderTypes,
   paymentModeTypes,
   orderStatusTypesObj,
