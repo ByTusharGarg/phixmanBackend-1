@@ -860,7 +860,7 @@ router.post(
       }
 
       // send notifications to all partners
-      return handelSuccess(res, resp);
+      return handelSuccess(res, { data: resp });
     } catch (error) {
       return handelServerError(res, { message: "Error encountered" });
     }
@@ -1034,7 +1034,7 @@ router.post("/verifyOrderStatus", async (req, res) => {
       handelValidationError(res, { message: "order id is required" });
     }
     const resp = await Payment.verifyCustomerOrder(req.body.order_id);
-    return handelSuccess(res, resp);
+    return handelSuccess(res, { data: resp });
   } catch (error) {
     return handelServerError(res, { message: "Error encountered" });
   }
@@ -1161,7 +1161,7 @@ router.get("/myorders/:status", async (req, res) => {
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");
 
-    return handelSuccess(res, orders);
+    return handelSuccess(res, { data: orders });
   } catch (error) {
     return handelServerError(res, { message: "Error encountered" });
   }
@@ -1198,30 +1198,22 @@ router.get("/myorders/:status", async (req, res) => {
  */
 
 
-router.get("/order", async(req,res) => {
-  try{
-  let{
-    query: {orderId},
-    Customer:{_id}
-  } = req;
+router.get("/order/:orderId", async (req, res) => {
+  try {
+    let {
+      query: { orderId },
+      Customer: { _id }
+    } = req;
 
-  const foundUser = await Customer.findById({_id})
-  if(!foundUser){ return res.status(404).send('User does not exist')}
+    const foundUser = await Customer.findById({ _id })
+    if (!foundUser) { return res.status(404).send('User does not exist') }
 
-  const foundOrder = await Order.findOne({Customer:_id, _id:orderId})
-  if(!foundOrder) { return res.status(404).send('No orders found')}
-
-  return res.send({
-    status: 200,
-    message: "Orders found",
-    data: foundOrder
-  })}
-  catch(err){
-    console.log("An error occured",err);
-    return res.send({
-      status: 500,
-      message: "An error occured",
-    })
+    const foundOrder = await Order.findOne({ Customer: _id, _id: orderId })
+    if (!foundOrder) { return res.status(404).send('No orders found') }
+    return handelSuccess(res, { data: foundOrder, message: "Orders found" });
+  }
+  catch (err) {
+    return handelServerError(res, { message: "An error occured" });
   }
 })
 
