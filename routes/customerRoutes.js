@@ -1155,8 +1155,8 @@ router.get("/myorders/:status", async (req, res) => {
 
   try {
     const orders = await Order.find(query)
-      .populate("Partner")
-      .populate("Customer")
+      .populate("Partner","Name")
+      .populate("Customer","Name")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");
