@@ -657,11 +657,11 @@ router.get("/myprofile", async (req, res) => {
  *                  type: string
  *                Password:
  *                  type: string
- *                name:
+ *                Name:
  *                  type: string
  *                Product_Service:
  *                  type: array
- *                dob:
+ *                Dob:
  *                  type: string
  *                bussinessName:
  *                  type: string
