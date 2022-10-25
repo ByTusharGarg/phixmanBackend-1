@@ -875,6 +875,20 @@ router.get("/Order", async (req, res) => {
  *            aadharNumber:
  *              type: string
  *              required: true
+ *            bussinessName:
+ *              type: string
+ *              required: true
+ *            workingdays:
+ *              type: array
+ *              required: true
+ *            business_hours:
+ *              type: object
+ *              required: true
+ *              properties:
+ *               start_hour:
+ *                type: string
+ *               end_hour:
+ *                type: string
  *            address:
  *              type: object
  *              required: true
@@ -946,6 +960,9 @@ router.post("/createpartner", async (req, res) => {
     panNumber,
     aadharNumber,
     secondaryNumber,
+    workingdays,
+    bussinessName,
+    business_hours
   } = req.body;
 
   let images = [];
@@ -1048,6 +1065,9 @@ router.post("/createpartner", async (req, res) => {
       isProfileCompleted: true,
       isVerified: true,
       isApproved: true,
+      bussinessName,
+      workingdays,
+      business_hours,
       aadhar: {
         number: aadharNumber,
         fileF: images[0].fileName,
