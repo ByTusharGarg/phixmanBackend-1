@@ -610,7 +610,7 @@ router.get("/customersorders/:id", async (req, res) => {
  *          schema:
  *              type: object
  *              properties:
- *                PartnerId:
+ *                partnerId:
  *                  type: string
  *                customerId:
  *                  type: string
@@ -795,6 +795,98 @@ router.get("/getOrders", async (req, res) => {
   try {
     const orders = await Order.find({});
     return res.status(200).json(orders);
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+
+/**
+ * @openapi
+ * /admin/assignorder:
+ *  post:
+ *    summary: it's use to assign order to partner
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                orderId:
+ *                  type: string
+ *                partnerId:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/assignorder", async (req, res) => {
+  const { orderId, partnerId } = req.body;
+  if (!orderId || !partnerId) {
+    return res.status(400).json({ message: "partnerId and  orderId required" });
+  }
+
+  try {
+    const orderDetails = await Order.findById(orderId);
+
+    if (!orderDetails) {
+      return res.status(400).json({ message: "No order found" });
+    }
+
+    await Order.findByIdAndUpdate(orderId, { Partner: partnerId }, { new: true });
+    return res.status(200).json({ message: "Order successfully assigned to partner" });
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
