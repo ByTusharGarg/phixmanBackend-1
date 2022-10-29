@@ -5,6 +5,7 @@ const { generateOtp, sendOtp } = require("../libs/otpLib");
 const {
   Customer,
   Order,
+  SubCategory,
   Partner,
   Counters,
   CustomerWallet,
@@ -315,7 +316,7 @@ router.post(
 /**
  * middleware to check if customer has access to perform following actions
  */
-router.use(checkCustomer);
+//router.use(checkCustomer);
 
 /**
  * @openapi
@@ -1198,12 +1199,15 @@ router.get("/myorders/:status", async (req, res) => {
  */
 
 
-router.get("/order", async (req, res) => {
-  try {
-    let {
-      query: { orderId },
-      Customer: { _id }
-    } = req;
+router.get("/order", async(req,res) => {
+  try{
+  let{
+    query: {orderId},
+    Customer:{_id}
+  } = req;
+
+  // const foundUser = await Customer.findById({_id})
+  // if(!foundUser){ return res.status(404).send('User does not exist')}
 
     const foundOrder = await Order.findOne({ Customer: _id, _id: orderId })
       .populate("OrderDetails.Items.ServiceId")
@@ -1219,5 +1223,30 @@ router.get("/order", async (req, res) => {
     return handelServerError(res, { message: "An error occured" });
   }
 })
+
+router.get("/category", async(req,res) => {
+  try{
+  let{
+    query: {categoryId},
+  } = req;
+
+  const foundSubcategory = await SubCategory.findOne({category:categoryId})
+  if(!foundSubcategory) { return res.status(404).send('No subcategories found')}
+
+  return res.send({
+    status: 200,
+    message: "subcategories found",
+    data: foundSubcategory
+  })}
+  catch(err){
+    console.log("An error occured",err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    })
+  }
+})
+
+
 
 module.exports = router;
