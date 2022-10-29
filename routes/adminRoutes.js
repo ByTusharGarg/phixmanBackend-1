@@ -17,6 +17,7 @@ const {
   State,
   City,
   Zone,
+  SubCategory,
 } = require("../models");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -2994,4 +2995,69 @@ router.patch("/Zone/:id", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /admin/create-subcategory:
+ *  post:
+ *    summary: route to create subcategory.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                category:
+ *                  type: string
+ *                name:
+ *                  type: string
+ *                description:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/create-subcategory", async(req,res)=>{
+  try{
+  let {
+    body:{
+      categoryId,
+      name,
+      description
+    }
+  } = req;
+
+  let subcategoryObj = {
+      category:categoryId,
+      name,
+      description
+  }
+  const savedSubcategory = await SubCategory.create(subcategoryObj)
+  if (!savedSubcategory) return res.status(404).send('Failed to save subcategory info')
+  return res.send({
+    status: 200,
+    message: "subcategories created",
+    data: savedSubcategory
+  })}
+  catch(err){
+    console.log("An error occured",err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    })
+  }
+
+})
 module.exports = router;
