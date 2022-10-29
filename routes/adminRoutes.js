@@ -978,9 +978,9 @@ router.get("/Order", async (req, res) => {
  *              required: true
  *              properties:
  *               start_hour:
- *                type: string
+ *                type: Date
  *               end_hour:
- *                type: string
+ *                type: Date
  *            address:
  *              type: object
  *              required: true

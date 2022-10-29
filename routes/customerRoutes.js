@@ -707,9 +707,9 @@ router.get("/address", async (req, res) => {
  *                timeSlot:
  *                  type: object
  *                  properties:
- *                    from:
+ *                    day:
  *                      type: string
- *                    to:
+ *                    time:
  *                      type: string
  *                Items:
  *                  type: array
@@ -1155,8 +1155,8 @@ router.get("/myorders/:status", async (req, res) => {
 
   try {
     const orders = await Order.find(query)
-      .populate("Partner","Name")
-      .populate("Customer","Name")
+      .populate("Partner", "Name")
+      .populate("Customer", "Name")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");
@@ -1205,11 +1205,14 @@ router.get("/order", async (req, res) => {
       Customer: { _id }
     } = req;
 
-    const foundUser = await Customer.findById({ _id })
-    if (!foundUser) { return res.status(404).send('User does not exist') }
-
     const foundOrder = await Order.findOne({ Customer: _id, _id: orderId })
-    if (!foundOrder) { return res.status(404).send('No orders found') }
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
+
+    if (!foundOrder) {
+      handelNoteFoundError(res, { message: "No orders found" });
+    }
     return handelSuccess(res, { data: foundOrder, message: "Orders found" });
   }
   catch (err) {

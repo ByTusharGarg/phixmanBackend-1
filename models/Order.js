@@ -50,8 +50,8 @@ const Order = mongoose.model(
     },
     PickUpRequired: { type: Boolean },
     timeSlot: {
-      from: { type: String, default: "" },
-      to: { type: String, default: "" },
+      day: { type: String, default: "" },
+      time: { type: String, default: "" },
     },
   })
 );
