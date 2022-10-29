@@ -1198,7 +1198,7 @@ router.get("/myorders/:status", async (req, res) => {
  */
 
 
-router.get("/order/:orderId", async (req, res) => {
+router.get("/order", async (req, res) => {
   try {
     let {
       query: { orderId },
