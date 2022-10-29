@@ -1224,6 +1224,37 @@ router.get("/order", async(req,res) => {
   }
 })
 
+
+/**
+ * @openapi
+ * /customer/category:
+ *  get:
+ *    summary: using this route user can get subcategories
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
 router.get("/category", async(req,res) => {
   try{
   let{
