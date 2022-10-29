@@ -456,6 +456,87 @@ router.post("/customer/create", async (req, res) => {
   }
 });
 
+
+/**
+ * @openapi
+ * /admin/updatecustomer/{_id}:
+ *  patch:
+ *    summary: Update consumer profile
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *          type: string
+ *    requestBody:
+ *      content:
+ *        multipart/form-data:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: string
+ *                Name:
+ *                  type: string
+ *                Password:
+ *                  type: string
+ *                image:
+ *                  type: file
+ *                fcmToken:
+ *                  type: string
+ *                gender:
+ *                  type: string
+ *                  enum: ["male", "female", "non-binary"]
+ *    responses:
+ *      200:
+ *          description: if successfully found user
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               description: customer details
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.patch("/updatecustomer/:id", async (req, res) => {
+  const cid = req.params;
+
+  if (req.body.phone) {
+    return handelValidationError(res, { message: "phone not allowed" })
+  }
+
+  let updateQuery = req.body;
+  try {
+    await Customer.findByIdAndUpdate(cid, updateQuery);
+    return handelSuccess(res, { message: "Profile updated successfully" });
+  } catch (error) {
+    return handelServerError(res, { message: "Error encountered" });
+  }
+});
+
 /**
  * @openapi
  * /admin/customer/search:
