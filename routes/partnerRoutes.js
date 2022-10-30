@@ -1011,7 +1011,8 @@ router.get("/myorders/:status", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find(query);
+    const orders = await Order.find(query)
+    .populate("OrderDetails.Items.ServiceId")
     return res.status(200).json(orders);
   } catch (error) {
     console.log(error);
@@ -1055,7 +1056,8 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find(queryobj);
+    const orders = await Order.find(queryobj)
+    .populate("OrderDetails.Items.ServiceId")
 
     return res.status(200).json(orders);
   } catch (error) {
