@@ -1261,7 +1261,7 @@ router.get("/category", async(req,res) => {
     query: {categoryId},
   } = req;
 
-  const foundSubcategory = await SubCategory.findOne({category:categoryId})
+  const foundSubcategory = await SubCategory.find({category:categoryId})
   if(!foundSubcategory) { return res.status(404).send('No subcategories found')}
 
   return res.send({
