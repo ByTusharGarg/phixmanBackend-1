@@ -1027,6 +1027,9 @@ router.get("/Order", async (req, res) => {
  *            Name:
  *              type: string
  *              required: true
+ *            isParent:
+ *              type: string
+ *              required: true
  *            gender:
  *              type: string
  *              required: true
@@ -1039,7 +1042,7 @@ router.get("/Order", async (req, res) => {
  *            Type:
  *              type: string
  *              required: true
- *              enum: ["store", "individual"]
+ *              enum: ["store", "individual", "sub-provider", "spacialist"]
  *            Product_Service:
  *              type: string
  *              required: true
