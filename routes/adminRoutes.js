@@ -3141,4 +3141,38 @@ router.post("/create-subcategory", async(req,res)=>{
   }
 
 })
+
+/**
+ * @openapi
+ * /admin/get-store-partner:
+ *  get:
+ *    summary: used to fetch list of all available store partner
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.get("/get-store-partner", async (req, response) => {
+  try {
+    const data = await Partner.find({ Type: "store" });
+    return response.status(200).json({ message: "store partner lists", data });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
 module.exports = router;
