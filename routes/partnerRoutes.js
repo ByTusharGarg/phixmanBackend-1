@@ -863,6 +863,56 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
 
 /**
  * @openapi
+ * /partner/orderdetails/{OrderId}:
+ *  get:
+ *    summary: used to fetch a specific order by OrderId.
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: OrderId
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+ router.get("/:id", async (req, res) => {
+  const OrderId = req.params.id;
+  const partnerId = req.partner._id;
+
+  try {
+    const order = await Order.findOne({ Partner:partnerId,OrderId })
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
+
+    if(order){
+      return res.status(200).json({ message: "order details", data: orders });
+    }else{
+      return res.status(404).json({ message: "No order found" });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
+/**
+ * @openapi
  * /partner/changeprofilepic:
  *  patch:
  *    summary: used to update partner profile pic
