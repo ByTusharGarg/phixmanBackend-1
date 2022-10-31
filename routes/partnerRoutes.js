@@ -671,9 +671,9 @@ router.get("/myprofile", async (req, res) => {
  *                  type: object
  *                  properties:
  *                    start_hour:
- *                      type: date
+ *                      type: string
  *                    end_hour:
- *                      type: date
+ *                      type: string
  *                address:
  *                  type: object
  *                  properties:
