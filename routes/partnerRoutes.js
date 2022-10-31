@@ -888,7 +888,7 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
  *    - bearerAuth: []
  */
 
- router.get("/:id", async (req, res) => {
+ router.get("/orderdetails/:id", async (req, res) => {
   const OrderId = req.params.id;
   const partnerId = req.partner._id;
 
