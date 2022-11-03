@@ -1028,6 +1028,9 @@ router.get("/Order", async (req, res) => {
  *            Name:
  *              type: string
  *              required: true
+ *            isParent:
+ *              type: string
+ *              required: true
  *            gender:
  *              type: string
  *              required: true
@@ -1040,7 +1043,7 @@ router.get("/Order", async (req, res) => {
  *            Type:
  *              type: string
  *              required: true
- *              enum: ["store", "individual"]
+ *              enum: ["store", "individual", "sub-provider", "spacialist"]
  *            Product_Service:
  *              type: string
  *              required: true
@@ -1061,9 +1064,9 @@ router.get("/Order", async (req, res) => {
  *              required: true
  *              properties:
  *               start_hour:
- *                type: Date
+ *                type: string
  *               end_hour:
- *                type: Date
+ *                type: string
  *            address:
  *              type: object
  *              required: true
@@ -1143,6 +1146,10 @@ router.post("/createpartner", async (req, res) => {
   let images = [];
   let docs = {};
 
+  let panObj = {};
+  let adadharObj = {};
+
+
   if (!phone || !Name || !Dob) {
     return res.status(500).json({
       message: "phone Name Dob required",
@@ -1161,57 +1168,58 @@ router.post("/createpartner", async (req, res) => {
       message: "Error encountered while trying to uploading documents",
     });
   }
+  
+  if (req.files?.aadharImageF && req.files?.aadharImageB) {
+    let af = randomImageName();
+    let ab = randomImageName();
 
-  const {
-    aadharImageF,
-    aadharImageB,
-    pancardImage,
-    gstCertificate,
-    incorprationCertificate,
-    expCertificate,
-  } = req.files;
-
-  if (!aadharImageF || !aadharImageB || !pancardImage) {
-    return res.status(500).json({
-      message: "aadharImageF, aadharImageB, pancardImage documents required",
-    });
-  } else {
-    images.push({ ...aadharImageF, fileName: randomImageName() });
-    images.push({ ...aadharImageB, fileName: randomImageName() });
-    images.push({ ...pancardImage, fileName: randomImageName() });
+    images.push({ ...req.files?.aadharImageF, fileName:af  });
+    images.push({ ...req.files?.aadharImageB, fileName:ab});
+    adadharObj = {
+      number: aadharNumber,
+      fileF: af,
+      fileB: ab,
+    };
   }
 
-  if (Type === "store" && (!gstCertificate || !incorprationCertificate)) {
+  if(req.files?.pancardImage){
+    let n = randomImageName();
+    panObj = { number: panNumber, file:n },
+    images.push({ ...req.files?.pancardImage, fileName:n  });
+  }
+
+
+  if (Type === "store" && (!req.files?.gstCertificate || !req.files?.incorprationCertificate)) {
     return res.status(500).json({
       message: "gstCertificate incorprationCertificate documents required",
     });
   } else {
-    docs["incorprationCertificate"] = incorprationCertificate
+    docs["incorprationCertificate"] = req.files?.incorprationCertificate
       ? randomImageName()
       : null;
-    docs["gstCertificate"] = gstCertificate ? randomImageName() : null;
+    docs["gstCertificate"] = req.files?.gstCertificate ? randomImageName() : null;
 
-    if (incorprationCertificate) {
-      images.push({ ...incorprationCertificate, fileName: randomImageName() });
+    if (req.files?.incorprationCertificate) {
+      images.push({ ...req.files?.incorprationCertificate, fileName: randomImageName() });
     } else {
       images.push(undefined);
     }
-    if (gstCertificate) {
-      images.push({ ...gstCertificate, fileName: randomImageName() });
+    if (req.files?.gstCertificate) {
+      images.push({ ...req.files?.gstCertificate, fileName: randomImageName() });
     } else {
       images.push(undefined);
     }
   }
 
-  if (Type === "individual" && !expCertificate) {
+  if (Type === "individual" && !req.files?.expCertificate) {
     return res
       .status(500)
       .json({ message: "expCertificate documents required" });
   } else {
-    docs["expCertificate"] = expCertificate ? randomImageName() : null;
+    docs["expCertificate"] = req.files?.expCertificate ? randomImageName() : null;
 
-    if (expCertificate) {
-      images.push({ ...expCertificate, fileName: randomImageName() });
+    if (req.files?.expCertificate) {
+      images.push({ ...req.files?.expCertificate, fileName: randomImageName() });
     } else {
       images.push(undefined);
     }
@@ -1243,12 +1251,8 @@ router.post("/createpartner", async (req, res) => {
       bussinessName,
       workingdays,
       business_hours,
-      aadhar: {
-        number: aadharNumber,
-        fileF: images[0].fileName,
-        fileB: images[1].fileName,
-      },
-      pan: { number: panNumber, file: images[2].fileName },
+      aadhar: adadharObj,
+      pan: panObj,
       secondaryNumber,
       ...docs,
     });

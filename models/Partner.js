@@ -81,8 +81,8 @@ const Partner = mongoose.model(
     },
     workingdays: [],
     business_hours: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: String,
+      end_hour: String,
     },
     aadhar: {
       number: String,

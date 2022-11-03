@@ -671,9 +671,9 @@ router.get("/myprofile", async (req, res) => {
  *                  type: object
  *                  properties:
  *                    start_hour:
- *                      type: date
+ *                      type: string
  *                    end_hour:
- *                      type: date
+ *                      type: string
  *                address:
  *                  type: object
  *                  properties:
@@ -860,6 +860,56 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
   }
 }
 );
+
+/**
+ * @openapi
+ * /partner/orderdetails/{OrderId}:
+ *  get:
+ *    summary: used to fetch a specific order by OrderId.
+ *    tags:
+ *    - partner Routes
+ *    parameters:
+ *      - in: path
+ *        name: OrderId
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+ router.get("/orderdetails/:id", async (req, res) => {
+  const OrderId = req.params.id;
+  const partnerId = req.partner._id;
+
+  try {
+    const order = await Order.findOne({ Partner:partnerId,OrderId })
+      .populate("Partner")
+      .populate("Customer")
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
+
+    if(order){
+      return res.status(200).json({ message: "order details", data: orders });
+    }else{
+      return res.status(404).json({ message: "No order found" });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 
 /**
  * @openapi
@@ -2114,7 +2164,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
 
 /**
  * @openapi
- * /customer/verifypayment:
+ * /partner/verifypayment:
  *   post:
  *    summary: it's use to verify order payment status.
  *    tags:
@@ -2165,5 +2215,128 @@ router.post("/verifypayment", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
+/**
+ * @openapi
+ * /partner/reestimate:
+ *  post:
+ *    summary: it's use to re estimated order.
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                Items:
+ *                  type: array
+ *                  items:
+ *                    properties:
+ *                      CategoryId:
+ *                        type: string
+ *                      ModelId:
+ *                        type: string
+ *                      ServiceId:
+ *                        type: string
+ *                      Cost:
+ *                        type: integer
+ *                OrderId:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+ router.post("/reestimate", rejectBadRequests, async (req, res) => {
+  const { OrderId, Items } = req.body;
+  const partnerId = req.partner._id;
+
+  if (!OrderId || Items.length === 0) {
+    return res.status(400).json({ message: "please provide OrderId and Items." });
+  }
+
+  let Amount = 0;
+  let grandTotal = 0;
+
+  Items.map((element) => (Amount += element?.Cost));
+  grandTotal = Amount;
+
+
+  try {
+    const isorderExists = await Order.findOne({
+      Partner: partnerId,
+      _id: OrderId,
+    });
+
+    if (!isorderExists) {
+      return res.status(400).json({ message: "order not found." });
+    }
+
+    await Order.findOneAndUpdate(
+      { _id: OrderId, Customer: consumerId },
+      {
+        $inc: { "OrderDetails.Gradtotal": grandTotal },
+        $inc: { "OrderDetails.Amount": Amount },
+        $push: { "OrderDetails.Items": [...Items] },
+      },
+      { new: true }
+    );
+    return res.status(200).json({ message: "Orders successfully reestimated." });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 
 module.exports = router;
