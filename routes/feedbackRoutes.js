@@ -155,7 +155,7 @@ router.get("/allfeedback/:userType", checkTokenOnly, async (req, res) => {
  *    - bearerAuth: []
  */
 
-router.get("/customer/:_id", async (req, res) => {
+router.get("/customer/:_id",checkAdmin, async (req, res) => {
     const { _id } = req.params;
     try {
         const feedbacks = await Feedback.find({ customerId: _id })
