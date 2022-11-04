@@ -19,6 +19,8 @@ const {
   Zone,
   SubCategory,
 } = require("../models");
+const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
+const {checkAdmin} = require("../middleware/AuthAdmin")
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
@@ -3273,4 +3275,46 @@ router.delete("/delete-partner-account", async (req, res) => {
     });
   }
 })
+
+/**
+ * @openapi
+ * /admin/wallet/customer:
+ *  delete:
+ *    summary: used to fetch wallet and transactions details
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/wallet/customer", checkAdmin, async (req, res) => {
+  try {
+    const {
+    query: { customerId },
+    admin: { type }
+  } = req;
+  if (!type === adminTypeArray[0]) {
+    return res.status(400).json({ message: "invalid admin type" });
+  }    
+    const walletData = await getCustomerWallet(customerId);
+    const transactionData = await getAllWallletTranssactionForUser(customerId, "customer")
+    return res
+      .status(200)
+      .json({ message: "customer wallet and transaction", walletData,transactionData });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch wallet.",
+    });
+  }
+});
 module.exports = router;
