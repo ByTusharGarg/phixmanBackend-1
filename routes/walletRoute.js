@@ -11,7 +11,8 @@ const {
 
 const checkPartner = require("../middleware/AuthPartner");
 const checkCustomer = require("../middleware/AuthCustomer");
-const { getAllWallletTranssactionForUser } = require("../services/Wallet");
+
+const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
 
 /**
  * @openapi
@@ -125,5 +126,6 @@ router.get("/customer", checkCustomer, async (req, res) => {
       .json({ message: "Error encountered while trying to fetching wallet" });
   }
 });
+
 
 module.exports = router;

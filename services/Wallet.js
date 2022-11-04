@@ -26,10 +26,11 @@ const getCustomerWallet = async (id) => {
   try {
     // check if user have a wallet, else create wallet
     let userWallet = null;
-    userWallet = await CustomerWallet.findOne({ userId: id });
+    userWallet = await CustomerWallet.findOne({ customerId: id });
+    
     // If user wallet doesn't exist
     if (!userWallet) {
-      userWallet = await CustomerWallet.create({ userId: id });
+      userWallet = await CustomerWallet.create({ customerId: id });
     }
     return userWallet;
   } catch (error) {
