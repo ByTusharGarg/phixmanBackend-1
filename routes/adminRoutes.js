@@ -41,6 +41,7 @@ const {
   getParseModels,
   generateRandomReferralCode,
 } = require("../libs/commonFunction");
+const { adminTypeArray } = require('../enums/adminTypes');
 const { getWalletTransactions } = require("../services/Wallet");
 
 const verifyOrderValidator = [
@@ -3114,30 +3115,31 @@ router.patch("/Zone/:id", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/create-subcategory", async(req,res)=>{
-  try{
-  let {
-    body:{
-      categoryId,
+router.post("/create-subcategory", async (req, res) => {
+  try {
+    let {
+      body: {
+        categoryId,
+        name,
+        description
+      }
+    } = req;
+
+    let subcategoryObj = {
+      category: categoryId,
       name,
       description
     }
-  } = req;
-
-  let subcategoryObj = {
-      category:categoryId,
-      name,
-      description
+    const savedSubcategory = await SubCategory.create(subcategoryObj)
+    if (!savedSubcategory) return res.status(404).send('Failed to save subcategory info')
+    return res.send({
+      status: 200,
+      message: "subcategories created",
+      data: savedSubcategory
+    })
   }
-  const savedSubcategory = await SubCategory.create(subcategoryObj)
-  if (!savedSubcategory) return res.status(404).send('Failed to save subcategory info')
-  return res.send({
-    status: 200,
-    message: "subcategories created",
-    data: savedSubcategory
-  })}
-  catch(err){
-    console.log("An error occured",err);
+  catch (err) {
+    console.log("An error occured", err);
     return res.send({
       status: 500,
       message: "An error occured",
@@ -3179,4 +3181,96 @@ router.get("/get-store-partner", async (req, response) => {
   }
 });
 
+/**
+ * @openapi
+ * /admin/delete-customer-account:
+ *  delete:
+ *    summary: used to delete customer account
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.delete("/delete-customer-account", async (req, res) => {
+  try {
+    const {
+      body: { customerId },
+      admin: { type }
+    } = req;
+
+    if(customerId.length==0) return res.status(400).json({ message: "No Customer id found" });
+
+    if (!type === adminTypeArray[0]) {
+      return res.status(400).json({ message: "invalid admin type" });
+    }          
+    const deleteUser = await Customer.deleteMany({ _id: customerId })
+    
+    if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
+
+    return res.status(200).json({ message: "Customer account deleted" });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to deleting customer account",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/delete-partner-account:
+ *  delete:
+ *    summary: used to delete partner account
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.delete("/delete-partner-account", async (req, res) => {
+  try {
+    const {
+      body: { partnerId },
+      admin: { type }
+    } = req;
+
+    if(partnerId.length==0) return res.status(400).json({ message: "No partner id found" });
+
+    if (!type === adminTypeArray[0]) {
+      return res.status(400).json({ message: "invalid admin type" });
+    }          
+    const deleteUser = await Partner.deleteMany({ _id: partnerId })
+    
+    if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
+
+    return res.status(200).json({ message: "Partner account deleted" });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to deleting partner account",
+    });
+  }
+})
 module.exports = router;
