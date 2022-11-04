@@ -1,3 +1,4 @@
+const { checkAdmin } = require('../middleware/AuthAdmin');
 const checkPartner = require('../middleware/AuthPartner');
 const checkTokenOnly = require('../middleware/checkToken');
 const { Feedback } = require("../models");
@@ -115,6 +116,49 @@ router.get("/allfeedback/:userType", checkTokenOnly, async (req, res) => {
 
     try {
         const feedbacks = await Feedback.find({ from: userType })
+            .populate("orderId", "OrderId invoiceId PickUpRequired Status Date")
+            .populate("customerId", "Name Address email phone _id")
+            .populate("partnerId", "Name Address email phone _id")
+            .sort({ createdAt: -1 });
+        return res.status(200).json({ message: "feedbacks details", data: feedbacks, totalfeedback: feedbacks.length });
+    } catch (error) {
+        return res.status(500).json({ message: "Error encountered." });
+    }
+});
+
+/**
+ * @openapi
+ * /feedback/customer/{_id}:
+ *  get:
+ *    summary: admin to fetch all customers feedbacks
+ *    tags:
+ *    - Feedback Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/customer/:_id", async (req, res) => {
+    const { _id } = req.params;
+    try {
+        const feedbacks = await Feedback.find({ customerId: _id })
             .populate("orderId", "OrderId invoiceId PickUpRequired Status Date")
             .populate("customerId", "Name Address email phone _id")
             .populate("partnerId", "Name Address email phone _id")
