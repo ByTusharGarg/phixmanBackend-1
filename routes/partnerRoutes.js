@@ -900,24 +900,24 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
  *    - bearerAuth: []
  */
 
- router.get("/orderdetails/:id", async (req, res) => {
+router.get("/orderdetails/:id", async (req, res) => {
   const OrderId = req.params.id;
   const partnerId = req.partner._id;
 
   try {
-    const order = await Order.findOne({ Partner:partnerId,OrderId })
-      .populate("Partner")
-      .populate("Customer")
+    const order = await Order.findOne({ Partner: partnerId, OrderId })
+      .populate("Customer", "Name email")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");
 
-    if(order){
-      return res.status(200).json({ message: "order details", data: orders });
-    }else{
+    if (order) {
+      return res.status(200).json({ message: "order details", data: order });
+    } else {
       return res.status(404).json({ message: "No order found" });
     }
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
@@ -1074,7 +1074,9 @@ router.get("/myorders/:status", async (req, res) => {
 
   try {
     const orders = await Order.find(query)
-    .populate("OrderDetails.Items.ServiceId")
+      .populate("Partner", "Name bussinessName")
+      .populate("OrderDetails.Items.ServiceId");
+
     return res.status(200).json(orders);
   } catch (error) {
     console.log(error);
@@ -1118,9 +1120,7 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find(queryobj)
-    .populate("OrderDetails.Items.ServiceId")
-
+    const orders = await Order.find(queryobj).populate("OrderDetails.Items.ServiceId");
     return res.status(200).json(orders);
   } catch (error) {
     console.log(error);
@@ -2280,7 +2280,7 @@ router.post("/verifypayment", async (req, res) => {
  *                 errors:
  *                   type: array
  *                   description: a list of validation errors
- *                   items:
+ *                   Items:
  *                     type: object
  *                     properties:
  *                       value:
@@ -2309,7 +2309,7 @@ router.post("/verifypayment", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
- router.post("/reestimate", rejectBadRequests, async (req, res) => {
+router.post("/reestimate", rejectBadRequests, async (req, res) => {
   const { OrderId, Items } = req.body;
   const partnerId = req.partner._id;
 
@@ -2335,7 +2335,7 @@ router.post("/verifypayment", async (req, res) => {
     }
 
     await Order.findOneAndUpdate(
-      { _id: OrderId, Customer: consumerId },
+      { _id: OrderId,Partner: partnerId },
       {
         $inc: { "OrderDetails.Gradtotal": grandTotal },
         $inc: { "OrderDetails.Amount": Amount },

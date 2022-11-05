@@ -316,7 +316,8 @@ router.post(
 /**
  * middleware to check if customer has access to perform following actions
  */
-//router.use(checkCustomer);
+
+router.use(checkCustomer);
 
 /**
  * @openapi

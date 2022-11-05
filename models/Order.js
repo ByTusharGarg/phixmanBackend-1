@@ -53,7 +53,7 @@ const Order = mongoose.model(
       day: { type: String, default: "" },
       time: { type: String, default: "" },
     },
-  })
+  }, { timestamps: true })
 );
 
 module.exports = Order;
