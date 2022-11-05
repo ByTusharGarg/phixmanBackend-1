@@ -1125,17 +1125,9 @@ router.get("/Order", async (req, res) => {
  *              type: file
  *              required: false
  *              description: required for businesses
- *            incorprationCertificateNo:
- *              type: string
- *              required: false
- *              description: required for businesses
  *            expCertificate:
  *              type: file
  *              required: false
- *            expCertificateNo:
- *              type: string
- *              required: false
- *              description: required for businesses
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -1166,7 +1158,8 @@ router.post("/createpartner", async (req, res) => {
     secondaryNumber,
     workingdays,
     bussinessName,
-    business_hours
+    business_hours,
+    gstCertificateNo
   } = req.body;
 
   let images = [];
@@ -1280,6 +1273,7 @@ router.post("/createpartner", async (req, res) => {
       aadhar: adadharObj,
       pan: panObj,
       secondaryNumber,
+      gstCertificateNo,
       ...docs,
     });
 

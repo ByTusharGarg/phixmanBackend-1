@@ -111,18 +111,10 @@ const Partner = mongoose.model(
       type: String,
       default: null,
     },
-    incorprationCertificateNo: {
-      type: String,
-      default: null,
-    },
     expCertificate: {
       type: String,
       default: null,
     },
-    expCertificateNo: {
-      type: String,
-      default: null,
-    }, 
   })
 );
 

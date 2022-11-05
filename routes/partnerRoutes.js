@@ -408,6 +408,10 @@ router.post(
  *              type: file
  *              required: false
  *              description: required for businesses
+ *            gstCertificateNo:
+ *              type: string
+ *              required: false
+ *              description: required for businesses
  *            incorprationCertificate:
  *              type: file
  *              required: false
@@ -451,6 +455,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     panNumber,
     aadharNumber,
     secondaryNumber,
+    gstCertificateNo
   } = req.body;
 
   // console.log(Product_Service);
@@ -549,6 +554,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
           secondaryNumber,
           business_hours,
           workingdays,
+          gstCertificateNo,
           ...docs
         },
       },
