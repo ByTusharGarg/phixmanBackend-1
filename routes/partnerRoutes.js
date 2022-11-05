@@ -900,11 +900,12 @@ router.get("/orderdetails/:id", async (req, res) => {
       .populate("OrderDetails.Items.ModelId");
 
     if (order) {
-      return res.status(200).json({ message: "order details", data: orders });
+      return res.status(200).json({ message: "order details", data: order });
     } else {
       return res.status(404).json({ message: "No order found" });
     }
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
