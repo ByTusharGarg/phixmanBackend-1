@@ -380,6 +380,12 @@ router.post(
  *                type: string
  *               country:
  *                type: string
+ *               landmark:
+ *                type: string
+ *               billingAddress:
+ *                type: string
+ *               address:
+ *                type: string
  *               cood:
  *                type: object
  *                properties:
@@ -687,6 +693,12 @@ router.get("/myprofile", async (req, res) => {
  *                      type: string
  *                    pin:
  *                      type: string
+ *                    landmark:
+        *               type: string
+        *             billingAddress:
+        *               type: string
+        *             address:
+        *                type: string
  *                    cood:
  *                      type: object
  *                      properties:

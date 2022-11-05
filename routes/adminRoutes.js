@@ -63,6 +63,12 @@ const verifyOrderValidator = [
   body("Items").isArray().withMessage("Items should be an array"),
 ];
 
+// const verifyCustomerId = [
+//   query("customerId")
+//       .notEmpty()
+//       .withMessage("Customer Id is required"),
+// ]
+
 /**
  * @openapi
  * /admin/Register:
@@ -1083,6 +1089,12 @@ router.get("/Order", async (req, res) => {
  *                type: string
  *               country:
  *                type: string
+ *               landmark:
+ *                type: string
+ *               billingAddress:
+ *                type: string
+ *               address:
+ *                type: string
  *               cood:
  *                type: object
  *                properties:
@@ -1105,13 +1117,25 @@ router.get("/Order", async (req, res) => {
  *              type: file
  *              required: false
  *              description: required for businesses
+ *            gstCertificateNo:
+ *              type: string
+ *              required: false
+ *              description: required for businesses
  *            incorprationCertificate:
  *              type: file
+ *              required: false
+ *              description: required for businesses
+ *            incorprationCertificateNo:
+ *              type: string
  *              required: false
  *              description: required for businesses
  *            expCertificate:
  *              type: file
  *              required: false
+ *            expCertificateNo:
+ *              type: string
+ *              required: false
+ *              description: required for businesses
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3296,7 +3320,9 @@ router.delete("/delete-partner-account", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/wallet/customer", checkAdmin, async (req, res) => {
+router.get("/wallet/customer", 
+checkAdmin, 
+async (req, res) => {
   try {
     const {
     query: { customerId },

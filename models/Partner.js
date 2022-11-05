@@ -74,6 +74,9 @@ const Partner = mongoose.model(
       pin: String,
       state: String,
       country: String,
+      landmark: String,
+      billingAddress:String,
+      address:String,
       cood: {
         lattitude: String,
         longitude: String,
@@ -100,7 +103,15 @@ const Partner = mongoose.model(
       type: String,
       default: null,
     },
+    gstCertificateNo: {
+      type: String,
+      default: null,
+    }, 
     incorprationCertificate: {
+      type: String,
+      default: null,
+    },
+    incorprationCertificateNo: {
       type: String,
       default: null,
     },
@@ -108,6 +119,10 @@ const Partner = mongoose.model(
       type: String,
       default: null,
     },
+    expCertificateNo: {
+      type: String,
+      default: null,
+    }, 
   })
 );
 
