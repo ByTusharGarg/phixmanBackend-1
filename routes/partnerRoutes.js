@@ -2325,7 +2325,7 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     }
 
     await Order.findOneAndUpdate(
-      { _id: OrderId, Customer: consumerId },
+      { _id: OrderId,Partner: partnerId },
       {
         $inc: { "OrderDetails.Gradtotal": grandTotal },
         $inc: { "OrderDetails.Amount": Amount },
