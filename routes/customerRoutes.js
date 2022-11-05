@@ -862,7 +862,7 @@ router.post(
       }
 
       // send notifications to all partners
-      return handelSuccess(res, { data: resp });
+      return handelSuccess(res, { data: resp, cashfree });
     } catch (error) {
       return handelServerError(res, { message: "Error encountered" });
     }
