@@ -700,11 +700,11 @@ router.get("/myprofile", async (req, res) => {
  *                    pin:
  *                      type: string
  *                    landmark:
-        *               type: string
-        *             billingAddress:
-        *               type: string
-        *             address:
-        *                type: string
+ *                       type: string
+ *                    billingAddress:
+ *                       type: string
+ *                    address:
+ *                       type: string
  *                    cood:
  *                      type: object
  *                      properties:
