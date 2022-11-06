@@ -849,7 +849,6 @@ router.post(
           PickUpRequired,
         });
         const customer = await Customer.findById(req.Customer._id);
-
         let cashfree = await Payment.createCustomerOrder({
           customerid: customer._id,
           email: customer.email,
@@ -913,7 +912,7 @@ router.post(
 router.post("/verifyOrderStatus", async (req, res) => {
   try {
     if (!req.body.order_id) {
-      handelValidationError(res, { message: "order id is required" });
+      return handelValidationError(res, { message: "order id is required" });
     }
     const resp = await Payment.verifyCustomerOrder(req.body.order_id);
     return handelSuccess(res, { data: resp });
@@ -969,15 +968,20 @@ router.post("/cancel", async (req, res) => {
   const orderStatusTypes = ["Initial", "Requested"];
 
   try {
-    const isOrdrrBelongs = await Order.find({ _id: id, Customer });
-
-    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
-      handelValidationError(res, { message: "This order can't be Cancelled" })
-    }
+    const isOrdrrBelongs = await Order.findOne({ _id: id, Customer });
 
     if (!isOrdrrBelongs) {
-      handelValidationError(res, { message: "This order not belongs to you" })
+      return handelValidationError(res, { message: "This order not belongs to you" })
     }
+
+    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
+      return handelValidationError(res, { message: "This order can't be Cancelled" })
+    }
+
+
+    // if (isOrdrrBelongs.paymentModeTypes === "online") {
+
+    // }
 
 
     await Order.findByIdAndUpdate(
@@ -1026,7 +1030,7 @@ router.get("/myorders/:status", async (req, res) => {
   const Customer = req.Customer._id;
 
   if (status !== "all" && !orderStatusTypes.includes(status)) {
-    handelValidationError(res, { message: "Invalid status" });
+    return handelValidationError(res, { message: "Invalid status" });
   }
 
   let query = { Customer };
