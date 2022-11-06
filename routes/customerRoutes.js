@@ -848,7 +848,10 @@ router.post(
           address,
           PickUpRequired,
         });
+
+        resp.order = await newOrder.save();
         const customer = await Customer.findById(req.Customer._id);
+
         let cashfree = await Payment.createCustomerOrder({
           customerid: customer._id,
           email: customer.email,
@@ -856,15 +859,14 @@ router.post(
           OrderId,
           Amount,
         });
-        resp.order = await newOrder.save();
         resp.cashfree = cashfree;
       }
 
       // send notifications to all partners
       return handelSuccess(res, { data: resp });
     } catch (error) {
-      console.log(error);
-      return handelServerError(res, { message: "Error encountered" });
+      console.log(error.message);
+      return handelServerError(res, { message: error?.message || "Error encountered" });
     }
   }
 );
@@ -918,7 +920,7 @@ router.post("/verifyOrderStatus", async (req, res) => {
     const resp = await Payment.verifyCustomerOrder(req.body.order_id);
     return handelSuccess(res, { data: resp });
   } catch (error) {
-    return handelServerError(res, { message: "Error encountered" });
+    return handelServerError(res, { message: error?.message || "Error encountered" });
   }
 });
 

@@ -52,7 +52,7 @@ class Payment {
 
       const existingOrderId = data.OrderId.split("-")[0];
 
-      const newTransaction = new orderTransactionModel({
+      const newTransaction = await this.createTranssaction({
         ...resp,
         order_id: existingOrderId,
         cashfreeOrderId: data.OrderId,
@@ -62,7 +62,7 @@ class Payment {
       await ordersModel.findOneAndUpdate(
         { OrderId: existingOrderId },
         { $push: { TxnId: newTransaction._id } },
-        { upsert: true, new: true }
+        { new: true }
       );
 
       return newTransaction;
@@ -80,7 +80,6 @@ class Payment {
         "x-client-id": this.APPID,
         "x-client-secret": this.APPSECRET,
       });
-      console.log(resp);
       let payment = await axios.get(resp?.payments?.url, {
         headers: {
           "x-api-version": "2022-01-01",
@@ -89,15 +88,24 @@ class Payment {
         },
       });
 
-      let transaction = await orderTransactionModel.findOneAndUpdate(
-        { order_id },
-        { payment_status: payment.data[0].payment_status },
-        { new: true }
-      );
-      return transaction;
+      if (payment.data.length > 0) {
+        let isExist = await orderTransactionModel.findOneAndUpdate({ cashfreeOrderId: order_id });
+
+        let transaction = await orderTransactionModel.findOneAndUpdate(
+          { cashfreeOrderId: order_id },
+          { order_status: payment.data[0].payment_status, payment_group: payment.data[0].payment_group, payment_method: payment.data[0].payment_method, paymentverified: true },
+          { new: true }
+        );
+
+        if (isExist?.paymentverified === false) {
+          await this.updateOrderPaymentStatus(order_id, transaction._id);
+        }
+        return transaction;
+      }
+      throw new Error("Payment not completed yet");
     } catch (error) {
       console.log(error);
-      throw new Error("Couldn't verify order");
+      throw new Error(error.message || "some error occurred");
     }
   }
 
@@ -265,6 +273,7 @@ class Payment {
             PaymentStatus: paymentStatus[0],
             Status: orderStatusTypesObj['Requested'],
             PendingAmount: leftAmount,
+            $inc: { paidamount: txnData.order_amount }
           }
         );
       } else {
@@ -274,6 +283,7 @@ class Payment {
             PaymentStatus: paymentStatus[2],
             Status: orderStatusTypesObj['Requested'],
             PendingAmount: leftAmount,
+            $inc: { paidamount: txnData.order_amount }
           }
         );
       }
