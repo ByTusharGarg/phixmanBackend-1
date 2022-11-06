@@ -280,18 +280,18 @@ const changePassword = async (req, res) => {
             message: "Password Changed successfully",
           });
         } else {
-          return res.status(404).json({
+          return res.status(401).json({
             message: "Token expired or invalid",
           });
         }
       }
     } else {
-      return res.status(500).json({
+      return res.status(401).json({
         message: "Token expired or invalid",
       });
     }
   } catch (error) {
-    return res.status(500).json({
+    return res.status(401).json({
       message: "Token expired or invalid",
     });
   }
@@ -313,9 +313,9 @@ const updatePassword = async (req, res) => {
       { password: hashpassword(newpassword) },
       { new: true }
     );
-    return res.status(404).json({ message: "Password Changed successfully" });
+    return res.status(200).json({ message: "Password Changed successfully" });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(401).json({
       message: "Token expired or invalid",
     });
   }

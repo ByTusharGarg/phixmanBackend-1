@@ -437,7 +437,7 @@ router.post("/customer/create", async (req, res) => {
     const isuserExist = await Customer.findOne({ phone: req?.body?.phone });
     if (isuserExist) {
       return res
-        .status(500)
+        .status(403)
         .json({ message: "Customer number already exists" });
     }
     const newuser = await Customer.create({
@@ -816,7 +816,7 @@ router.post(
 
     if (!partnerId || !customerId) {
       return res
-        .status(500)
+        .status(400)
         .json({ message: "partnerid and customerid are required" });
     }
 
@@ -831,7 +831,7 @@ router.post(
       let resp = {};
 
       if (PaymentMode !== "cod") {
-        return res.status(500).json({ message: "Cod  is allowed." });
+        return res.status(400).json({ message: "Cod is allowed." });
       }
       const newOrder = new Order({
         Partner: partnerId,
@@ -1170,7 +1170,7 @@ router.post("/createpartner", async (req, res) => {
 
 
   if (!phone || !Name || !Dob) {
-    return res.status(500).json({
+    return res.status(400).json({
       message: "phone Name Dob required",
     });
   }
@@ -1178,7 +1178,7 @@ router.post("/createpartner", async (req, res) => {
   try {
     const isPhoneExist = await Partner.findOne({ phone });
     if (isPhoneExist) {
-      return res.status(500).json({
+      return res.status(403).json({
         message: "Phone number allready exists",
       });
     }
@@ -1209,7 +1209,7 @@ router.post("/createpartner", async (req, res) => {
 
 
   if (Type === "store" && (!req.files?.gstCertificate || !req.files?.incorprationCertificate)) {
-    return res.status(500).json({
+    return res.status(400).json({
       message: "gstCertificate incorprationCertificate documents required",
     });
   } else {
@@ -1429,7 +1429,7 @@ router.get("/partner/search", async (req, res) => {
 router.post("/createspacialist", async (req, response) => {
   try {
     if (!req?.body?.phone || !req?.body?.name || req?.body?.email) {
-      return response.status(404).json({
+      return response.status(400).json({
         message: "missing phone name email required fields",
       });
     }
@@ -1623,7 +1623,7 @@ router.put("/partners/:id", async (req, res) => {
   const { type, id } = req.params;
 
   if (!id || !type) {
-    return res.status(500).json({ message: `id and type required` });
+    return res.status(400).json({ message: `id and type required` });
   }
 
   try {
@@ -1638,7 +1638,7 @@ router.put("/partners/:id", async (req, res) => {
 
       if (!isNotVerified) {
         return res
-          .status(500)
+          .status(400)
           .json({ message: "Account is  allready verified" });
       }
     } else if (type === "block") {
@@ -1646,7 +1646,7 @@ router.put("/partners/:id", async (req, res) => {
     } else if (type === "unblock") {
       query = { isPublished: true };
     } else {
-      return res.status(200).json({ message: "Invalid type" });
+      return res.status(400).json({ message: "Invalid type" });
     }
 
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
@@ -2053,7 +2053,7 @@ router.put("/categories/:id", async (req, res) => {
         data: updatedategory,
       });
     } else {
-      return res.status(404).json({ message: "Category not found." });
+      return res.status(400).json({ message: "Category not found." });
     }
   } catch (error) {
     console.log(error);
@@ -2294,7 +2294,7 @@ router.get("/orders/:status", async (req, res) => {
   ];
 
   if (!allowedStatus.includes(status)) {
-    return res.status(500).json({ message: `${status} status not allowed.` });
+    return res.status(403).json({ message: `${status} status not allowed.` });
   }
 
   let query = {};
@@ -2361,13 +2361,13 @@ router.post("/service", async (req, res) => {
   try {
     const { categoryId, modelId, serviceName, cost } = req.body;
     if (!categoryId)
-      return res.status(404).json({ message: "category is reqiured" });
+      return res.status(400).json({ message: "category is reqiured" });
     let categorydoc = await category.findOne({
       _id: categoryId,
       isDeleted: false,
     });
     if (!categorydoc) {
-      return res.status(404).json({ message: "category not found" });
+      return res.status(400).json({ message: "category not found" });
     }
     if (categorydoc.key === "mobile" && !modelId) {
       return res
@@ -2429,7 +2429,7 @@ router.post("/ratecard", async (req, res) => {
   const { categoryId, brandId, modelId } = req.body;
 
   if (!categoryId) {
-    return res.status(500).json({ message: "categoryId is required" });
+    return res.status(400).json({ message: "categoryId is required" });
   }
 
   try {
@@ -2439,7 +2439,7 @@ router.post("/ratecard", async (req, res) => {
     });
 
     if (!isCategoryExists) {
-      return res.status(500).json({ message: "Category not exist" });
+      return res.status(403).json({ message: "Category not exist" });
     }
 
     const file = req?.files?.csvfile;
@@ -2451,7 +2451,7 @@ router.post("/ratecard", async (req, res) => {
       isCategoryExists?.name.toLowerCase() === "tablet"
     ) {
       if (!modelId || !brandId) {
-        return res.status(500).json({
+        return res.status(400).json({
           message: "brandid and modelid is required for mobile and tablet",
         });
       }
@@ -2461,7 +2461,7 @@ router.post("/ratecard", async (req, res) => {
         //   Name: item.brand,
         //   brandId: item.brand.toLowerCase(),
         // });
-        return res.status(500).json({
+        return res.status(400).json({
           message: "brandid is invalid",
         });
       }
@@ -2473,7 +2473,7 @@ router.post("/ratecard", async (req, res) => {
         //   modelId: item.model.toLowerCase(),
         //   brandId: brand._id,
         // });
-        return res.status(500).json({
+        return res.status(400).json({
           message: "modelid is invalid",
         });
       }
@@ -3275,7 +3275,7 @@ router.delete("/delete-partner-account", async (req, res) => {
       admin: { type }
     } = req;
 
-    if(partnerId.length==0) return res.status(400).json({ message: "No partner id found" });
+    if(partnerId.length==0) return res.status(403).json({ message: "No partner id found" });
 
     if (!type === adminTypeArray[0]) {
       return res.status(400).json({ message: "invalid admin type" });
