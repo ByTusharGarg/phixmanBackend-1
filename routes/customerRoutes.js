@@ -861,8 +861,9 @@ router.post(
       }
 
       // send notifications to all partners
-      return handelSuccess(res, { data: resp, cashfree });
+      return handelSuccess(res, { data: resp });
     } catch (error) {
+      console.log(error);
       return handelServerError(res, { message: "Error encountered" });
     }
   }
