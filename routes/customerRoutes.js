@@ -9,6 +9,7 @@ const {
   Partner,
   Counters,
   CustomerWallet,
+  category
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
@@ -1154,6 +1155,55 @@ router.get("/category", async (req, res) => {
       message: "An error occured",
     })
   }
+})
+
+
+/**
+ * @openapi
+ * /customer/timeslots:
+ *  get:
+ *    summary: using this route user can get timeslots
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/timeslots",async (req,res) => {
+  try{
+  let {
+    query:{categoryId}
+  } = req;
+  const foundTimeSlots = await category.findById({_id:categoryId}).select('Slots')
+  if(!foundTimeSlots) return res.status(404).send('No Timeslots found')
+  return handelSuccess(res, { data: foundTimeSlots, message: "Timeslots found" });
+}
+catch (err) {
+  console.log("An error occured", err);
+  return res.send({
+    status: 500,
+    message: "An error occured",
+  })
+}
+
 })
 
 
