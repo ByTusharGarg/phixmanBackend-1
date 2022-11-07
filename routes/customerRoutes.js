@@ -849,6 +849,8 @@ router.post(
           address,
           PickUpRequired,
         });
+
+        resp.order = await newOrder.save();
         const customer = await Customer.findById(req.Customer._id);
 
         let cashfree = await Payment.createCustomerOrder({
@@ -858,14 +860,14 @@ router.post(
           OrderId,
           Amount,
         });
-        resp.order = await newOrder.save();
         resp.cashfree = cashfree;
       }
 
       // send notifications to all partners
-      return handelSuccess(res, { data: resp, cashfree });
+      return handelSuccess(res, { data: resp });
     } catch (error) {
-      return handelServerError(res, { message: "Error encountered" });
+      console.log(error.message);
+      return handelServerError(res, { message: error?.message || "Error encountered" });
     }
   }
 );
@@ -914,12 +916,12 @@ router.post(
 router.post("/verifyOrderStatus", async (req, res) => {
   try {
     if (!req.body.order_id) {
-      handelValidationError(res, { message: "order id is required" });
+      return handelValidationError(res, { message: "order id is required" });
     }
     const resp = await Payment.verifyCustomerOrder(req.body.order_id);
     return handelSuccess(res, { data: resp });
   } catch (error) {
-    return handelServerError(res, { message: "Error encountered" });
+    return handelServerError(res, { message: error?.message || "Error encountered" });
   }
 });
 
@@ -970,15 +972,20 @@ router.post("/cancel", async (req, res) => {
   const orderStatusTypes = ["Initial", "Requested"];
 
   try {
-    const isOrdrrBelongs = await Order.find({ _id: id, Customer });
-
-    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
-      handelValidationError(res, { message: "This order can't be Cancelled" })
-    }
+    const isOrdrrBelongs = await Order.findOne({ _id: id, Customer });
 
     if (!isOrdrrBelongs) {
-      handelValidationError(res, { message: "This order not belongs to you" })
+      return handelValidationError(res, { message: "This order not belongs to you" })
     }
+
+    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
+      return handelValidationError(res, { message: "This order can't be Cancelled" })
+    }
+
+
+    // if (isOrdrrBelongs.paymentModeTypes === "online") {
+
+    // }
 
 
     await Order.findByIdAndUpdate(
@@ -1027,7 +1034,7 @@ router.get("/myorders/:status", async (req, res) => {
   const Customer = req.Customer._id;
 
   if (status !== "all" && !orderStatusTypes.includes(status)) {
-    handelValidationError(res, { message: "Invalid status" });
+    return handelValidationError(res, { message: "Invalid status" });
   }
 
   let query = { Customer };

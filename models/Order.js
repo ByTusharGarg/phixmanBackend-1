@@ -19,10 +19,10 @@ const Order = mongoose.model(
       type: String,
       enum: orderStatusTypes,
     },
+    paidamount: { type: Number, default: 0 },
     OrderDetails: {
       Amount: { type: Number },
       Gradtotal: { type: Number },
-      paidamount: { type: Number, default: 0 },
       Items: [
         {
           CategoryId: { type: Schema.Types.ObjectId, ref: "category" },

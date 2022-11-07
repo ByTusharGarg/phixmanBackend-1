@@ -33,6 +33,15 @@ const transactionSchema = mongoose.Schema({
     order_meta: {
         type: Object
     },
+    payment_method: {
+        type: Object
+    },
+    payment_group: {
+        type: Object
+    },
+    payment_method: {
+        type: Object
+    },
     payment_link: {
         type: String
     },
@@ -47,7 +56,11 @@ const transactionSchema = mongoose.Schema({
     payment: Object,
     type: String,
     event_time: Date,
-    Desc: String
+    Desc: String,
+    paymentverified: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true });
 
 const mod = mongoose.model('ordertransaction', transactionSchema);
