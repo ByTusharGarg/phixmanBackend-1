@@ -20,7 +20,7 @@ const {
   SubCategory,
 } = require("../models");
 const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
-const {checkAdmin} = require("../middleware/AuthAdmin")
+const { checkAdmin } = require("../middleware/AuthAdmin")
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
@@ -1178,7 +1178,7 @@ router.post("/createpartner", async (req, res) => {
   try {
     const isPhoneExist = await Partner.findOne({ phone });
     if (isPhoneExist) {
-      return res.status(403).json({
+      return res.status(400).json({
         message: "Phone number allready exists",
       });
     }
@@ -1187,13 +1187,13 @@ router.post("/createpartner", async (req, res) => {
       message: "Error encountered while trying to uploading documents",
     });
   }
-  
+
   if (req.files?.aadharImageF && req.files?.aadharImageB) {
     let af = randomImageName();
     let ab = randomImageName();
 
-    images.push({ ...req.files?.aadharImageF, fileName:af  });
-    images.push({ ...req.files?.aadharImageB, fileName:ab});
+    images.push({ ...req.files?.aadharImageF, fileName: af });
+    images.push({ ...req.files?.aadharImageB, fileName: ab });
     adadharObj = {
       number: aadharNumber,
       fileF: af,
@@ -1201,10 +1201,10 @@ router.post("/createpartner", async (req, res) => {
     };
   }
 
-  if(req.files?.pancardImage){
+  if (req.files?.pancardImage) {
     let n = randomImageName();
-    panObj = { number: panNumber, file:n },
-    images.push({ ...req.files?.pancardImage, fileName:n  });
+    panObj = { number: panNumber, file: n },
+      images.push({ ...req.files?.pancardImage, fileName: n });
   }
 
 
@@ -3228,13 +3228,13 @@ router.delete("/delete-customer-account", async (req, res) => {
       admin: { type }
     } = req;
 
-    if(customerId.length==0) return res.status(400).json({ message: "No Customer id found" });
+    if (customerId.length == 0) return res.status(400).json({ message: "No Customer id found" });
 
     if (!type === adminTypeArray[0]) {
       return res.status(400).json({ message: "invalid admin type" });
-    }          
+    }
     const deleteUser = await Customer.deleteMany({ _id: customerId })
-    
+
     if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
 
     return res.status(200).json({ message: "Customer account deleted" });
@@ -3275,13 +3275,13 @@ router.delete("/delete-partner-account", async (req, res) => {
       admin: { type }
     } = req;
 
-    if(partnerId.length==0) return res.status(403).json({ message: "No partner id found" });
+    if (partnerId.length == 0) return res.status(403).json({ message: "No partner id found" });
 
     if (!type === adminTypeArray[0]) {
       return res.status(400).json({ message: "invalid admin type" });
-    }          
+    }
     const deleteUser = await Partner.deleteMany({ _id: partnerId })
-    
+
     if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
 
     return res.status(200).json({ message: "Partner account deleted" });
@@ -3314,27 +3314,27 @@ router.delete("/delete-partner-account", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/wallet/customer", 
-checkAdmin, 
-async (req, res) => {
-  try {
-    const {
-    query: { customerId },
-    admin: { type }
-  } = req;
-  if (!type === adminTypeArray[0]) {
-    return res.status(400).json({ message: "invalid admin type" });
-  }    
-    const walletData = await getCustomerWallet(customerId);
-    const transactionData = await getAllWallletTranssactionForUser(customerId, "customer")
-    return res
-      .status(200)
-      .json({ message: "customer wallet and transaction", walletData,transactionData });
+router.get("/wallet/customer",
+  checkAdmin,
+  async (req, res) => {
+    try {
+      const {
+        query: { customerId },
+        admin: { type }
+      } = req;
+      if (!type === adminTypeArray[0]) {
+        return res.status(400).json({ message: "invalid admin type" });
+      }
+      const walletData = await getCustomerWallet(customerId);
+      const transactionData = await getAllWallletTranssactionForUser(customerId, "customer")
+      return res
+        .status(200)
+        .json({ message: "customer wallet and transaction", walletData, transactionData });
 
-  } catch (error) {
-    return res.status(500).json({
-      message: "Error encountered while trying to fetch wallet.",
-    });
-  }
-});
+    } catch (error) {
+      return res.status(500).json({
+        message: "Error encountered while trying to fetch wallet.",
+      });
+    }
+  });
 module.exports = router;
