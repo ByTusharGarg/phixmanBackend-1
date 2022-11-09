@@ -1613,6 +1613,10 @@ router.get("/getpartnertransaction", async (req, res) => {
  *                icon:
  *                  type: file
  *                  description: required
+ *                images:
+ *                  type: array
+ *                  items:
+ *                    type: file
  *                name:
  *                  type: string
  *                  description: required
@@ -1696,6 +1700,7 @@ router.get("/getpartnertransaction", async (req, res) => {
  */
 router.post("/categories", async (req, res) => {
   try {
+    console.log(req.files);
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
@@ -1710,7 +1715,15 @@ router.post("/categories", async (req, res) => {
     if (!req?.files?.icon) {
       return res.status(404).json({ message: "icon is missing" });
     }
+    if (!req?.files?.images) {
+      return res.status(404).json({ message: "product images are missing" });
+    }
+    let images = [];
+    for (let i = 0; i < req?.files?.images.length; i++) {
+      images.push(encodeImage(req?.files?.images[i]));
+    }
     req.body.icon = encodeImage(req.files.icon);
+    req.body.images = images;
     const newCategory = new category(req.body);
     await newCategory.save();
     return res
@@ -2805,7 +2818,6 @@ router.get("/Zone", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
