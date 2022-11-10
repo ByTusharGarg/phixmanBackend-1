@@ -3184,9 +3184,9 @@ router.get("/wallet/customer",
 
 /**
  * @openapi
- * /admin/offer/disable:
+ * /admin/offer/change-status:
  *  get:
- *    summary: used to disable order
+ *    summary: used to change offer status
  *    tags:
  *    - Admin Routes
  *    responses:
@@ -3202,27 +3202,33 @@ router.get("/wallet/customer",
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */    
-  router.get("/offer/disable", checkAdmin,async(req,res)=>{
+  router.get("/offer/change-status", checkAdmin,async(req,res)=>{
       try{
         const {
           query: {
-            promoCode
+            offerId,
+            action
           }
         }= req;
-        const disableOffer = await Coupon.findOneAndUpdate(
-          {promoCode},
+
+        if(!['enable', 'disable'].includes(action)) return res.status(409).json({message:'invalid action'})
+        
+        const status = action==="enable" ? true : false
+        const changeOfferStatus = await Coupon.findOneAndUpdate(
+
+          {_id:offerId},
           {
-            $set:{ isActive: false }
+            $set:{ isActive: status }
           },
           {new:true}
         )
-        if(!disableOffer) return res.status(409).json({message: 'Unable to disable offer'})
+        if(!changeOfferStatus) return res.status(409).json({message: 'Unable to change offer status'})
         
-        return res.status(200).json({message:"Offer disable", data: disableOffer})
+        return res.status(200).json({message:"Offer status changed", data: changeOfferStatus})
       } 
       catch (error) {
           return res.status(500).json({
-            message: "Error encountered while trying to create offer.",
+            message: "Error encountered while trying to change offer status.",
           });
         }
       }) 
