@@ -18,6 +18,7 @@ const {
   City,
   Zone,
 } = require("../models");
+
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
@@ -41,6 +42,7 @@ const {
   generateRandomReferralCode,
 } = require("../libs/commonFunction");
 const { getWalletTransactions } = require("../services/Wallet");
+const { checkAdmin } = require("../middleware/AuthAdmin")
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -2882,4 +2884,301 @@ router.patch("/Zone/:id", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /admin/create-subcategory:
+ *  post:
+ *    summary: route to create subcategory.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                category:
+ *                  type: string
+ *                name:
+ *                  type: string
+ *                description:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/create-subcategory", async (req, res) => {
+  try {
+    let {
+      body: {
+        categoryId,
+        name,
+        description
+      }
+    } = req;
+
+    let subcategoryObj = {
+      category: categoryId,
+      name,
+      description
+    }
+    const savedSubcategory = await SubCategory.create(subcategoryObj)
+    if (!savedSubcategory) return res.status(404).send('Failed to save subcategory info')
+    return res.send({
+      status: 200,
+      message: "subcategories created",
+      data: savedSubcategory
+    })
+  }
+  catch (err) {
+    console.log("An error occured", err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    })
+  }
+
+})
+
+/**
+ * @openapi
+ * /admin/get-store-partner:
+ *  get:
+ *    summary: used to fetch list of all available store partner
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.get("/get-store-partner", async (req, response) => {
+  try {
+    const data = await Partner.find({ Type: "store" });
+    return response.status(200).json({ message: "store partner lists", data });
+  } catch (error) {
+    console.log(error);
+    return response.status(500).json({
+      message: "Error encountered while trying to create new sub provider",
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/delete-customer-account:
+ *  delete:
+ *    summary: used to delete customer account
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.delete("/delete-customer-account", async (req, res) => {
+  try {
+    const {
+      body: { customerId },
+      admin: { type }
+    } = req;
+
+    if (customerId.length == 0) return res.status(400).json({ message: "No Customer id found" });
+
+    if (!type === adminTypeArray[0]) {
+      return res.status(400).json({ message: "invalid admin type" });
+    }
+    const deleteUser = await Customer.deleteMany({ _id: customerId })
+
+    if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
+
+    return res.status(200).json({ message: "Customer account deleted" });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to deleting customer account",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/delete-partner-account:
+ *  delete:
+ *    summary: used to delete partner account
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.delete("/delete-partner-account", async (req, res) => {
+  try {
+    const {
+      body: { partnerId },
+      admin: { type }
+    } = req;
+
+    if (partnerId.length == 0) return res.status(403).json({ message: "No partner id found" });
+
+    if (!type === adminTypeArray[0]) {
+      return res.status(400).json({ message: "invalid admin type" });
+    }
+    const deleteUser = await Partner.deleteMany({ _id: partnerId })
+
+    if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
+
+    return res.status(200).json({ message: "Partner account deleted" });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to deleting partner account",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/wallet/customer:
+ *  delete:
+ *    summary: used to fetch wallet and transactions details
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/wallet/customer",
+  checkAdmin,
+  async (req, res) => {
+    try {
+      const {
+        query: { customerId },
+        admin: { type }
+      } = req;
+      if (!type === adminTypeArray[0]) {
+        return res.status(400).json({ message: "invalid admin type" });
+      }
+      const walletData = await getCustomerWallet(customerId);
+      const transactionData = await getAllWallletTranssactionForUser(customerId, "customer")
+      return res
+        .status(200)
+        .json({ message: "customer wallet and transaction", walletData, transactionData });
+
+    } catch (error) {
+      return res.status(500).json({
+        message: "Error encountered while trying to fetch wallet.",
+      });
+    }
+  });
+
+/**
+ * @openapi
+ * /admin/offer/create:
+ *  post:
+ *    summary: used to create order
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+  router.post("/offer/create", checkAdmin,async(req,res)=>{
+    try{
+      const {
+        body: {
+          promoCode,
+          promoType,
+          title,
+          description,
+          offerAmount,
+          percentageOff,
+          maxDisc,
+          minCartValue,
+          startValidity,
+          endValidity
+        }
+      }= req;
+      const offerObj ={
+          promoCode,
+          promoType,
+          title,
+          description,
+          offerAmount,
+          percentageOff,
+          maxDisc,
+          minCartValue,
+          startValidity,
+          endValidity
+      }
+    
+      const newOffer = await Coupon.create(offerObj)
+      if(!newOffer) return res.status(409).json({message: 'Unable to create offer'})
+      return res.status(200).json({message:"Offer created", data: newOffer})
+    } 
+    catch (error) {
+        return res.status(500).json({
+          message: "Error encountered while trying to create offer.",
+        });
+      }
+    })  
 module.exports = router;
