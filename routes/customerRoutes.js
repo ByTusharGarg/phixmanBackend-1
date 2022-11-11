@@ -841,7 +841,7 @@ router.post(
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypesObj["Requested"],
+          Status: orderStatusTypesObj.Initial,
           PendingAmount: Amount,
           PaymentStatus: paymentStatus[1],
           OrderDetails: { Amount, Gradtotal: grandTotal, Items },
@@ -866,7 +866,7 @@ router.post(
       // send notifications to all partners
       return handelSuccess(res, { data: resp });
     } catch (error) {
-      console.log(error.message);
+      // console.log(error.message);
       return handelServerError(res, { message: error?.message || "Error encountered" });
     }
   }
@@ -969,10 +969,10 @@ router.post("/verifyOrderStatus", async (req, res) => {
 router.post("/cancel", async (req, res) => {
   const { id } = req.body;
   const Customer = req.Customer._id;
-  const orderStatusTypes = ["Initial", "Requested"];
+  const orderStatusTypes = ["Initial", "Requested", "Accepted"];
 
   try {
-    const isOrdrrBelongs = await Order.findOne({ _id: id, Customer });
+    const isOrdrrBelongs = await Order.findOne({ _id: id, Customer }).populate("TxnId");
 
     if (!isOrdrrBelongs) {
       return handelValidationError(res, { message: "This order not belongs to you" })
@@ -982,19 +982,40 @@ router.post("/cancel", async (req, res) => {
       return handelValidationError(res, { message: "This order can't be Cancelled" })
     }
 
+    // 
+    if (isOrdrrBelongs.paymentModeTypes === "cod") {
+      await Order.findByIdAndUpdate(
+        isOrdrrBelongs._id,
+        { Status: orderStatusTypesObj.Cancelled },
+        { new: true }
+      );
+      return handelSuccess(res, { message: "Orders Cancelled successfully" });
+    }
 
-    // if (isOrdrrBelongs.paymentModeTypes === "online") {
+    if (isOrdrrBelongs.TxnId.length === 0) {
+      return handelValidationError(res, { message: "no transaction found for this order" })
+    }
 
-    // }
+    if (isOrdrrBelongs.TxnId.length > 1) {
+      return handelValidationError(res, { message: "more then 1 transsaction found for this can't cancel" })
+    }
 
+    const transData = isOrdrrBelongs.TxnId[0];
+    // console.log(transData);
 
-    await Order.findByIdAndUpdate(
-      isOrdrrBelongs._id,
-      { Status: orderStatusTypesObj.Cancelled },
-      { new: true }
-    );
-    return handelSuccess(res, { message: "Orders Cancelled successfully" });
+    // if in requested state refund all payments
+    if (isOrdrrBelongs.Status === orderStatusTypesObj.Requested) {
+      await Payment.initiateRefundPayments(transData.cashfreeOrderId, transData.order_amount, { orderId: id });
+    }
+
+    // if in the accepted state but less then 2h refund all amount
+
+    // if more the 2hr deduct some amount
+
+    return handelSuccess(res, { message: "Orders Cancelled successfully refund iniitiated" });
+
   } catch (error) {
+    console.log(error);
     return handelServerError(res, { message: "Error encountered" });
   }
 });
@@ -1194,22 +1215,22 @@ router.get("/category", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/timeslots",async (req,res) => {
-  try{
-  let {
-    query:{categoryId}
-  } = req;
-  const foundTimeSlots = await category.findById({_id:categoryId}).select('Slots')
-  if(!foundTimeSlots) return res.status(404).send('No Timeslots found')
-  return handelSuccess(res, { data: foundTimeSlots, message: "Timeslots found" });
-}
-catch (err) {
-  console.log("An error occured", err);
-  return res.send({
-    status: 500,
-    message: "An error occured",
-  })
-}
+router.get("/timeslots", async (req, res) => {
+  try {
+    let {
+      query: { categoryId }
+    } = req;
+    const foundTimeSlots = await category.findById({ _id: categoryId }).select('Slots')
+    if (!foundTimeSlots) return res.status(404).send('No Timeslots found')
+    return handelSuccess(res, { data: foundTimeSlots, message: "Timeslots found" });
+  }
+  catch (err) {
+    console.log("An error occured", err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    })
+  }
 
 })
 

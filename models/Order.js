@@ -48,6 +48,12 @@ const Order = mongoose.model(
         longitude: String,
       },
     },
+    statusLogs: [
+      {
+        status: { type: String, enum: orderStatusTypes },
+        timestampLog: { type: Number, default: Date.now() }
+      }
+    ],
     PickUpRequired: { type: Boolean },
     timeSlot: {
       day: { type: String, default: "" },

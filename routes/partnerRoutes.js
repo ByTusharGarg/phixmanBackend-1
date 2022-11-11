@@ -1185,7 +1185,9 @@ router.post("/order/acceptorder", async (req, res) => {
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
-      { Status: orderStatusTypesObj['Accepted'], Partner: partnerId },
+      { Status: orderStatusTypesObj['Accepted'], Partner: partnerId,
+      $push: { statusLogs:{status:orderStatusTypesObj.Accepted}},
+    },
       { new: true }
     );
     return res.status(200).json({ message: "order Accepted" });
@@ -2341,7 +2343,7 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     }
 
     await Order.findOneAndUpdate(
-      { _id: OrderId,Partner: partnerId },
+      { _id: OrderId, Partner: partnerId },
       {
         $inc: { "OrderDetails.Gradtotal": grandTotal },
         $inc: { "OrderDetails.Amount": Amount },
