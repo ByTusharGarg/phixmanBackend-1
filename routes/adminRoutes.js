@@ -17,6 +17,7 @@ const {
   State,
   City,
   Zone,
+  Notification,
 } = require("../models");
 
 const { rejectBadRequests } = require("../middleware");
@@ -3337,6 +3338,46 @@ router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/notification:
+ *  get:
+ *    summary: used to fetch notifications
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.get("/notification", checkAdmin,async(req,res)=>{
+  try{
+    let {
+      query:{
+        customerId
+      } 
+    }= req;
+const foundNotifications = await Notification.find({customerId}).select("title desc").lean()
+if(!foundNotifications) return res.status(400).json({message:"No notification found"})
+
+return res.status(400).json({message:"Notifications found", data: foundNotifications})
+  }catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch notifications.",
     });
   }
 })
