@@ -1051,7 +1051,7 @@ router.get("/Order", async (req, res) => {
  *            Type:
  *              type: string
  *              required: true
- *              enum: ["store", "individual", "sub-provider", "spacialist"]
+ *              enum: ["store", "individual", "sub-provider", "specialist"]
  *            Product_Service:
  *              type: string
  *              required: true
@@ -1351,9 +1351,9 @@ router.get("/partner/search", async (req, res) => {
 
 /**
  * @openapi
- * /admin/createspacialist:
+ * /admin/createspecialist:
  *  post:
- *    summary: used to create spacialist
+ *    summary: used to create specialist
  *    tags:
  *    - Admin Routes
  *    requestBody:
@@ -1426,7 +1426,7 @@ router.get("/partner/search", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/createspacialist", async (req, response) => {
+router.post("/createspecialist", async (req, response) => {
   try {
     if (!req?.body?.phone || !req?.body?.name || req?.body?.email) {
       return response.status(400).json({
@@ -1438,13 +1438,13 @@ router.post("/createspacialist", async (req, response) => {
 
     if (isPartnerExists) {
       return response.status(403).json({
-        message: "spacialist with this number already exists",
+        message: "specialist with this number already exists",
       });
     }
-    const newSpacialist = await Partner.create({
+    const newspecialist = await Partner.create({
       phone: req?.body?.phone,
       Name: req?.body?.name,
-      Type: "spacialist",
+      Type: "specialist",
       email: req?.body?.email ? req?.body?.email : "",
       isVerified: true,
       isApproved: true,
@@ -1455,7 +1455,7 @@ router.post("/createspacialist", async (req, response) => {
 
     return response.status(201).json({
       message: "successfully created sub-provider",
-      data: newSpacialist,
+      data: newspecialist,
     });
   } catch (error) {
     console.log(error);
@@ -1467,9 +1467,9 @@ router.post("/createspacialist", async (req, response) => {
 
 /**
  * @openapi
- * /admin/getspacialist:
+ * /admin/getspecialist:
  *  get:
- *    summary: used to fetch list of  all available spacialist
+ *    summary: used to fetch list of  all available specialist
  *    tags:
  *    - Admin Routes
  *    responses:
@@ -1485,10 +1485,10 @@ router.post("/createspacialist", async (req, response) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/getspacialist", async (req, response) => {
+router.get("/getspecialist", async (req, response) => {
   try {
-    const data = await Partner.find({ Type: "spacialist" });
-    return response.status(200).json({ message: "spacialist lists", data });
+    const data = await Partner.find({ Type: "specialist" });
+    return response.status(200).json({ message: "specialist lists", data });
   } catch (error) {
     console.log(error);
     return response.status(500).json({

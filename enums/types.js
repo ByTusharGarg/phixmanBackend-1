@@ -1,6 +1,6 @@
 const genderTypes = ["male", "female", "non-binary"];
 const userStatusTypes = ["active", "inactive"];
-const partnerTypes = ["store", "individual", "sub-provider", "spacialist"];
+const partnerTypes = ["store", "individual", "sub-provider", "specialist"];
 const partnerStatusTypes = ["active", "inactive"];
 const storeStatusTypes = ["active", "inactive"];
 const categoryTypes = [
