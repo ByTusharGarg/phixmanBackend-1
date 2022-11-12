@@ -46,6 +46,9 @@ const coupenUserType = ["PARTNER", "CUSTOMER"];
 
 const panalityEnnum = ["CANCEL"];
 
+const payoutPaymentStatus = ["AWAITED", "SUCCESS", "FAILED", "INPROGRESS"];
+
+
 const paymentStatusObject = {
   SUCCESS: "SUCCESS",
   PENDING: "PENDING",
@@ -75,5 +78,7 @@ module.exports = {
   coupenUserType,
   orderStatusTypesObj,
   panalityEnnum,
-  paymentStatusObject
+  paymentStatusObject,
+
+  payoutPaymentStatus
 };
