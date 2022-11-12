@@ -339,8 +339,6 @@ router.post(
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
 
  router.get("/category", async (req, res) => {
