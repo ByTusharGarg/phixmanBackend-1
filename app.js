@@ -13,7 +13,7 @@ const path = require("path");
 const helmet = require("helmet");
 const router = require("./routes/router");
 const connect = require("./connect");
-
+const payout = require('./libs/payments/payouts');
 // Configure Express app.
 const app = Express();
 
@@ -127,3 +127,8 @@ app.listen(process.env.PORT, function (err) {
   }
   console.log("Express Server Running at PORT: " + process.env.PORT);
 });
+
+
+(async () => {
+  // await payout.createBeneficiaryTkoCashhfree();
+})();

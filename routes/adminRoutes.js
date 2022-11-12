@@ -46,7 +46,6 @@ const {
 } = require("../libs/commonFunction");
 const { adminTypeArray } = require('../enums/adminTypes');
 const { getWalletTransactions } = require("../services/Wallet");
-const { checkAdmin } = require("../middleware/AuthAdmin")
 
 const verifyOrderValidator = [
   body("OrderType")
