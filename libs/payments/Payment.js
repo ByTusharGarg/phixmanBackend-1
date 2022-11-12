@@ -1,5 +1,10 @@
-const sdk = require("api")("@cashfreedocs-new/v2#1224ti1hl4o0uyhs");
+// const sdk = require("api")("@cashfreedocs-new/v2#1224ti1hl4o0uyhs");
+const sdk = require('api')('@cashfreedocs-new/v2#5qon17l8k4gqrl');
+
+
 const orderTransactionModel = require("../../models/Ordertransaction");
+const refundModel = require("../../models/refund.model");
+
 const ordersModel = require("../../models/Order");
 const {
   acceptedPaymentMethods,
@@ -14,12 +19,15 @@ const {
   updateWallletTransactionByTransactionId,
   updatePartnerWallet,
 } = require("../../services/Wallet");
+const commonFunction = require('../../utils/commonFunction');
 const axios = require("axios").default;
 
 let casrfreeUrlLinks =
   process.env.CASH_FREE_MODE === "Test"
     ? process.env.CASHFREE_GATEWAY_DEV_URL
     : process.env.CASHFREE_GATEWAY_PROD_URL;
+
+// sdk.server(casrfreeUrlLinks);
 sdk.server(casrfreeUrlLinks);
 
 class Payment {
@@ -52,18 +60,20 @@ class Payment {
 
       const existingOrderId = data.OrderId.split("-")[0];
 
-      const newTransaction = new orderTransactionModel({
+      const newTransaction = await this.createTranssaction({
         ...resp,
         order_id: existingOrderId,
         cashfreeOrderId: data.OrderId,
       });
       await newTransaction.save();
 
-      await ordersModel.findOneAndUpdate(
-        { OrderId: existingOrderId },
-        { $push: { TxnId: newTransaction._id } },
-        { upsert: true, new: true }
-      );
+
+      // this is move down to 
+      // await ordersModel.findOneAndUpdate(
+      //   { OrderId: existingOrderId },
+      //   { $push: { TxnId: newTransaction._id } },
+      //   { new: true }
+      // );
 
       return newTransaction;
     } catch (error) {
@@ -80,7 +90,6 @@ class Payment {
         "x-client-id": this.APPID,
         "x-client-secret": this.APPSECRET,
       });
-      console.log(resp);
       let payment = await axios.get(resp?.payments?.url, {
         headers: {
           "x-api-version": "2022-01-01",
@@ -89,15 +98,24 @@ class Payment {
         },
       });
 
-      let transaction = await orderTransactionModel.findOneAndUpdate(
-        { order_id },
-        { payment_status: payment.data[0].payment_status },
-        { new: true }
-      );
-      return transaction;
+      if (payment.data.length > 0) {
+        let isExist = await orderTransactionModel.findOneAndUpdate({ cashfreeOrderId: order_id });
+
+        let transaction = await orderTransactionModel.findOneAndUpdate(
+          { cashfreeOrderId: order_id },
+          { order_status: payment.data[0].payment_status, payment_group: payment.data[0].payment_group, payment_method: payment.data[0].payment_method, paymentverified: true },
+          { new: true }
+        );
+
+        if (isExist?.paymentverified === false) {
+          await this.updateOrderPaymentStatus(order_id, transaction._id);
+        }
+        return transaction;
+      }
+      throw new Error("Payment not completed yet");
     } catch (error) {
       console.log(error);
-      throw new Error("Couldn't verify order");
+      throw new Error(error.message || "some error occurred");
     }
   }
 
@@ -265,6 +283,8 @@ class Payment {
             PaymentStatus: paymentStatus[0],
             Status: orderStatusTypesObj['Requested'],
             PendingAmount: leftAmount,
+            $push: { TxnId: transactionId },
+            $inc: { paidamount: txnData.order_amount },
           }
         );
       } else {
@@ -274,6 +294,7 @@ class Payment {
             PaymentStatus: paymentStatus[2],
             Status: orderStatusTypesObj['Requested'],
             PendingAmount: leftAmount,
+            $inc: { paidamount: txnData.order_amount }
           }
         );
       }
@@ -291,6 +312,31 @@ class Payment {
         { payment_status: transsactionStatus[0], order_status: "PAID" }
       );
     } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async initiateRefundPayments(orderid, amount, metadata) {
+    const refunId = commonFunction.genrateID("REF_");
+
+    try {
+      const newRefund = new refundModel(metadata);
+      
+      const resp = await sdk.createrefund({
+        refund_amount: 100,
+        refund_id: 'refund_00916651',
+        refund_note: 'refund note for reference'
+      }, {
+        order_id: 'ORD2754999668',
+        'x-client-id': '168831af6617bb90b6c49b5585138861',
+        'x-client-secret': '33812c2762fed420f984f8e127a7942ec98cb624',
+        'x-api-version': '2022-01-01'
+      })
+
+      console.log(resp);
+      // return await refundModel.findOneAndUpdate({ refundId: refunId }, { caashfreeData: resp, cashfreeOrderId: orderId, orderId: orderid }, { new: true, upsert: true });
+    } catch (error) {
+      console.log(error.message);
       throw new Error(error);
     }
   }

@@ -4,6 +4,14 @@ const Schema = mongoose.Schema;
 const categorySchema = new mongoose.Schema({
   video: String,
   icon: String,
+  images: [String],
+  details: [
+    {
+      heading: String,
+      description: String,
+      image: String,
+    },
+  ],
   name: { type: String, unique: true },
   key: { type: String, default: "" },
   categoryType: { type: String, enum: categoryTypes, default: "Home service" },
@@ -30,7 +38,6 @@ const categorySchema = new mongoose.Schema({
   enabled: { type: Boolean, default: true },
   isDeleted: { type: Boolean, default: false },
   modelRequired: { type: Boolean, default: false },
-  
 });
 
 const category = mongoose.model("category", categorySchema);

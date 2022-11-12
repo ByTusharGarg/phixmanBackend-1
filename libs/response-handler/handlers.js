@@ -1,5 +1,3 @@
-const PASSWORD_PATTERN = /(?=^.{8,64}$)(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&])(?!.*\s).*$/;
-
 /**************** API STATUS  **********/
 const API_FAILED = 'FAILED';
 
@@ -29,36 +27,34 @@ const NOTFOUND_ERROR_CODE = 404;
 
 function handelSuccess(res, data) {
     // todo logger need to be added 
-    return res.status(SUCCESS_CODE).json({ statusCode: SUCCESS_CODE, requestStatus: true, status: SUCCESS, result: data });
+    return res.status(SUCCESS_CODE).json({ statusCode: SUCCESS_CODE, requestStatus: true, status: SUCCESS, ...data });
 }
 
 function handelSuccessOther(res, data, code) {
     // todo logger need to be added
-    return res.status(SUCCESS_CODE).json({ statusCode: code || 201, requestStatus: true, status: CREATED_SUCCESS, result: data });
+    return res.status(SUCCESS_CODE).json({ statusCode: code || 201, requestStatus: true, status: CREATED_SUCCESS, ...data });
 }
 
-function handelUnauthorize(res, message) {
-    return res.status(SUCCESS_CODE).json({ status: API_FAILED, requestStatus: false, statusCode: UNAUTHORIZE_ERROR_CODE, error: { type: UNAUTHORIZE_ERROR, message: message } });
+// Error handlers
+function handelUnauthorize(res, error = {}) {
+    return res.status(SUCCESS_CODE).json({ status: API_FAILED, requestStatus: false, statusCode: UNAUTHORIZE_ERROR_CODE, type: UNAUTHORIZE_ERROR, ...error });
 }
 
-function handelValidationError(res, error) {
-    return res.status(SUCCESS_CODE).json({ status: API_FAILED, requestStatus: false, statusCode: VALIDATION_ERROR_CODE, error: { type: VALIDATION_ERROR, message }, ...data });
+function handelValidationError(res, error = {}) {
+    return res.status(SUCCESS_CODE).json({ status: API_FAILED, requestStatus: false, statusCode: VALIDATION_ERROR_CODE, type: VALIDATION_ERROR, ...error });
 }
 
-function handelServerError(res, error) {
-    return res.status(SUCCESS_CODE).json({ status: API_FAILED, requestStatus: false, statusCode: SERVER_ERROR_CODE, error: { type: SERVER_ERROR, message: error.message || 'Something went wrong !' } });
+function handelServerError(res, error = {}) {
+    return res.status(SUCCESS_CODE).json({ status: API_FAILED, requestStatus: false, statusCode: SERVER_ERROR_CODE, type: SERVER_ERROR, ...error });
 }
 
-
-function handelNoteFoundError(res, error, message) {
-    return res.status(SUCCESS_CODE).json({ status: NOTFOUND_ERROR, requestStatus: false, statusCode: NOTFOUND_ERROR_CODE, error: { type: NOTFOUND_ERROR, message: message || 'Something went wrong !' } });
+function handelNoteFoundError(res, error = {}) {
+    return res.status(SUCCESS_CODE).json({ status: API_FAILED, requestStatus: false, statusCode: NOTFOUND_ERROR_CODE, type: NOTFOUND_ERROR, ...error });
 }
-
 
 module.exports = {
     handelSuccess, handelSuccessOther, handelServerError,
     handelUnauthorize,
     handelValidationError,
-    handelGatewayOut,
     handelNoteFoundError
 };

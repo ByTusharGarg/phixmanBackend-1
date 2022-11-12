@@ -5,15 +5,17 @@ const { generateOtp, sendOtp } = require("../libs/otpLib");
 const {
   Customer,
   Order,
+  SubCategory,
   Partner,
   Counters,
   CustomerWallet,
+  category
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
-
+const { handelSuccess, handelValidationError, handelServerError, handelNoteFoundError } = require('../libs/response-handler/handlers')
 
 const {
   orderStatusTypes,
@@ -165,14 +167,9 @@ router.post(
         //send otp to user
       }
       sendOtp(req?.body?.phone, otp);
-      return res
-        .status(200)
-        .json({ message: "OTP has been sent successfully", otp: otp });
+      return handelSuccess(res, { message: "OTP has been sent successfully", otp: otp });
     } catch (error) {
-      console.log(error);
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to send otp" });
+      return handelServerError(res, { message: "Error encountered while trying to send otp " });
     }
   }
 );
@@ -264,12 +261,8 @@ router.post(
       );
 
       if (customer === null) {
-        return res.status(401).json({ message: "Invalid OTP" });
+        return handelValidationError(res, { message: "Invalid OTP" });
       }
-
-      // if (customer && customer.isExistingUser === false) {
-      //   const up = await Customer.findOneAndUpdate({ phone: req?.body?.phone }, { isExistingUser: true });
-      // }
 
       if (!customer.isVerified) {
         // This condition runs when customer login first time
@@ -299,13 +292,13 @@ router.post(
       }
 
       if (resp.message) {
-        return res.status(500).json({ ...resp });
+        return handelValidationError(res, resp)
       } else {
         const { accessToken, refreshToken } = tokenService.generateAuthTokens(
           { _id: customer._id, isPublished: customer.isPublished },
           process.env.JWT_SECRET_ACCESS_TOKEN
         );
-        return res.status(200).json({
+        return handelSuccess(res, {
           message: "Login successfully",
           uid: customer._id,
           isExistingUser: customer.isExistingUser,
@@ -315,18 +308,64 @@ router.post(
         });
       }
     } catch (error) {
-      console.log(error);
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to verify otp" });
+      return handelServerError(res, { message: "Error encountered while trying to verify otp " });
     }
   }
 );
+
+/**
+ * @openapi
+ * /customer/category:
+ *  get:
+ *    summary: using this route user can get subcategories
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+ router.get("/category", async (req, res) => {
+  try {
+    let {
+      query: { categoryId },
+    } = req;
+
+    const foundSubcategory = await SubCategory.find({ category: categoryId })
+    if (!foundSubcategory) { return res.status(404).send('No subcategories found') }
+
+    return handelSuccess(res, { data: foundSubcategory, message: "subcategories found" });
+  }
+  catch (err) {
+    console.log("An error occured", err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    })
+  }
+})
 
 
 /**
  * middleware to check if customer has access to perform following actions
  */
+
 router.use(checkCustomer);
 
 /**
@@ -429,9 +468,7 @@ router.patch(
       }
       if (req?.body?.Password && req?.body?.Password === "") {
         if (!isStrong(req?.body?.Password)) {
-          return res
-            .status(400)
-            .json({ message: "password is not strong enough." });
+          return handelValidationError(res, { message: "password is not strong enough." });
         }
         update.Password = hashpassword(req?.body?.Password);
       }
@@ -444,11 +481,9 @@ router.patch(
         update,
         { new: true }
       );
-      return res.status(200).json({ message: "user updated successfully." });
+      return handelValidationError(res, { message: "user updated successfully." });
     } catch (error) {
-      return res
-        .status(500)
-        .json({ message: "Error encountered while trying to update user." });
+      return handelServerError(res, { message: "Error encountered while trying to update user." });
     }
   }
 );
@@ -494,7 +529,7 @@ router.patch(
  */
 router.get("/", async (req, res) => {
   console.log(req?.Customer);
-  return res.status(200).json(req?.Customer);
+  return handelSuccess(res, { data: req?.Customer });
 });
 
 /**
@@ -565,7 +600,7 @@ router.get("/", async (req, res) => {
 router.post("/address", async (req, res) => {
   try {
     if (!req?.body?.address || Object.keys(req?.body?.address).length === 0) {
-      return res.status(404).json({ message: "address field not found." });
+      return handelValidationError(res, { message: "address field not found." });
     }
     await Customer.findByIdAndUpdate(
       req.Customer._id,
@@ -574,9 +609,9 @@ router.post("/address", async (req, res) => {
       },
       { new: true }
     );
-    return res.status(200).json({ message: "address added" });
+    return handelSuccess(res, { message: "address added" });
   } catch (error) {
-    return res.status(500).json({ message: "Error encountered." });
+    return handelServerError(res, { message: "Error encountered" });
   }
 });
 
@@ -641,7 +676,7 @@ router.post("/address", async (req, res) => {
 router.patch("/updateprofile", async (req, res) => {
   const cid = req.Customer._id;
   if (req.body.phone) {
-    return res.status(400).json({ message: "phone not allowed" });
+    return handelValidationError(res, { message: "phone not allowed" })
   }
 
   let updateQuery = req.body;
@@ -655,10 +690,9 @@ router.patch("/updateprofile", async (req, res) => {
       updateQuery["isExistingUser"] = true;
     }
     await Customer.findByIdAndUpdate(cid, updateQuery);
-    return res.status(200).json({ message: "Profile updated successfully" });
+    return handelSuccess(res, { message: "Profile updated successfully" });
   } catch (error) {
-    console.log(error)
-    return res.status(500).json({ message: "Error encountered." });
+    return handelServerError(res, { message: "Error encountered" });
   }
 });
 
@@ -702,7 +736,7 @@ router.patch("/updateprofile", async (req, res) => {
  *    - bearerAuth: []
  */
 router.get("/address", async (req, res) => {
-  return res.status(200).json(req?.Customer?.address);
+  return handelSuccess(res, { address: req?.Customer?.address });
 });
 
 /**
@@ -724,9 +758,9 @@ router.get("/address", async (req, res) => {
  *                timeSlot:
  *                  type: object
  *                  properties:
- *                    from:
+ *                    day:
  *                      type: string
- *                    to:
+ *                    time:
  *                      type: string
  *                Items:
  *                  type: array
@@ -855,7 +889,7 @@ router.post(
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypesObj["Requested"],
+          Status: orderStatusTypesObj.Initial,
           PendingAmount: Amount,
           PaymentStatus: paymentStatus[1],
           OrderDetails: { Amount, Gradtotal: grandTotal, Items },
@@ -863,6 +897,8 @@ router.post(
           address,
           PickUpRequired,
         });
+
+        resp.order = await newOrder.save();
         const customer = await Customer.findById(req.Customer._id);
 
         let cashfree = await Payment.createCustomerOrder({
@@ -872,142 +908,17 @@ router.post(
           OrderId,
           Amount,
         });
-        resp.order = await newOrder.save();
         resp.cashfree = cashfree;
       }
 
       // send notifications to all partners
-
-      return res.status(200).json(resp);
+      return handelSuccess(res, { data: resp });
     } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "Error encountered." });
+      // console.log(error.message);
+      return handelServerError(res, { message: error?.message || "Error encountered" });
     }
   }
 );
-
-/**
- * @openapi
- * /customer/reestimate:
- *  post:
- *    summary: it's use to re estimated order.
- *    tags:
- *    - Customer Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          schema:
- *              type: object
- *              properties:
- *                Items:
- *                  type: array
- *                  items:
- *                    properties:
- *                      CategoryId:
- *                        type: string
- *                      ModelId:
- *                        type: string
- *                      ServiceId:
- *                        type: string
- *                      Cost:
- *                        type: integer
- *                OrderId:
- *                  type: string
- *    responses:
- *      200:
- *          description: if otp is sent successfully
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: OTP has been sent successfully.
- *      400:
- *         description: if the parameters given were invalid
- *         content:
- *           application/json:
- *             schema:
- *               required:
- *               - errors
- *               type: object
- *               properties:
- *                 errors:
- *                   type: array
- *                   description: a list of validation errors
- *                   items:
- *                     type: object
- *                     properties:
- *                       value:
- *                         type: object
- *                         description: the value received for the parameter
- *                       msg:
- *                         type: string
- *                         description: a message describing the validation error
- *                       param:
- *                         type: string
- *                         description: the parameter for which the validation error occurred
- *                       location:
- *                         type: string
- *                         description: the location at which the validation error occurred (e.g. query, body)
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
- */
-router.post("/reestimate", rejectBadRequests, async (req, res) => {
-  const { OrderId, Items } = req.body;
-
-  if (!OrderId || Items.length === 0) {
-    return res
-      .status(404)
-      .json({ message: "please provide OrderId and Items" });
-  }
-  const consumerId = req.Customer._id;
-  let Amount = 0;
-  let grandTotal = 0;
-
-  Items.map((element) => (Amount += element?.Cost));
-  grandTotal = Amount;
-
-  try {
-    const isorderExists = await Order.findOne({
-      Customer: consumerId,
-      _id: OrderId,
-    });
-    if (!isorderExists) {
-      return res.status(404).json({ message: "order not found" });
-    }
-
-    await Order.findOneAndUpdate(
-      { _id: OrderId, Customer: consumerId },
-      {
-        $inc: { "OrderDetails.Gradtotal": grandTotal },
-        $inc: { "OrderDetails.Amount": Amount },
-        $push: { "OrderDetails.Items": [...Items] },
-      },
-      { new: true }
-    );
-
-    return res
-      .status(200)
-      .json({ message: "Orders successfully reestimated." });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
 
 /**
  * @openapi
@@ -1053,13 +964,12 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
 router.post("/verifyOrderStatus", async (req, res) => {
   try {
     if (!req.body.order_id) {
-      return res.status(404).json({ message: "order id is required" });
+      return handelValidationError(res, { message: "order id is required" });
     }
     const resp = await Payment.verifyCustomerOrder(req.body.order_id);
-    return res.status(200).json(resp);
+    return handelSuccess(res, { data: resp });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
+    return handelServerError(res, { message: error?.message || "Error encountered" });
   }
 });
 
@@ -1107,29 +1017,54 @@ router.post("/verifyOrderStatus", async (req, res) => {
 router.post("/cancel", async (req, res) => {
   const { id } = req.body;
   const Customer = req.Customer._id;
-  const orderStatusTypes = ["Initial", "Requested"];
+  const orderStatusTypes = ["Initial", "Requested", "Accepted"];
 
   try {
-    const isOrdrrBelongs = await Order.find({ _id: id, Customer });
-
-    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
-      return res.status(400).json({ message: "This order can't be Cancelled" });
-    }
+    const isOrdrrBelongs = await Order.findOne({ _id: id, Customer }).populate("TxnId");
 
     if (!isOrdrrBelongs) {
-      return res.status(400).json({ message: "This order not belongs to you" });
+      return handelValidationError(res, { message: "This order not belongs to you" })
     }
 
+    if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
+      return handelValidationError(res, { message: "This order can't be Cancelled" })
+    }
 
-    await Order.findByIdAndUpdate(
-      isOrdrrBelongs._id,
-      { Status: orderStatusTypesObj.Cancelled },
-      { new: true }
-    );
+    // 
+    if (isOrdrrBelongs.paymentModeTypes === "cod") {
+      await Order.findByIdAndUpdate(
+        isOrdrrBelongs._id,
+        { Status: orderStatusTypesObj.Cancelled },
+        { new: true }
+      );
+      return handelSuccess(res, { message: "Orders Cancelled successfully" });
+    }
 
-    return res.status(200).json({ message: "Orders Cancelled successfully" });
+    if (isOrdrrBelongs.TxnId.length === 0) {
+      return handelValidationError(res, { message: "no transaction found for this order" })
+    }
+
+    if (isOrdrrBelongs.TxnId.length > 1) {
+      return handelValidationError(res, { message: "more then 1 transsaction found for this can't cancel" })
+    }
+
+    const transData = isOrdrrBelongs.TxnId[0];
+    // console.log(transData);
+
+    // if in requested state refund all payments
+    if (isOrdrrBelongs.Status === orderStatusTypesObj.Requested) {
+      await Payment.initiateRefundPayments(transData.cashfreeOrderId, transData.order_amount, { orderId: id });
+    }
+
+    // if in the accepted state but less then 2h refund all amount
+
+    // if more the 2hr deduct some amount
+
+    return handelSuccess(res, { message: "Orders Cancelled successfully refund iniitiated" });
+
   } catch (error) {
-    return res.status(500).json({ message: "Error encountered." });
+    console.log(error);
+    return handelServerError(res, { message: "Error encountered" });
   }
 });
 
@@ -1168,7 +1103,7 @@ router.get("/myorders/:status", async (req, res) => {
   const Customer = req.Customer._id;
 
   if (status !== "all" && !orderStatusTypes.includes(status)) {
-    return res.status(400).json({ message: "Invalid status" });
+    return handelValidationError(res, { message: "Invalid status" });
   }
 
   let query = { Customer };
@@ -1179,15 +1114,15 @@ router.get("/myorders/:status", async (req, res) => {
 
   try {
     const orders = await Order.find(query)
-      .populate("Partner")
-      .populate("Customer")
+      .populate("Partner", "Name")
+      .populate("Customer", "Name")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");
-    return res.status(200).json(orders);
+
+    return handelSuccess(res, { data: orders });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
+    return handelServerError(res, { message: "Error encountered" });
   }
 });
 
@@ -1222,31 +1157,83 @@ router.get("/myorders/:status", async (req, res) => {
  */
 
 
-router.get("/order", async(req,res) => {
-  try{
-  let{
-    query: {orderId},
-    Customer:{_id}
-  } = req;
+router.get("/order", async (req, res) => {
+  try {
+    let {
+      query: { orderId },
+      Customer: { _id }
+    } = req;
 
-  const foundUser = await Customer.findById({_id})
-  if(!foundUser){ return res.status(404).send('User does not exist')}
+    // const foundUser = await Customer.findById({_id})
+    // if(!foundUser){ return res.status(404).send('User does not exist')}
 
-  const foundOrder = await Order.findOne({Customer:_id, _id:orderId})
-  if(!foundOrder) { return res.status(404).send('No orders found')}
+    const foundOrder = await Order.findOne({ Customer: _id, _id: orderId })
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.ModelId");
 
-  return res.send({
-    status: 200,
-    message: "Orders found",
-    data: foundOrder
-  })}
-  catch(err){
-    console.log("An error occured",err);
+    if (!foundOrder) {
+      handelNoteFoundError(res, { message: "No orders found" });
+    }
+    return handelSuccess(res, { data: foundOrder, message: "Orders found" });
+  }
+  catch (err) {
+    return handelServerError(res, { message: "An error occured" });
+  }
+})
+
+
+
+
+
+/**
+ * @openapi
+ * /customer/timeslots:
+ *  get:
+ *    summary: using this route user can get timeslots
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/timeslots", async (req, res) => {
+  try {
+    let {
+      query: { categoryId }
+    } = req;
+    const foundTimeSlots = await category.findById({ _id: categoryId }).select('Slots')
+    if (!foundTimeSlots) return res.status(404).send('No Timeslots found')
+    return handelSuccess(res, { data: foundTimeSlots, message: "Timeslots found" });
+  }
+  catch (err) {
+    console.log("An error occured", err);
     return res.send({
       status: 500,
       message: "An error occured",
     })
   }
+
 })
+
+
 
 module.exports = router;

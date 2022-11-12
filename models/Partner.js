@@ -74,6 +74,9 @@ const Partner = mongoose.model(
       pin: String,
       state: String,
       country: String,
+      landmark: String,
+      billingAddress:String,
+      address:String,
       cood: {
         lattitude: String,
         longitude: String,
@@ -81,8 +84,8 @@ const Partner = mongoose.model(
     },
     workingdays: [],
     business_hours: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: String,
+      end_hour: String,
     },
     aadhar: {
       number: String,
@@ -100,6 +103,10 @@ const Partner = mongoose.model(
       type: String,
       default: null,
     },
+    gstCertificateNo: {
+      type: String,
+      default: null,
+    }, 
     incorprationCertificate: {
       type: String,
       default: null,

@@ -12,7 +12,7 @@ const transsactionSchema = mongoose.Schema(
     transsactionUser: { type: String, enum: transsactionUser, required: true },
     walletId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Wallet",
+      ref: "Customerwallet",
       required: [true, "walletId is required"],
     },
     amount: { type: Number, required: true },

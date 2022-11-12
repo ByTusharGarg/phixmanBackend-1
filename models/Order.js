@@ -19,10 +19,10 @@ const Order = mongoose.model(
       type: String,
       enum: orderStatusTypes,
     },
+    paidamount: { type: Number, default: 0 },
     OrderDetails: {
       Amount: { type: Number },
       Gradtotal: { type: Number },
-      paidamount: { type: Number, default: 0 },
       Items: [
         {
           CategoryId: { type: Schema.Types.ObjectId, ref: "category" },
@@ -48,12 +48,18 @@ const Order = mongoose.model(
         longitude: String,
       },
     },
+    statusLogs: [
+      {
+        status: { type: String, enum: orderStatusTypes },
+        timestampLog: { type: Number, default: Date.now() }
+      }
+    ],
     PickUpRequired: { type: Boolean },
     timeSlot: {
-      from: { type: String, default: "" },
-      to: { type: String, default: "" },
+      day: { type: String, default: "" },
+      time: { type: String, default: "" },
     },
-  })
+  }, { timestamps: true })
 );
 
 module.exports = Order;

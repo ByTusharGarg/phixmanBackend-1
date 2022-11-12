@@ -22,15 +22,15 @@ const orderStatusTypes = [
   "Reshedulled",
 ];
 const orderStatusTypesObj = {
-  Initial:"Initial",
-  Requested:"Requested",
-  Accepted:"Accepted",
-  pickup:"pickup",
-  InRepair:"InRepair",
-  completed:"completed",
-  delivered:"delivered",
-  Cancelled:"Cancelled",
-  Reshedulled:"Reshedulled"
+  Initial: "Initial",
+  Requested: "Requested",
+  Accepted: "Accepted",
+  pickup: "pickup",
+  InRepair: "InRepair",
+  completed: "completed",
+  delivered: "delivered",
+  Cancelled: "Cancelled",
+  Reshedulled: "Reshedulled"
 };
 
 const serviceTypes = [];
@@ -38,7 +38,7 @@ const paymentModeTypes = ["cod", "online"];
 const transsactionTypes = ["debit", "credit"];
 const transsactionStatus = ["successful", "pending", "failed"];
 const roles = ["customer", "partner", "order"];
-const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED", "FAILED"];
+const paymentStatus = ["SUCCESS", "PENDING", "PARTIAL_COMPLETED", "FAILED", "REFUND"];
 const acceptedPaymentMethods = ["card", "upi", "app"];
 const transsactionUser = ["partner", "customer"];
 const offerPromoType = ["flat", "upto"];
@@ -46,6 +46,16 @@ const coupenUserType = ["PARTNER", "CUSTOMER"];
 
 const panalityEnnum = ["CANCEL"];
 
+const payoutPaymentStatus = ["AWAITED", "SUCCESS", "FAILED", "INPROGRESS"];
+
+
+const paymentStatusObject = {
+  SUCCESS: "SUCCESS",
+  PENDING: "PENDING",
+  PARTIAL_COMPLETED: "PARTIAL_COMPLETED",
+  FAILED: "FAILED",
+  REFUND: "REFUND"
+}
 
 module.exports = {
   categoryTypes,
@@ -68,4 +78,7 @@ module.exports = {
   coupenUserType,
   orderStatusTypesObj,
   panalityEnnum,
+  paymentStatusObject,
+
+  payoutPaymentStatus
 };

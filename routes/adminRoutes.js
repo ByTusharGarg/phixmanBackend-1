@@ -18,8 +18,10 @@ const {
   City,
   Zone,
   Notification,
+  SubCategory,
 } = require("../models");
-
+const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
+const { checkAdmin } = require("../middleware/AuthAdmin")
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
@@ -42,6 +44,7 @@ const {
   getParseModels,
   generateRandomReferralCode,
 } = require("../libs/commonFunction");
+const { adminTypeArray } = require('../enums/adminTypes');
 const { getWalletTransactions } = require("../services/Wallet");
 const { checkAdmin } = require("../middleware/AuthAdmin")
 
@@ -61,6 +64,12 @@ const verifyOrderValidator = [
     .withMessage("PickUpRequired Must be a boolean true or false"),
   body("Items").isArray().withMessage("Items should be an array"),
 ];
+
+// const verifyCustomerId = [
+//   query("customerId")
+//       .notEmpty()
+//       .withMessage("Customer Id is required"),
+// ]
 
 /**
  * @openapi
@@ -430,7 +439,7 @@ router.post("/customer/create", async (req, res) => {
     const isuserExist = await Customer.findOne({ phone: req?.body?.phone });
     if (isuserExist) {
       return res
-        .status(500)
+        .status(403)
         .json({ message: "Customer number already exists" });
     }
     const newuser = await Customer.create({
@@ -456,6 +465,87 @@ router.post("/customer/create", async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error encountered while trying to send otp" });
+  }
+});
+
+
+/**
+ * @openapi
+ * /admin/updatecustomer/{_id}:
+ *  patch:
+ *    summary: Update consumer profile
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: _id
+ *        required: true
+ *        schema:
+ *          type: string
+ *    requestBody:
+ *      content:
+ *        multipart/form-data:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: string
+ *                Name:
+ *                  type: string
+ *                Password:
+ *                  type: string
+ *                image:
+ *                  type: file
+ *                fcmToken:
+ *                  type: string
+ *                gender:
+ *                  type: string
+ *                  enum: ["male", "female", "non-binary"]
+ *    responses:
+ *      200:
+ *          description: if successfully found user
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               description: customer details
+ *      404:
+ *          description: if user not found or auth token not supplied.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.patch("/updatecustomer/:id", async (req, res) => {
+  const cid = req.params;
+
+  if (req.body.phone) {
+    return handelValidationError(res, { message: "phone not allowed" })
+  }
+
+  let updateQuery = req.body;
+  try {
+    await Customer.findByIdAndUpdate(cid, updateQuery);
+    return handelSuccess(res, { message: "Profile updated successfully" });
+  } catch (error) {
+    return handelServerError(res, { message: "Error encountered" });
   }
 });
 
@@ -613,7 +703,7 @@ router.get("/customersorders/:id", async (req, res) => {
  *          schema:
  *              type: object
  *              properties:
- *                PartnerId:
+ *                partnerId:
  *                  type: string
  *                customerId:
  *                  type: string
@@ -728,7 +818,7 @@ router.post(
 
     if (!partnerId || !customerId) {
       return res
-        .status(500)
+        .status(400)
         .json({ message: "partnerid and customerid are required" });
     }
 
@@ -743,7 +833,7 @@ router.post(
       let resp = {};
 
       if (PaymentMode !== "cod") {
-        return res.status(500).json({ message: "Cod  is allowed." });
+        return res.status(400).json({ message: "Cod is allowed." });
       }
       const newOrder = new Order({
         Partner: partnerId,
@@ -803,6 +893,98 @@ router.get("/getOrders", async (req, res) => {
   }
 });
 
+
+
+/**
+ * @openapi
+ * /admin/assignorder:
+ *  post:
+ *    summary: it's use to assign order to partner
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                orderId:
+ *                  type: string
+ *                partnerId:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/assignorder", async (req, res) => {
+  const { orderId, partnerId } = req.body;
+  if (!orderId || !partnerId) {
+    return res.status(400).json({ message: "partnerId and  orderId required" });
+  }
+
+  try {
+    const orderDetails = await Order.findById(orderId);
+
+    if (!orderDetails) {
+      return res.status(400).json({ message: "No order found" });
+    }
+
+    await Order.findByIdAndUpdate(orderId, { Partner: partnerId }, { new: true });
+    return res.status(200).json({ message: "Order successfully assigned to partner" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
 /**
  * @openapi
  * /admin/Order:
@@ -856,6 +1038,9 @@ router.get("/Order", async (req, res) => {
  *            Name:
  *              type: string
  *              required: true
+ *            isParent:
+ *              type: string
+ *              required: true
  *            gender:
  *              type: string
  *              required: true
@@ -868,7 +1053,7 @@ router.get("/Order", async (req, res) => {
  *            Type:
  *              type: string
  *              required: true
- *              enum: ["store", "individual"]
+ *              enum: ["store", "individual", "sub-provider", "spacialist"]
  *            Product_Service:
  *              type: string
  *              required: true
@@ -878,6 +1063,20 @@ router.get("/Order", async (req, res) => {
  *            aadharNumber:
  *              type: string
  *              required: true
+ *            bussinessName:
+ *              type: string
+ *              required: true
+ *            workingdays:
+ *              type: array
+ *              required: true
+ *            business_hours:
+ *              type: object
+ *              required: true
+ *              properties:
+ *               start_hour:
+ *                type: string
+ *               end_hour:
+ *                type: string
  *            address:
  *              type: object
  *              required: true
@@ -891,6 +1090,12 @@ router.get("/Order", async (req, res) => {
  *               state:
  *                type: string
  *               country:
+ *                type: string
+ *               landmark:
+ *                type: string
+ *               billingAddress:
+ *                type: string
+ *               address:
  *                type: string
  *               cood:
  *                type: object
@@ -912,6 +1117,10 @@ router.get("/Order", async (req, res) => {
  *              required: true
  *            gstCertificate:
  *              type: file
+ *              required: false
+ *              description: required for businesses
+ *            gstCertificateNo:
+ *              type: string
  *              required: false
  *              description: required for businesses
  *            incorprationCertificate:
@@ -949,13 +1158,21 @@ router.post("/createpartner", async (req, res) => {
     panNumber,
     aadharNumber,
     secondaryNumber,
+    workingdays,
+    bussinessName,
+    business_hours,
+    gstCertificateNo
   } = req.body;
 
   let images = [];
   let docs = {};
 
+  let panObj = {};
+  let adadharObj = {};
+
+
   if (!phone || !Name || !Dob) {
-    return res.status(500).json({
+    return res.status(400).json({
       message: "phone Name Dob required",
     });
   }
@@ -963,7 +1180,7 @@ router.post("/createpartner", async (req, res) => {
   try {
     const isPhoneExist = await Partner.findOne({ phone });
     if (isPhoneExist) {
-      return res.status(500).json({
+      return res.status(400).json({
         message: "Phone number allready exists",
       });
     }
@@ -973,56 +1190,57 @@ router.post("/createpartner", async (req, res) => {
     });
   }
 
-  const {
-    aadharImageF,
-    aadharImageB,
-    pancardImage,
-    gstCertificate,
-    incorprationCertificate,
-    expCertificate,
-  } = req.files;
+  if (req.files?.aadharImageF && req.files?.aadharImageB) {
+    let af = randomImageName();
+    let ab = randomImageName();
 
-  if (!aadharImageF || !aadharImageB || !pancardImage) {
-    return res.status(500).json({
-      message: "aadharImageF, aadharImageB, pancardImage documents required",
-    });
-  } else {
-    images.push({ ...aadharImageF, fileName: randomImageName() });
-    images.push({ ...aadharImageB, fileName: randomImageName() });
-    images.push({ ...pancardImage, fileName: randomImageName() });
+    images.push({ ...req.files?.aadharImageF, fileName: af });
+    images.push({ ...req.files?.aadharImageB, fileName: ab });
+    adadharObj = {
+      number: aadharNumber,
+      fileF: af,
+      fileB: ab,
+    };
   }
 
-  if (Type === "store" && (!gstCertificate || !incorprationCertificate)) {
-    return res.status(500).json({
+  if (req.files?.pancardImage) {
+    let n = randomImageName();
+    panObj = { number: panNumber, file: n },
+      images.push({ ...req.files?.pancardImage, fileName: n });
+  }
+
+
+  if (Type === "store" && (!req.files?.gstCertificate || !req.files?.incorprationCertificate)) {
+    return res.status(400).json({
       message: "gstCertificate incorprationCertificate documents required",
     });
   } else {
-    docs["incorprationCertificate"] = incorprationCertificate
+    docs["incorprationCertificate"] = req.files?.incorprationCertificate
       ? randomImageName()
       : null;
-    docs["gstCertificate"] = gstCertificate ? randomImageName() : null;
+    docs["gstCertificate"] = req.files?.gstCertificate ? randomImageName() : null;
 
-    if (incorprationCertificate) {
-      images.push({ ...incorprationCertificate, fileName: randomImageName() });
+    if (req.files?.incorprationCertificate) {
+      images.push({ ...req.files?.incorprationCertificate, fileName: randomImageName() });
     } else {
       images.push(undefined);
     }
-    if (gstCertificate) {
-      images.push({ ...gstCertificate, fileName: randomImageName() });
+    if (req.files?.gstCertificate) {
+      images.push({ ...req.files?.gstCertificate, fileName: randomImageName() });
     } else {
       images.push(undefined);
     }
   }
 
-  if (Type === "individual" && !expCertificate) {
+  if (Type === "individual" && !req.files?.expCertificate) {
     return res
       .status(500)
       .json({ message: "expCertificate documents required" });
   } else {
-    docs["expCertificate"] = expCertificate ? randomImageName() : null;
+    docs["expCertificate"] = req.files?.expCertificate ? randomImageName() : null;
 
-    if (expCertificate) {
-      images.push({ ...expCertificate, fileName: randomImageName() });
+    if (req.files?.expCertificate) {
+      images.push({ ...req.files?.expCertificate, fileName: randomImageName() });
     } else {
       images.push(undefined);
     }
@@ -1051,13 +1269,13 @@ router.post("/createpartner", async (req, res) => {
       isProfileCompleted: true,
       isVerified: true,
       isApproved: true,
-      aadhar: {
-        number: aadharNumber,
-        fileF: images[0].fileName,
-        fileB: images[1].fileName,
-      },
-      pan: { number: panNumber, file: images[2].fileName },
+      bussinessName,
+      workingdays,
+      business_hours,
+      aadhar: adadharObj,
+      pan: panObj,
       secondaryNumber,
+      gstCertificateNo,
       ...docs,
     });
 
@@ -1213,7 +1431,7 @@ router.get("/partner/search", async (req, res) => {
 router.post("/createspacialist", async (req, response) => {
   try {
     if (!req?.body?.phone || !req?.body?.name || req?.body?.email) {
-      return response.status(404).json({
+      return response.status(400).json({
         message: "missing phone name email required fields",
       });
     }
@@ -1407,7 +1625,7 @@ router.put("/partners/:id", async (req, res) => {
   const { type, id } = req.params;
 
   if (!id || !type) {
-    return res.status(500).json({ message: `id and type required` });
+    return res.status(400).json({ message: `id and type required` });
   }
 
   try {
@@ -1422,7 +1640,7 @@ router.put("/partners/:id", async (req, res) => {
 
       if (!isNotVerified) {
         return res
-          .status(500)
+          .status(400)
           .json({ message: "Account is  allready verified" });
       }
     } else if (type === "block") {
@@ -1430,7 +1648,7 @@ router.put("/partners/:id", async (req, res) => {
     } else if (type === "unblock") {
       query = { isPublished: true };
     } else {
-      return res.status(200).json({ message: "Invalid type" });
+      return res.status(400).json({ message: "Invalid type" });
     }
 
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
@@ -1596,6 +1814,10 @@ router.get("/getpartnertransaction", async (req, res) => {
  *                icon:
  *                  type: file
  *                  description: required
+ *                images:
+ *                  type: array
+ *                  items:
+ *                    type: file
  *                name:
  *                  type: string
  *                  description: required
@@ -1679,6 +1901,7 @@ router.get("/getpartnertransaction", async (req, res) => {
  */
 router.post("/categories", async (req, res) => {
   try {
+    console.log(req.files);
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
@@ -1693,7 +1916,15 @@ router.post("/categories", async (req, res) => {
     if (!req?.files?.icon) {
       return res.status(404).json({ message: "icon is missing" });
     }
+    if (!req?.files?.images) {
+      return res.status(404).json({ message: "product images are missing" });
+    }
+    let images = [];
+    for (let i = 0; i < req?.files?.images.length; i++) {
+      images.push(encodeImage(req?.files?.images[i]));
+    }
     req.body.icon = encodeImage(req.files.icon);
+    req.body.images = images;
     const newCategory = new category(req.body);
     await newCategory.save();
     return res
@@ -1837,7 +2068,7 @@ router.put("/categories/:id", async (req, res) => {
         data: updatedategory,
       });
     } else {
-      return res.status(404).json({ message: "Category not found." });
+      return res.status(400).json({ message: "Category not found." });
     }
   } catch (error) {
     console.log(error);
@@ -2078,7 +2309,7 @@ router.get("/orders/:status", async (req, res) => {
   ];
 
   if (!allowedStatus.includes(status)) {
-    return res.status(500).json({ message: `${status} status not allowed.` });
+    return res.status(403).json({ message: `${status} status not allowed.` });
   }
 
   let query = {};
@@ -2145,13 +2376,13 @@ router.post("/service", async (req, res) => {
   try {
     const { categoryId, modelId, serviceName, cost } = req.body;
     if (!categoryId)
-      return res.status(404).json({ message: "category is reqiured" });
+      return res.status(400).json({ message: "category is reqiured" });
     let categorydoc = await category.findOne({
       _id: categoryId,
       isDeleted: false,
     });
     if (!categorydoc) {
-      return res.status(404).json({ message: "category not found" });
+      return res.status(400).json({ message: "category not found" });
     }
     if (categorydoc.key === "mobile" && !modelId) {
       return res
@@ -2213,7 +2444,7 @@ router.post("/ratecard", async (req, res) => {
   const { categoryId, brandId, modelId } = req.body;
 
   if (!categoryId) {
-    return res.status(500).json({ message: "categoryId is required" });
+    return res.status(400).json({ message: "categoryId is required" });
   }
 
   try {
@@ -2223,7 +2454,7 @@ router.post("/ratecard", async (req, res) => {
     });
 
     if (!isCategoryExists) {
-      return res.status(500).json({ message: "Category not exist" });
+      return res.status(403).json({ message: "Category not exist" });
     }
 
     const file = req?.files?.csvfile;
@@ -2235,7 +2466,7 @@ router.post("/ratecard", async (req, res) => {
       isCategoryExists?.name.toLowerCase() === "tablet"
     ) {
       if (!modelId || !brandId) {
-        return res.status(500).json({
+        return res.status(400).json({
           message: "brandid and modelid is required for mobile and tablet",
         });
       }
@@ -2245,7 +2476,7 @@ router.post("/ratecard", async (req, res) => {
         //   Name: item.brand,
         //   brandId: item.brand.toLowerCase(),
         // });
-        return res.status(500).json({
+        return res.status(400).json({
           message: "brandid is invalid",
         });
       }
@@ -2257,7 +2488,7 @@ router.post("/ratecard", async (req, res) => {
         //   modelId: item.model.toLowerCase(),
         //   brandId: brand._id,
         // });
-        return res.status(500).json({
+        return res.status(400).json({
           message: "modelid is invalid",
         });
       }
@@ -2771,7 +3002,7 @@ router.post("/Zone/add", async (req, res) => {
  */
 router.get("/Zone", async (req, res) => {
   try {
-    let states = await Zone.find({ isActive: true, isDeleted: false })
+    let states = await Zone.find({ isDeleted: false })
       .populate({
         path: "City",
         select: "-__v",
@@ -2788,7 +3019,6 @@ router.get("/Zone", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
