@@ -1227,7 +1227,7 @@ router.get("/order", async (req, res) => {
     // if(!foundUser){ return res.status(404).send('User does not exist')}
 
     const foundOrder = await Order.findOne({ Customer: _id, _id: orderId })
-      .populate("Partner","Name email phone")
+      .populate("Partner","Name email phone profilePic")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");
