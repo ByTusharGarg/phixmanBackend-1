@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
-const penalitySchema = mongoose.Schema({
+const penalitySchema = mongoose.Schema(
+    {
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, unique: true },
-    appliedOn: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, unique: true },
     reason: {
         type: String
     },
@@ -13,7 +13,10 @@ const penalitySchema = mongoose.Schema({
         type: Boolean,
         default: true
     },
-}, { timestamps: true });
+    
 
-const penalityModel = mongoose.model("penality", penalitySchema);
-module.exports = penalityModel;
+}, { timestamps: true }
+);
+
+const Penality = mongoose.model("Penality", penalitySchema);
+module.exports = Penality
