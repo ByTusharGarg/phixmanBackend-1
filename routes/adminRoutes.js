@@ -20,6 +20,7 @@ const {
   Notification,
   SubCategory,
 } = require("../models");
+const PenalitySchema = require("../models/penality")
 const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
 const { checkAdmin } = require("../middleware/AuthAdmin")
 const { rejectBadRequests } = require("../middleware");
@@ -3611,5 +3612,25 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
   }
 })
 
+router.get("/penalties", async(req,res)=>{
+  try {
+    let {
+    query:{
+      orderId
+    }
+  } = req;
 
+  const foundPenalties = await PenalitySchema.find({orderId})
+  if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
+
+  return res
+        .status(200)
+        .json({ message: "Penalties found", foundPenalties });
+} catch (error){
+  console.log(error);
+  return res.status(500).json({
+    message: "Error encountered while trying to fetch penality.",
+  });
+}
+})  
 module.exports = router;
