@@ -17,6 +17,7 @@ const {
   State,
   City,
   Zone,
+  Notification,
   SubCategory,
 } = require("../models");
 const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
@@ -3349,4 +3350,266 @@ router.get("/wallet/customer",
       });
     }
   });
+
+/**
+ * @openapi
+ * /admin/offer/create:
+ *  post:
+ *    summary: used to create order
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.post("/offer/create", checkAdmin, async (req, res) => {
+  try {
+    const {
+      body: {
+        promoCode,
+        promoType,
+        title,
+        description,
+        offerAmount,
+        percentageOff,
+        maxDisc,
+        minCartValue,
+        startValidity,
+        endValidity
+      }
+    } = req;
+    const offerObj = {
+      promoCode,
+      promoType,
+      title,
+      description,
+      offerAmount,
+      percentageOff,
+      maxDisc,
+      minCartValue,
+      startValidity,
+      endValidity
+    }
+
+    const newOffer = await Coupon.create(offerObj)
+    if (!newOffer) return res.status(409).json({ message: 'Unable to create offer' })
+    return res.status(200).json({ message: "Offer created", data: newOffer })
+  }
+  catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to create offer.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/offer/change-status:
+ *  get:
+ *    summary: used to change offer status
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/offer/change-status", checkAdmin, async (req, res) => {
+  try {
+    const {
+      query: {
+        offerId,
+        action
+      }
+    } = req;
+
+    if (!['enable', 'disable'].includes(action)) return res.status(409).json({ message: 'invalid action' })
+
+    const status = action === "enable" ? true : false
+    const changeOfferStatus = await Coupon.findOneAndUpdate(
+
+      { _id: offerId },
+      {
+        $set: { isActive: status }
+      },
+      { new: true }
+    )
+    if (!changeOfferStatus) return res.status(409).json({ message: 'Unable to change offer status' })
+
+    return res.status(200).json({ message: "Offer status changed", data: changeOfferStatus })
+  }
+  catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while trying to change offer status.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/offer/all:
+ *  get:
+ *    summary: used to fetch all offers 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/offer/all", checkAdmin, async (req, res) => {
+  try {
+    const foundOffer = await Coupon.find({}).lean()
+    if (!foundOffer) return res.status(400).json({ message: 'No offers found' })
+    return res.status(200).json({ message: "Offers found", data: foundOffer })
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while trying to change offer status.",
+    });
+  }
+})
+/**
+ * @openapi
+ * /admin/offer/get-offer:
+ *  get:
+ *    summary: used to get offer by offerId
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/offer/get-offer", checkAdmin, async (req, res) => {
+  try {
+    let {
+      query: { offerId }
+    } = req;
+    const foundOffer = await Coupon.findById({ _id: offerId })
+    if (!foundOffer) return res.status(400).json({ message: "Offer not found" })
+
+    return res.status(200).json({ message: 'offer found', data: foundOffer })
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to change offer status.",
+    });
+  }
+
+})
+/**
+ * @openapi
+ * /admin/offer/delete-offer:
+ *  delete:
+ *    summary: used to delete offer
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
+  try{
+    let {
+      body:{offerId}
+    } = req;
+
+    const deleteOffer = await Coupon.deleteOne({_id:offerId}).lean()
+    if(!deleteOffer) return res.status(400).json({message:"Unable to delete offer"})
+
+    return res.status(200).json({ message: 'offer deleted', data: deleteOffer })
+  }catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to change offer status.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/notification:
+ *  get:
+ *    summary: used to fetch notifications
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.get("/notification", checkAdmin,async(req,res)=>{
+  try{
+    let {
+      query:{
+        customerId
+      } 
+    }= req;
+const foundNotifications = await Notification.find({customerId}).select("title desc").lean()
+if(!foundNotifications) return res.status(400).json({message:"No notification found"})
+
+return res.status(400).json({message:"Notifications found", data: foundNotifications})
+  }catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch notifications.",
+    });
+  }
+})
+
+
 module.exports = router;
