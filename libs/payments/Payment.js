@@ -320,24 +320,30 @@ class Payment {
     const refunId = commonFunction.genrateID("REF_");
 
     try {
-      const newRefund = new refundModel(metadata);
-      
-      const resp = await sdk.createrefund({
-        refund_amount: 100,
-        refund_id: 'refund_00916651',
-        refund_note: 'refund note for reference'
-      }, {
-        order_id: 'ORD2754999668',
-        'x-client-id': '168831af6617bb90b6c49b5585138861',
-        'x-client-secret': '33812c2762fed420f984f8e127a7942ec98cb624',
-        'x-api-version': '2022-01-01'
-      })
+      // const newRefund = new refundModel(metadata);
+      const options = {
+        method: 'POST',
+        url: this.casrfreeUrl + `/orders/${orderid}/refunds`,
+        headers: {
+          accept: 'application/json',
+          'x-client-id': this.APPID,
+          'x-client-secret': this.APPSECRET,
+          'x-api-version': '2022-01-01',
+          'content-type': 'application/json'
+        },
+        data: { refund_amount: amount, refund_id: refunId }
+      };
 
-      console.log(resp);
-      // return await refundModel.findOneAndUpdate({ refundId: refunId }, { caashfreeData: resp, cashfreeOrderId: orderId, orderId: orderid }, { new: true, upsert: true });
+      const refundResp = await axios.request(options);
+
+      console.log("re => ", refundResp.data);
+
+      const newRefund = new refundModel({ orderId: metadata.orderId, cashfreeOrderId: orderid, refundId: refunId, caashfreeData: refundResp.data });
+      const refundDbData = await newRefund.save();
+
+      return ordersModel.findByIdAndUpdate(metadata['orderId'], { refundId: refundDbData._id, refundStatus: refundResp.data['refund_status'] });
     } catch (error) {
-      console.log(error.message);
-      throw new Error(error);
+      throw new Error(error.response.data.message || error.message || error);
     }
   }
 }

@@ -9,6 +9,8 @@ const customerPaymentRoutes = require("./customerPaymentsRoutes");
 const coupenRoutes = require("./coupenRoutes");
 const notificationRoutes = require("./notificationRouter");
 const feedbackRoutes = require("./feedbackRoutes");
+const payoutsRoutes = require("./payoutsRoutes");
+
 
 
 
@@ -23,4 +25,5 @@ module.exports = {
   coupenRoutes,
   notificationRoutes,
   feedbackRoutes,
+  payoutsRoutes,
 };

@@ -1,5 +1,6 @@
 const sdk = require('api')('@cashfreedocs-new/v2#3ydphnjkycu3dpv');
 const axios = require("axios").default;
+const partnerBankDetailsModel = require('../../models/partnerbankDetails');
 
 let casrfreeUrlLinks =
     process.env.CASH_FREE_MODE === "Test"
@@ -94,8 +95,8 @@ class Payouts {
         return axios.request(options)
     }
 
-    async createUpdateAccountDetails(account) {
-
+    async createUpdateAccountDetails(id, data) {
+        return partnerBankDetailsModel.findOneAndUpdate({ partnerId: id }, data, { new: true, upsert: true })
     }
 
 

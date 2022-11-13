@@ -341,7 +341,7 @@ router.post(
  *                    example: Error encountered.
  */
 
- router.get("/category", async (req, res) => {
+router.get("/category", async (req, res) => {
   try {
     let {
       query: { categoryId },
@@ -388,7 +388,7 @@ router.post(
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
- router.get("/timeslots", async (req, res) => {
+router.get("/timeslots", async (req, res) => {
   try {
     let {
       query: { categoryId }
@@ -1076,8 +1076,8 @@ router.post("/cancel", async (req, res) => {
       return handelValidationError(res, { message: "This order can't be Cancelled" })
     }
 
-    // 
-    if (isOrdrrBelongs.paymentModeTypes === "cod") {
+    //  all cod order cancel
+    if (isOrdrrBelongs.PaymentMode === "cod") {
       await Order.findByIdAndUpdate(
         isOrdrrBelongs._id,
         { Status: orderStatusTypesObj.Cancelled },
@@ -1086,6 +1086,18 @@ router.post("/cancel", async (req, res) => {
       return handelSuccess(res, { message: "Orders Cancelled successfully" });
     }
 
+    // online initial order cancel
+    if (isOrdrrBelongs.PaymentMode === "online" && isOrdrrBelongs.Status === orderStatusTypesObj.Initial && isOrdrrBelongs.TxnId.length === 0) {
+      await Order.findByIdAndUpdate(
+        isOrdrrBelongs._id,
+        { Status: orderStatusTypesObj.Cancelled },
+        { new: true }
+      );
+      return handelSuccess(res, { message: "initial Orders Cancelled successfully" });
+    }
+
+
+    // all online payment order done block
     if (isOrdrrBelongs.TxnId.length === 0) {
       return handelValidationError(res, { message: "no transaction found for this order" })
     }
@@ -1099,6 +1111,7 @@ router.post("/cancel", async (req, res) => {
 
     // if in requested state refund all payments
     if (isOrdrrBelongs.Status === orderStatusTypesObj.Requested) {
+      // console.log(transData);
       await Payment.initiateRefundPayments(transData.cashfreeOrderId, transData.order_amount, { orderId: id });
     }
 
@@ -1110,7 +1123,7 @@ router.post("/cancel", async (req, res) => {
 
   } catch (error) {
     console.log(error);
-    return handelServerError(res, { message: "Error encountered" });
+    return handelServerError(res, { message: error.message || "Error encountered" });
   }
 });
 
@@ -1214,6 +1227,7 @@ router.get("/order", async (req, res) => {
     // if(!foundUser){ return res.status(404).send('User does not exist')}
 
     const foundOrder = await Order.findOne({ Customer: _id, _id: orderId })
+      .populate("Partner","Name email phone")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");

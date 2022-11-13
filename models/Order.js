@@ -12,7 +12,7 @@ const Order = mongoose.model(
   new Schema({
     Partner: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
     Customer: { type: Schema.Types.ObjectId, ref: "Customer" },
-    OrderId: { type: String },
+    OrderId: { type: String, unique: true, index: true },
     invoiceId: { type: String, default: null },
     OrderType: { type: String, enum: orderTypes },
     Status: {
@@ -54,6 +54,8 @@ const Order = mongoose.model(
         timestampLog: { type: Number, default: Date.now() }
       }
     ],
+    refundStatus: { type: String, default: null },
+    refundId: { type: Schema.Types.ObjectId, ref: "refund", default: null },
     PickUpRequired: { type: Boolean },
     timeSlot: {
       day: { type: String, default: "" },
