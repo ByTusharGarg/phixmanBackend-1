@@ -407,6 +407,49 @@ router.get("/timeslots", async (req, res) => {
 
 })
 
+// refund webhook
+router.post('/webhook/refund', (req, res) => {
+  console.log(req.body);
+  const { type, data: { refund: { refund_id, refund_status, refund_amount, order_id } } } = req.body;
+
+  if (type !== "REFUND_WEBHOOK") {
+    return res.status(400).json({ message: "not as cashfree request" })
+  }
+  try {
+    // {
+    //   data: {
+    //     refund: {
+    //       cf_payment_id: 1234,
+    //       cf_refund_id: 34198,
+    //       created_at: '2022-02-23T15:27:26+05:30',
+    //       entity: 'Refund',
+    //       metadata: null,
+    //       order_id: '3hD-hgxkW27',
+    //       processed_at: '2022-02-23T15:28:36+05:30',
+    //       refund_amount: 5,
+    //       refund_arn: '123356',
+    //       refund_charge: 0,
+    //       refund_currency: 'INR',
+    //       refund_id: 'REF_1645610245762635',
+    //       refund_mode: 'STANDARD',
+    //       refund_note: 'triggered by CashFree',
+    //       refund_splits: null,
+    //       refund_status: 'SUCCESS',
+    //       refund_type: 'MERCHANT_INITIATED',
+    //       status_description: 'Refund processed successfully'
+    //     }
+    //   },
+    //   type: 'REFUND_WEBHOOK',
+    //   event_time: '2022-02-23T15:28:36+05:30'
+    // }
+
+
+    return res.status(200).json({ message: "thanks cashfree for notify us" })
+  } catch (error) {
+    console.log(error);
+    return handelServerError(res, { message: "Error encountered while trying to update user." });
+  }
+})
 
 /**
  * middleware to check if customer has access to perform following actions
@@ -1097,7 +1140,8 @@ router.post("/cancel", async (req, res) => {
     }
 
 
-    // all online payment order done block
+    // all online payment order Accepted cases
+
     if (isOrdrrBelongs.TxnId.length === 0) {
       return handelValidationError(res, { message: "no transaction found for this order" })
     }
@@ -1111,13 +1155,30 @@ router.post("/cancel", async (req, res) => {
 
     // if in requested state refund all payments
     if (isOrdrrBelongs.Status === orderStatusTypesObj.Requested) {
-      // console.log(transData);
       await Payment.initiateRefundPayments(transData.cashfreeOrderId, transData.order_amount, { orderId: id });
     }
 
-    // if in the accepted state but less then 2h refund all amount
+    let acceptTimeStamp = isOrdrrBelongs.statusLogs.filter((ele) => ele.status === orderStatusTypesObj.Accepted)
+    acceptTimeStamp = acceptTimeStamp[0];
+    // console.log(acceptTimeStamp);
 
-    // if more the 2hr deduct some amount
+    const dbDate = new Date(acceptTimeStamp.timestampLog);
+    let currentDate = new Date();
+
+    currentDate.setHours(currentDate.getHours() + 2);
+
+    if (isOrdrrBelongs.Status === orderStatusTypesObj.Accepted && dbDate.getTime() < currentDate.getTime()) {
+      // if in the accepted state but less then 2h refund all amount
+      // console.log('all amt');
+      await Payment.initiateRefundPayments(transData.cashfreeOrderId, transData.order_amount, { orderId: id });
+    }
+    else if (isOrdrrBelongs.Status === orderStatusTypesObj.Accepted && dbDate.getTime() > currentDate.getTime()) {
+      // if more the 2hr deduct some amount
+      // console.log('less');
+      await Payment.initiateRefundPayments(transData.cashfreeOrderId, (transData.order_amount - process.env.REFUND_AMOUNT), { orderId: id });
+    } else {
+      return handelValidationError(res, { message: "unable too cancel order" });
+    }
 
     return handelSuccess(res, { message: "Orders Cancelled successfully refund iniitiated" });
 
@@ -1227,7 +1288,7 @@ router.get("/order", async (req, res) => {
     // if(!foundUser){ return res.status(404).send('User does not exist')}
 
     const foundOrder = await Order.findOne({ Customer: _id, _id: orderId })
-      .populate("Partner","Name email phone profilePic")
+      .populate("Partner", "Name email phone profilePic")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");

@@ -51,7 +51,7 @@ const Order = mongoose.model(
     statusLogs: [
       {
         status: { type: String, enum: orderStatusTypes },
-        timestampLog: { type: Number, default: Date.now() }
+        timestampLog: { type: Date}
       }
     ],
     refundStatus: { type: String, default: null },
