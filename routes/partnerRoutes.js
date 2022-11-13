@@ -1142,7 +1142,7 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
  *    tags:
  *    - partner Routes
  *    parameters:
- *      - in: path
+ *      - in: query
  *        name: orderId
  *        required: true
  *        schema:
@@ -1163,7 +1163,7 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
  *    - bearerAuth: []
  */
 router.post("/order/acceptorder", async (req, res) => {
-  let { orderId } = req.body;
+  let { orderId } = req.query;
   const partnerId = req.partner._id;
 
   if (!orderId) {
