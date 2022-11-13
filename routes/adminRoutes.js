@@ -3620,7 +3620,7 @@ router.get("/penalties", async(req,res)=>{
     }
   } = req;
 
-  const foundPenalties = await PenalitySchema.find({orderId})
+  const foundPenalties = await PenalitySchema.find({orderId}).populate('orderId')
   if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
 
   return res

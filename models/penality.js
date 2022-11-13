@@ -13,9 +13,8 @@ const penalitySchema = mongoose.Schema(
         type: Boolean,
         default: true
     },
-    penalityAppliedOn:{
-        type: String, enum:["partner","customer"]
-    }
+    
+
 }, { timestamps: true }
 );
 
