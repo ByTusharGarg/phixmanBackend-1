@@ -3612,6 +3612,26 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
   }
 })
 
+/**
+ * @openapi
+ * /admin/penalties:
+ *  get:
+ *    summary: used to fetch penalties
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
 router.get("/penalties", async(req,res)=>{
   try {
     let {
