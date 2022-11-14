@@ -3685,7 +3685,7 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
  *    summary: used to fetch penalties
  *    tags:
  *    - Admin Routes
-  *    parameters:
+ *    parameters:
  *      - in: query
  *        name: orderId
  *    responses:
@@ -3722,4 +3722,53 @@ router.get("/penalties", async(req,res)=>{
   });
 }
 })  
+
+/**
+ * @openapi
+ * /admin/penalties/all:
+ *  get:
+ *    summary: used to fetch penalties
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/penalties/all", async(req,res)=>{
+  try {
+  const foundPenalties = await PenalitySchema.find({})
+  .populate({
+    path: 'orderId',
+    model: Order,
+    select: '-_id',
+    populate: {
+      path: 'Customer',
+      model: Customer,
+    },
+    populate: {
+      path: 'Partner',
+      model: Partner,
+    }
+  })
+  if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
+
+  return res
+        .status(200)
+        .json({ message: "Penalties found", foundPenalties });
+} catch (error){
+  console.log(error);
+  return res.status(500).json({
+    message: "Error encountered while trying to fetch penality.",
+  });
+}
+}) 
 module.exports = router;
