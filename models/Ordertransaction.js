@@ -5,6 +5,9 @@ const transactionSchema = mongoose.Schema({
     cf_order_id: {
         type: String
     },
+    ourorder_id: {
+        type: String
+    },
     order_id: {
         type: String
     },
