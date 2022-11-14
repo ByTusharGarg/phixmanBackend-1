@@ -3222,6 +3222,14 @@ router.get("/get-store-partner", async (req, response) => {
  *    summary: used to delete customer account
  *    tags:
  *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                customerId:
+ *                  type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3268,6 +3276,14 @@ router.delete("/delete-customer-account", async (req, res) => {
  *    summary: used to delete partner account
  *    tags:
  *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                partnerId:
+ *                  type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3315,6 +3331,9 @@ router.delete("/delete-partner-account", async (req, res) => {
  *    summary: used to fetch wallet and transactions details
  *    tags:
  *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: customerId
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3359,6 +3378,32 @@ router.get("/wallet/customer",
  *    summary: used to create order
  *    tags:
  *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                promoCode:
+ *                  type: string
+ *                promoType:
+ *                  type: string
+ *                title:
+ *                  type: string
+ *                description:
+ *                  type: string
+ *                offerAmount:
+ *                  type: string
+ *                percentageOff:
+ *                  type: string
+ *                maxDisc:
+ *                  type: string
+ *                minCartValue:
+ *                  type: string
+ *                startValidity:
+ *                  type: string
+ *                endValidity:
+ *                  type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3421,6 +3466,11 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
  *    summary: used to change offer status
  *    tags:
  *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: offerId
+ *      - in: query
+ *        name: action
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3496,6 +3546,7 @@ router.get("/offer/all", checkAdmin, async (req, res) => {
     });
   }
 })
+
 /**
  * @openapi
  * /admin/offer/get-offer:
@@ -3503,6 +3554,9 @@ router.get("/offer/all", checkAdmin, async (req, res) => {
  *    summary: used to get offer by offerId
  *    tags:
  *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: offerId
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3541,6 +3595,15 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
  *    summary: used to delete offer
  *    tags:
  *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                offerId:
+ *                  type: string
+ *                  example: Test
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3579,6 +3642,9 @@ router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
  *    summary: used to fetch notifications
  *    tags:
  *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: customerId
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3619,6 +3685,9 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
  *    summary: used to fetch penalties
  *    tags:
  *    - Admin Routes
+  *    parameters:
+ *      - in: query
+ *        name: orderId
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
