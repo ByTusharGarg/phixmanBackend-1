@@ -25,7 +25,7 @@ const {
   getWallletTransactionByTransactionId,
   getAllWallletTranssactionForUser,
 } = require("../services/Wallet");
-const emailDatamapping = require('../common/emailcontent');
+const emailDatamapping = require("../common/emailcontent");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -151,7 +151,9 @@ router.post(
         await newuser.save();
       }
       sendOtp(req?.body?.phone, otp);
-      return res.status(200).json({ message: "OTP has been sent successfully", otp });
+      return res
+        .status(200)
+        .json({ message: "OTP has been sent successfully", otp });
     } catch (error) {
       console.log(error);
       return res
@@ -455,7 +457,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     panNumber,
     aadharNumber,
     secondaryNumber,
-    gstCertificateNo
+    gstCertificateNo,
   } = req.body;
 
   // console.log(Product_Service);
@@ -489,7 +491,6 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     docs["pan"] = null;
   }
 
-
   docs["incorprationCertificate"] = incorprationCertificate
     ? randomImageName()
     : null;
@@ -505,7 +506,6 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
   } else {
     images.push(undefined);
   }
-
 
   docs["expCertificate"] = expCertificate ? randomImageName() : null;
   if (expCertificate) {
@@ -555,7 +555,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
           business_hours,
           workingdays,
           gstCertificateNo,
-          ...docs
+          ...docs,
         },
       },
       { new: true }
@@ -620,23 +620,35 @@ router.use(checkPartner);
 router.get("/myprofile", async (req, res) => {
   const partnerId = req.partner._id;
   try {
-    const profile = await Partner.findById(partnerId).populate("Product_Service");
+    const profile = await Partner.findById(partnerId).populate(
+      "Product_Service"
+    );
 
-    profile["aadhar"]["fileF"] = await getObjectSignedUrl(profile?.aadhar?.fileF);
+    profile["aadhar"]["fileF"] = await getObjectSignedUrl(
+      profile?.aadhar?.fileF
+    );
 
-    profile["aadhar"]["fileB"] = await getObjectSignedUrl(profile?.aadhar?.fileB);
+    profile["aadhar"]["fileB"] = await getObjectSignedUrl(
+      profile?.aadhar?.fileB
+    );
 
-    if (profile["pan"]['file']) {
-      profile["pan"]['file'] = await getObjectSignedUrl(profile.pan.file);
+    if (profile["pan"]["file"]) {
+      profile["pan"]["file"] = await getObjectSignedUrl(profile.pan.file);
     }
     if (profile["gstCertificate"]) {
-      profile["gstCertificate"] = await getObjectSignedUrl(profile.gstCertificate);
+      profile["gstCertificate"] = await getObjectSignedUrl(
+        profile.gstCertificate
+      );
     }
     if (profile["incorprationCertificate"]) {
-      profile["incorprationCertificate"] = await getObjectSignedUrl(profile.incorprationCertificate);
+      profile["incorprationCertificate"] = await getObjectSignedUrl(
+        profile.incorprationCertificate
+      );
     }
     if (profile["expCertificate"]) {
-      profile["expCertificate"] = await getObjectSignedUrl(profile.expCertificate);
+      profile["expCertificate"] = await getObjectSignedUrl(
+        profile.expCertificate
+      );
     }
 
     if (profile["profilePic"]) {
@@ -821,13 +833,18 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
 
   if (req?.body?.Password && req?.body?.Password === "") {
     if (!isStrong(req?.body?.Password)) {
-      return res.status(400).json({ message: "password is not strong enough." });
+      return res
+        .status(400)
+        .json({ message: "password is not strong enough." });
     }
     update.Password = hashpassword(req?.body?.Password);
   }
 
-
-  if (req?.files?.aadharImageF && req?.files?.aadharImageB && req.body.aadharNumber) {
+  if (
+    req?.files?.aadharImageF &&
+    req?.files?.aadharImageB &&
+    req.body.aadharNumber
+  ) {
     let af = randomImageName();
     let ab = randomImageName();
 
@@ -870,14 +887,19 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
       })
     );
 
-    await Partner.findByIdAndUpdate(req.partner._id, { ...update, ...docs }, { new: true });
+    await Partner.findByIdAndUpdate(
+      req.partner._id,
+      { ...update, ...docs },
+      { new: true }
+    );
     return res.status(200).json({ message: "partner updated successfully." });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Error encountered while trying to update user." });
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to update user." });
   }
-}
-);
+});
 
 /**
  * @openapi
@@ -927,7 +949,6 @@ router.get("/orderdetails/:id", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -1023,12 +1044,18 @@ router.patch("/changeprofilepic", rejectBadRequests, async (req, res) => {
   }
 
   try {
-    await uploadFile(req?.files.profilePic?.data, fileName, req?.files.profilePic?.mimetype);
+    await uploadFile(
+      req?.files.profilePic?.data,
+      fileName,
+      req?.files.profilePic?.mimetype
+    );
     await Partner.findByIdAndUpdate(req.partner._id, { profilePic: fileName });
     return res.status(200).json({ message: "profile updated successfully." });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Error encountered while trying to update user." });
+    return res
+      .status(500)
+      .json({ message: "Error encountered while trying to update user." });
   }
 });
 
@@ -1076,12 +1103,15 @@ router.get("/myorders/:status", async (req, res) => {
 
   if (status !== "all") {
     query["Status"] = status;
+  } else {
+    query["Status"] = { $ne: "Requested" };
   }
 
   try {
     const orders = await Order.find(query)
       .populate("Partner", "Name bussinessName")
-      .populate("OrderDetails.Items.ServiceId");
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("Customer");
 
     return res.status(200).json(orders);
   } catch (error) {
@@ -1126,7 +1156,9 @@ router.get("/requestedorder/:city/:pincode?", async (req, res) => {
   }
 
   try {
-    const orders = await Order.find(queryobj).populate("OrderDetails.Items.ServiceId").populate("Customer");
+    const orders = await Order.find(queryobj)
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("Customer");
     return res.status(200).json(orders);
   } catch (error) {
     console.log(error);
@@ -1186,8 +1218,14 @@ router.post("/order/acceptorder", async (req, res) => {
     await Order.findOneAndUpdate(
       { OrderId: orderId },
       {
-        Status: orderStatusTypesObj['Accepted'], Partner: partnerId,
-        $push: { statusLogs: { status: orderStatusTypesObj.Accepted, timestampLog: new Date() } },
+        Status: orderStatusTypesObj["Accepted"],
+        Partner: partnerId,
+        $push: {
+          statusLogs: {
+            status: orderStatusTypesObj.Accepted,
+            timestampLog: new Date(),
+          },
+        },
       },
       { new: true }
     );
@@ -1308,10 +1346,10 @@ router.post("/forms/:orderId/:type", async (req, res) => {
       { upsert: true }
     );
 
-    if (order.Status === orderStatusTypesObj['Accepted']) {
+    if (order.Status === orderStatusTypesObj["Accepted"]) {
       await Order.findByIdAndUpdate(
         orderId,
-        { Status: orderStatusTypesObj['InRepair'] },
+        { Status: orderStatusTypesObj["InRepair"] },
         { new: true }
       );
     }
@@ -1412,14 +1450,23 @@ router.post("/order/changestatus", async (req, res) => {
       .json({ message: "orderId and status must be provided" });
   }
 
-  const allowedStatus = ["InRepair", "completed", "Cancelled", "pickup", "delivered"];
+  const allowedStatus = [
+    "InRepair",
+    "completed",
+    "Cancelled",
+    "pickup",
+    "delivered",
+  ];
 
   if (!allowedStatus.includes(status)) {
     return res.status(500).json({ message: "status is not allowed" });
   }
 
   try {
-    const order = await Order.findOne({ Partner: partnerId, OrderId: orderId }).populate("Customer", "email Name")
+    const order = await Order.findOne({
+      Partner: partnerId,
+      OrderId: orderId,
+    }).populate("Customer", "email Name");
     let first_name = order.Customer.Name ? order.Customer.Name : "Dear";
 
     if (!order) {
@@ -1435,31 +1482,29 @@ router.post("/order/changestatus", async (req, res) => {
     if (status === "InRepair") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
-        heading1: emailDatamapping['repairInProgress'].heading1,
-        heading2: emailDatamapping['repairInProgress'].heading2,
-        desc: `Hey ${first_name}, ` + emailDatamapping['repairInProgress'].desc,
-        buttonName: emailDatamapping['repairInProgress'].buttonName,
-        email: order.Customer.email || null
+        heading1: emailDatamapping["repairInProgress"].heading1,
+        heading2: emailDatamapping["repairInProgress"].heading2,
+        desc: `Hey ${first_name}, ` + emailDatamapping["repairInProgress"].desc,
+        buttonName: emailDatamapping["repairInProgress"].buttonName,
+        email: order.Customer.email || null,
       };
-    }
-    else if (status === "pickup") {
+    } else if (status === "pickup") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
-        heading1: emailDatamapping['pickUp'].heading1,
-        heading2: emailDatamapping['pickUp'].heading2,
-        desc: `Hey ${first_name}, ` + emailDatamapping['pickUp'].desc,
-        buttonName: emailDatamapping['pickUp'].buttonName,
-        email: order.Customer.email || null
+        heading1: emailDatamapping["pickUp"].heading1,
+        heading2: emailDatamapping["pickUp"].heading2,
+        desc: `Hey ${first_name}, ` + emailDatamapping["pickUp"].desc,
+        buttonName: emailDatamapping["pickUp"].buttonName,
+        email: order.Customer.email || null,
       };
-    }
-    else if (status === "delivered") {
+    } else if (status === "delivered") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
-        heading1: emailDatamapping['orderComplete'].heading1,
-        heading2: emailDatamapping['orderComplete'].heading2,
-        desc: `Hey ${first_name}, ` + emailDatamapping['orderComplete'].desc,
-        buttonName: emailDatamapping['orderComplete'].buttonName,
-        email: order.Customer.email || null
+        heading1: emailDatamapping["orderComplete"].heading1,
+        heading2: emailDatamapping["orderComplete"].heading2,
+        desc: `Hey ${first_name}, ` + emailDatamapping["orderComplete"].desc,
+        buttonName: emailDatamapping["orderComplete"].buttonName,
+        email: order.Customer.email || null,
       };
     }
 
@@ -1475,7 +1520,9 @@ router.post("/order/changestatus", async (req, res) => {
       },
       { new: true }
     );
-    return res.status(200).json({ message: "order status chnages successfully" });
+    return res
+      .status(200)
+      .json({ message: "order status chnages successfully" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -1669,13 +1716,19 @@ router.delete("/deleteSubProvider/:sid", async (req, response) => {
   const { sid } = req.params;
 
   try {
-    const provider = await Partner.findOneAndDelete({ _id: sid, isParent: partnerId });
+    const provider = await Partner.findOneAndDelete({
+      _id: sid,
+      isParent: partnerId,
+    });
     if (provider) {
-      return response.status(201).json({ message: "sub-provider successfully deleted" });
+      return response
+        .status(201)
+        .json({ message: "sub-provider successfully deleted" });
     } else {
-      return response.status(404).json({ message: "no partner associated or not found" });
+      return response
+        .status(404)
+        .json({ message: "no partner associated or not found" });
     }
-
   } catch (error) {
     console.log(error);
     return response.status(500).json({
@@ -1773,7 +1826,9 @@ router.post("/createhelper", async (req, response) => {
       { new: true }
     );
 
-    return response.status(201).json({ message: "successfully created helper" });
+    return response
+      .status(201)
+      .json({ message: "successfully created helper" });
   } catch (error) {
     console.log(error);
     return response.status(500).json({
@@ -1781,7 +1836,6 @@ router.post("/createhelper", async (req, response) => {
     });
   }
 });
-
 
 /**
  * @openapi
@@ -1860,7 +1914,9 @@ router.delete("/deletehelper/:helperid", async (req, response) => {
       { new: true }
     );
 
-    return response.status(201).json({ message: "helper successfully deleted" });
+    return response
+      .status(201)
+      .json({ message: "helper successfully deleted" });
   } catch (error) {
     console.log(error);
     return response.status(500).json({
@@ -2079,8 +2135,6 @@ router.get("/wallet/transaction", async (req, res) => {
   }
 });
 
-
-
 /**
  * @openapi
  * /partner/initiateRecivePayment:
@@ -2124,28 +2178,37 @@ router.post("/initiateRecivePayment", async (req, res) => {
   const id = req.partner._id;
   let notifyTo = null;
 
-  if (notifyMethod['phone']) {
-    notifyTo = notifyMethod['phone']
-  }
-  else {
-    notifyTo = notifyMethod['email']
+  if (notifyMethod["phone"]) {
+    notifyTo = notifyMethod["phone"];
+  } else {
+    notifyTo = notifyMethod["email"];
   }
 
   try {
-    const orderData = await Order.findOne({ Partner: partnerId, OrderId: orderId }).populate("Customer", "email Name");
+    const orderData = await Order.findOne({
+      Partner: partnerId,
+      OrderId: orderId,
+    }).populate("Customer", "email Name");
     if (!orderData) {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount = orderData['OrderDetails']['Gradtotal'] - orderData['OrderDetails']['paidamount'];
+    const leftAmount =
+      orderData["OrderDetails"]["Gradtotal"] -
+      orderData["OrderDetails"]["paidamount"];
 
     if (paymentType === "self") {
-      const orderData = await Order.findByIdAndUpdate(orderData._id, { $inc: { paidamount: leftAmount } });
-      return res.status(200).json({ message: "Order payment on cash successfull", data });
-    }
-    else if (paymentType === "link") {
+      const orderData = await Order.findByIdAndUpdate(orderData._id, {
+        $inc: { paidamount: leftAmount },
+      });
+      return res
+        .status(200)
+        .json({ message: "Order payment on cash successfull", data });
+    } else if (paymentType === "link") {
       if (!notifyTo) {
-        return res.status(400).json({ message: "notifyMethod object required" });
+        return res
+          .status(400)
+          .json({ message: "notifyMethod object required" });
       }
 
       let paymentObj = {
@@ -2154,28 +2217,36 @@ router.post("/initiateRecivePayment", async (req, res) => {
         phone: customer.phone,
         OrderId: generatedOrderId,
         Amount: leftAmount,
-      }
+      };
       let cashfree = await Payment.createCustomerOrder(paymentObj);
       const paymentLink = cashfree.payment_link;
 
       // send link to user
       emailData = {
         Subject: "[Phixman] Order status E-mail",
-        heading1: emailDatamapping['ppaymentLink'].heading1,
-        heading2: emailDatamapping['ppaymentLink'].heading2,
-        desc: `Hey ${first_name}, ` + emailDatamapping['ppaymentLink'].desc + ` <a href='${paymentLink}'>${paymentLink}</a>`,
-        buttonName: emailDatamapping['ppaymentLink'].buttonName,
-        email: order.Customer.email || null
+        heading1: emailDatamapping["ppaymentLink"].heading1,
+        heading2: emailDatamapping["ppaymentLink"].heading2,
+        desc:
+          `Hey ${first_name}, ` +
+          emailDatamapping["ppaymentLink"].desc +
+          ` <a href='${paymentLink}'>${paymentLink}</a>`,
+        buttonName: emailDatamapping["ppaymentLink"].buttonName,
+        email: order.Customer.email || null,
       };
 
       // commonMailFunctionToAll(data, "common");
       // sendOtp()
-      return res.status(200).json({ message: "Payment link successfully sent", paymentLink, transactionId: generatedOrderId });
-    }
-    else if (paymentType === "qr") {
+      return res.status(200).json({
+        message: "Payment link successfully sent",
+        paymentLink,
+        transactionId: generatedOrderId,
+      });
+    } else if (paymentType === "qr") {
       return res.status(400).json({ message: "currently unavailable" });
     } else {
-      return res.status(400).json({ message: "Invalid payment initialization" });
+      return res
+        .status(400)
+        .json({ message: "Invalid payment initialization" });
     }
   } catch (error) {
     return res.status(500).json({
@@ -2239,7 +2310,6 @@ router.post("/verifypayment", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -2323,10 +2393,13 @@ router.post("/verifypayment", async (req, res) => {
  */
 router.post("/reestimate", rejectBadRequests, async (req, res) => {
   const { OrderId, Items } = req.body;
+  console.log(Items);
   const partnerId = req.partner._id;
 
   if (!OrderId || Items.length === 0) {
-    return res.status(400).json({ message: "please provide OrderId and Items." });
+    return res
+      .status(400)
+      .json({ message: "please provide OrderId and Items." });
   }
 
   let Amount = 0;
@@ -2334,7 +2407,6 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
 
   Items.map((element) => (Amount += element?.Cost));
   grandTotal = Amount;
-
 
   try {
     const isorderExists = await Order.findOne({
@@ -2345,22 +2417,24 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     if (!isorderExists) {
       return res.status(400).json({ message: "order not found." });
     }
-
-    await Order.findOneAndUpdate(
+    console.log(isorderExists, "order");
+    let update = await Order.findOneAndUpdate(
       { _id: OrderId, Partner: partnerId },
       {
         $inc: { "OrderDetails.Gradtotal": grandTotal },
         $inc: { "OrderDetails.Amount": Amount },
-        $push: { "OrderDetails.Items": [...Items] },
+        $push: { "OrderDetails.Items": Items },
       },
       { new: true }
     );
-    return res.status(200).json({ message: "Orders successfully reestimated." });
+    console.log(update);
+    return res
+      .status(200)
+      .json({ message: "Orders successfully reestimated." });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 module.exports = router;
