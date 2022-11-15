@@ -62,6 +62,7 @@ class Payment {
 
       const newTransaction = await this.createTranssaction({
         ...resp,
+        ourorder_id: data.ourorder_id,
         order_id: existingOrderId,
         cashfreeOrderId: data.OrderId,
       });
@@ -336,12 +337,10 @@ class Payment {
 
       const refundResp = await axios.request(options);
 
-      console.log("re => ", refundResp.data);
-
       const newRefund = new refundModel({ orderId: metadata.orderId, cashfreeOrderId: orderid, refundId: refunId, caashfreeData: refundResp.data });
       const refundDbData = await newRefund.save();
 
-      return ordersModel.findByIdAndUpdate(metadata['orderId'], { refundId: refundDbData._id, refundStatus: refundResp.data['refund_status'] });
+      return ordersModel.findByIdAndUpdate(metadata['orderId'], { refundId: refundDbData._id, refundStatus: refundResp.data['refund_status'], Status: orderStatusTypesObj.Cancelled });
     } catch (error) {
       throw new Error(error.response.data.message || error.message || error);
     }

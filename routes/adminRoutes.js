@@ -19,6 +19,7 @@ const {
   Zone,
   Notification,
   SubCategory,
+  orderTransaction
 } = require("../models");
 const PenalitySchema = require("../models/penality")
 const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
@@ -888,7 +889,8 @@ router.post(
  */
 router.get("/getOrders", async (req, res) => {
   try {
-    const orders = await Order.find({});
+    const orders = await Order.find({}).populate("TxnId");
+
     return res.status(200).json(orders);
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
@@ -3638,17 +3640,17 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
-  try{
+router.delete("/offer/delete-offer", checkAdmin, async (req, res) => {
+  try {
     let {
-      body:{offerId}
+      body: { offerId }
     } = req;
 
-    const deleteOffer = await Coupon.deleteOne({_id:offerId}).lean()
-    if(!deleteOffer) return res.status(400).json({message:"Unable to delete offer"})
+    const deleteOffer = await Coupon.deleteOne({ _id: offerId }).lean()
+    if (!deleteOffer) return res.status(400).json({ message: "Unable to delete offer" })
 
     return res.status(200).json({ message: 'offer deleted', data: deleteOffer })
-  }catch (error) {
+  } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
@@ -3682,18 +3684,18 @@ router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
  *    - bearerAuth: []
  */
 
-router.get("/notification", checkAdmin,async(req,res)=>{
-  try{
+router.get("/notification", checkAdmin, async (req, res) => {
+  try {
     let {
-      query:{
+      query: {
         customerId
-      } 
-    }= req;
-const foundNotifications = await Notification.find({customerId}).select("title desc").lean()
-if(!foundNotifications) return res.status(400).json({message:"No notification found"})
+      }
+    } = req;
+    const foundNotifications = await Notification.find({ customerId }).select("title desc").lean()
+    if (!foundNotifications) return res.status(400).json({ message: "No notification found" })
 
-return res.status(400).json({message:"Notifications found", data: foundNotifications})
-  }catch (error) {
+    return res.status(400).json({ message: "Notifications found", data: foundNotifications })
+  } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to fetch notifications.",
@@ -3726,27 +3728,27 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
  *    security:
  *    - bearerAuth: []
  */
-router.get("/penalties", async(req,res)=>{
+router.get("/penalties", async (req, res) => {
   try {
     let {
-    query:{
-      orderId
-    }
-  } = req;
+      query: {
+        orderId
+      }
+    } = req;
 
-  const foundPenalties = await PenalitySchema.find({orderId}).populate('orderId')
-  if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
+    const foundPenalties = await PenalitySchema.find({ orderId }).populate('orderId')
+    if (foundPenalties.length === 0) return res.status(400).json({ message: 'No Penalties found' })
 
-  return res
-        .status(200)
-        .json({ message: "Penalties found", foundPenalties });
-} catch (error){
-  console.log(error);
-  return res.status(500).json({
-    message: "Error encountered while trying to fetch penality.",
-  });
-}
-})  
+    return res
+      .status(200)
+      .json({ message: "Penalties found", foundPenalties });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+});
 
 /**
  * @openapi
@@ -3798,4 +3800,40 @@ router.get("/penalties/all", async(req,res)=>{
   });
 }
 }) 
+
+// /**
+//  * @openapi
+//  * /admin/ordertranssactions:
+//  *  get:
+//  *    summary: used to fetch penalties
+//  *    tags:
+//  *    - Admin Routes
+//  *    responses:
+//  *      500:
+//  *          description: if internal server error occured while performing request.
+//  *          content:
+//  *            application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    description: a human-readable message describing the response
+//  *                    example: Error encountered.
+//  */
+// router.get("/ordertranssactions", async (req, res) => {
+//   try {
+
+//     const ordersTranssactions = await orderTransaction.find({order_status:'SUCCESS'})
+//     .sort('orderId', -1);
+
+//     return res.status(200).json({ message: "transsaction list", ordersTranssactions });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({
+//       message: "Error encountered while trying to fetch penality.",
+//     });
+//   }
+// });
+
 module.exports = router;

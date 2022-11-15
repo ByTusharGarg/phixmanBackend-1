@@ -32,6 +32,8 @@ const SystemInfo = require("./SystemInfo");
 const SubCategory = require("./SubCategory");
 
 const WalletTransaction = require("./WalletTransaction");
+const orderTransaction = require("./Ordertransaction");
+
 
 const Zone = require("./Zone");
 
@@ -60,5 +62,6 @@ module.exports = {
   SystemInfo,
   SubCategory,
   WalletTransaction,
-  Zone
+  Zone,
+  orderTransaction,
 };

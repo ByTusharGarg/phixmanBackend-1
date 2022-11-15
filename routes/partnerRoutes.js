@@ -1185,9 +1185,10 @@ router.post("/order/acceptorder", async (req, res) => {
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
-      { Status: orderStatusTypesObj['Accepted'], Partner: partnerId,
-      $push: { statusLogs:{status:orderStatusTypesObj.Accepted}},
-    },
+      {
+        Status: orderStatusTypesObj['Accepted'], Partner: partnerId,
+        $push: { statusLogs: { status: orderStatusTypesObj.Accepted, timestampLog: new Date() } },
+      },
       { new: true }
     );
     return res.status(200).json({ message: "order Accepted" });
@@ -1468,7 +1469,10 @@ router.post("/order/changestatus", async (req, res) => {
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
-      { Status: status },
+      {
+        Status: status,
+        $push: { statusLogs: { status: status, timestampLog: new Date() } },
+      },
       { new: true }
     );
     return res.status(200).json({ message: "order status chnages successfully" });
