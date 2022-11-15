@@ -3260,7 +3260,7 @@ router.delete("/delete-customer-account", async (req, res) => {
       admin: { type }
     } = req;
 
-    if (customerId.length == 0) return res.status(400).json({ message: "No Customer id found" });
+    if (customerId.length == 0) return res.status(404).json({ message: "No Customer id found" });
 
     if (!type === adminTypeArray[0]) {
       return res.status(400).json({ message: "invalid admin type" });
@@ -3317,7 +3317,7 @@ router.delete("/delete-partner-account", async (req, res) => {
       admin: { type }
     } = req;
 
-    if (partnerId.length == 0) return res.status(403).json({ message: "No partner id found" });
+    if (partnerId.length == 0) return res.status(404).json({ message: "No partner id found" });
 
     if (!type === adminTypeArray[0]) {
       return res.status(400).json({ message: "invalid admin type" });
@@ -3463,7 +3463,7 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
     }
 
     const newOffer = await Coupon.create(offerObj)
-    if (!newOffer) return res.status(409).json({ message: 'Unable to create offer' })
+    if (!newOffer) return res.status(400).json({ message: 'Unable to create offer' })
     return res.status(200).json({ message: "Offer created", data: newOffer })
   }
   catch (error) {
@@ -3510,7 +3510,7 @@ router.get("/offer/change-status", async (req, res) => {
       }
     } = req;
 
-    if (!['enable', 'disable'].includes(action)) return res.status(409).json({ message: 'invalid action' })
+    if (!['enable', 'disable'].includes(action)) return res.status(400).json({ message: 'invalid action' })
 
     const status = action === "enable" ? true : false
     const changeOfferStatus = await Coupon.findOneAndUpdate(
@@ -3521,7 +3521,7 @@ router.get("/offer/change-status", async (req, res) => {
       },
       { new: true }
     )
-    if (!changeOfferStatus) return res.status(409).json({ message: 'Unable to change offer status' })
+    if (!changeOfferStatus) return res.status(404).json({ message: 'Unable to change offer status' })
 
     return res.status(200).json({ message: "Offer status changed", data: changeOfferStatus })
   }
@@ -3557,7 +3557,7 @@ router.get("/offer/change-status", async (req, res) => {
 router.get("/offer/all", async (req, res) => {
   try {
     const foundOffer = await Coupon.find({}).lean()
-    if (!foundOffer) return res.status(400).json({ message: 'No offers found' })
+    if (!foundOffer) return res.status(404).json({ message: 'No offers found' })
     return res.status(200).json({ message: "Offers found", data: foundOffer })
   } catch (error) {
     return res.status(500).json({
@@ -3597,7 +3597,7 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
       query: { offerId }
     } = req;
     const foundOffer = await Coupon.findById({ _id: offerId })
-    if (!foundOffer) return res.status(400).json({ message: "Offer not found" })
+    if (!foundOffer) return res.status(404).json({ message: "Offer not found" })
 
     return res.status(200).json({ message: 'offer found', data: foundOffer })
 
@@ -3647,7 +3647,7 @@ router.delete("/offer/delete-offer", checkAdmin, async (req, res) => {
     } = req;
 
     const deleteOffer = await Coupon.deleteOne({ _id: offerId }).lean()
-    if (!deleteOffer) return res.status(400).json({ message: "Unable to delete offer" })
+    if (!deleteOffer) return res.status(404).json({ message: "Unable to delete offer" })
 
     return res.status(200).json({ message: 'offer deleted', data: deleteOffer })
   } catch (error) {
@@ -3692,9 +3692,9 @@ router.get("/notification", checkAdmin, async (req, res) => {
       }
     } = req;
     const foundNotifications = await Notification.find({ customerId }).select("title desc").lean()
-    if (!foundNotifications) return res.status(400).json({ message: "No notification found" })
+    if (!foundNotifications) return res.status(404).json({ message: "No notification found" })
 
-    return res.status(400).json({ message: "Notifications found", data: foundNotifications })
+    return res.status(200).json({ message: "Notifications found", data: foundNotifications })
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -3737,7 +3737,7 @@ router.get("/penalties", async (req, res) => {
     } = req;
 
     const foundPenalties = await PenalitySchema.find({ orderId }).populate('orderId')
-    if (foundPenalties.length === 0) return res.status(400).json({ message: 'No Penalties found' })
+    if (foundPenalties.length === 0) return res.status(200).json({ message: 'No Penalties found' })
 
     return res
       .status(200)
@@ -3788,7 +3788,7 @@ router.get("/penalties/all", async(req,res)=>{
       model: Partner,
     }
   })
-  if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
+  if(foundPenalties.length===0) return res.status(200).json({message:'No Penalties found'}) 
 
   return res
         .status(200)
