@@ -18,7 +18,7 @@ class Payouts {
     async genrateAuthorizationTokenCashfree() {
         const options = {
             method: 'POST',
-            url: `${casrfreeUrlLinks}/authorize`,
+            url: `${casrfreeUrlLinks}/v1/authorize`,
             headers: { accept: 'application/json', 'X-Client-Secret': this.APPSECRET, 'X-Client-Id': this.APPID }
         };
         return axios.request(options)
@@ -41,7 +41,7 @@ class Payouts {
             // };
             const options = {
                 method: 'POST',
-                url: `${casrfreeUrlLinks}/addBeneficiary`,
+                url: `${casrfreeUrlLinks}/v1/addBeneficiary`,
                 data: body,
                 headers: { accept: 'application/json', 'authorization': `Bearer ${token}` }
             };
@@ -61,7 +61,7 @@ class Payouts {
             try {
                 const options = {
                     method: 'POST',
-                    url: `${casrfreeUrlLinks}/removeBeneficiary`,
+                    url: `${casrfreeUrlLinks}/v1/removeBeneficiary`,
                     headers: {
                         accept: 'application/json',
                         Authorization: `Bearer ${token}`,
@@ -82,14 +82,14 @@ class Payouts {
         }
     }
 
-    async verifyBankAccountCashfree(phone, bankAccount, ifsc) {
+    async verifyBankAccountCashfree(bankAccount, ifsc) {
         const { data: { data: { token } } } = await this.genrateAuthorizationTokenCashfree();
         if (!token) {
             throw new Error("token required");
         }
         const options = {
             method: 'GET',
-            url: `${casrfreeUrlLinks}/validation/bankDetails?phone=${phone}&bankAccount=${bankAccount}&ifsc=${ifsc}`,
+            url: `${casrfreeUrlLinks}/v1.2/validation/bankDetails?bankAccount=${bankAccount}&ifsc=${ifsc}`,
             headers: { accept: 'application/json', Authorization: `Bearer ${token}` }
         };
         return axios.request(options)

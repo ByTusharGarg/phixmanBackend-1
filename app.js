@@ -119,6 +119,8 @@ app.use("/customerpayment", router.customerPaymentRoutes);
 app.use("/coupen", router.coupenRoutes);
 app.use("/notification", router.notificationRoutes);
 app.use("/feedback", router.feedbackRoutes);
+app.use("/payouts", router.payoutsRoutes);
+
 
 // const server = https.createServer({}, app);
 app.listen(process.env.PORT, function (err) {
