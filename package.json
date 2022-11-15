@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node boot.js",
-    "devStart": "nodemon app.js"
+    "devstart": "nodemon app.js"
   },
   "author": "Tushar Garg",
   "license": "MIT",
