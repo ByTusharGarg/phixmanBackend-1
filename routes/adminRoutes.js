@@ -245,6 +245,8 @@ router.use(AdminAuth.checkAdmin);
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.post("/createadmin", AdminAuth.createAdmin);
 
@@ -1486,6 +1488,8 @@ router.post("/createspecialist", async (req, response) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.get("/getspecialist", async (req, response) => {
   try {
@@ -3026,7 +3030,7 @@ router.get("/Zone", async (req, res) => {
  *  patch:
  *    summary: Activate/deactivate or edit zone or delete zone using this api
  *    tags:
- *    - partner Routes
+ *    - Admin Routes
  *    parameters:
  *      - in: path
  *        name: _id
@@ -3201,6 +3205,8 @@ router.post("/create-subcategory", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 
 router.get("/get-store-partner", async (req, response) => {
@@ -3242,6 +3248,8 @@ router.get("/get-store-partner", async (req, response) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.delete("/delete-customer-account", async (req, res) => {
   try {
@@ -3296,6 +3304,8 @@ router.delete("/delete-customer-account", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 
 router.delete("/delete-partner-account", async (req, res) => {
@@ -3346,6 +3356,8 @@ router.delete("/delete-partner-account", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.get("/wallet/customer",
   checkAdmin,
@@ -3416,8 +3428,9 @@ router.get("/wallet/customer",
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
-
 router.post("/offer/create", checkAdmin, async (req, res) => {
   try {
     const {
@@ -3483,8 +3496,10 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
-router.get("/offer/change-status", checkAdmin, async (req, res) => {
+router.get("/offer/change-status", async (req, res) => {
   try {
     const {
       query: {
@@ -3534,8 +3549,10 @@ router.get("/offer/change-status", checkAdmin, async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
-router.get("/offer/all", checkAdmin, async (req, res) => {
+router.get("/offer/all", async (req, res) => {
   try {
     const foundOffer = await Coupon.find({}).lean()
     if (!foundOffer) return res.status(400).json({ message: 'No offers found' })
@@ -3569,6 +3586,8 @@ router.get("/offer/all", checkAdmin, async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.get("/offer/get-offer", checkAdmin, async (req, res) => {
   try {
@@ -3616,6 +3635,8 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
   try{
@@ -3657,6 +3678,8 @@ router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 
 router.get("/notification", checkAdmin,async(req,res)=>{
@@ -3682,7 +3705,7 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
  * @openapi
  * /admin/penalties:
  *  get:
- *    summary: used to fetch penalties
+ *    summary: used to fetch penalties by orderid
  *    tags:
  *    - Admin Routes
  *    parameters:
@@ -3700,6 +3723,8 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.get("/penalties", async(req,res)=>{
   try {
@@ -3742,6 +3767,8 @@ router.get("/penalties", async(req,res)=>{
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.get("/penalties/all", async(req,res)=>{
   try {
