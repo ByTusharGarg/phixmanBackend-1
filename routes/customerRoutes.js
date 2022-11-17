@@ -9,9 +9,11 @@ const {
   Partner,
   Counters,
   CustomerWallet,
-  category
+  category,
+  Coupon
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
+const moment = require('moment');
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
@@ -1238,6 +1240,63 @@ router.get("/order", async (req, res) => {
     return handelSuccess(res, { data: foundOrder, message: "Orders found" });
   }
   catch (err) {
+    return handelServerError(res, { message: "An error occured" });
+  }
+})
+
+/**
+ * @openapi
+ * /customer/active-offers:
+ *   get:
+ *    summary: it's used to fetch all active orders.
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                id:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch all active offers
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+
+router.get("/active-offers",async(req,res)=>{
+  try{
+    const today = moment().format('YYYY-MM-DD');
+    const currentTime = moment().format('hh:mm A');
+    console.log("Today : ",currentTime)
+    let foundActiveOffer = await Coupon.find({startDate:{$lte:today},endDate:{$gte:today},isActive:true,startTime:{$lte:currentTime},endTime:{$gte:currentTime}}).lean();
+
+    if(foundActiveOffer.length===0) return res.status(400).json({ message: 'No active offers found' })
+    
+    return res.status(200).json({message:"active offers found",data:foundActiveOffer})
+  }catch(err){
     return handelServerError(res, { message: "An error occured" });
   }
 })

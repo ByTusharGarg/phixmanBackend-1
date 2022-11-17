@@ -3430,8 +3430,10 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
         percentageOff,
         maxDisc,
         minCartValue,
-        startValidity,
-        endValidity
+        startTime,
+        endTime,
+        startDate,
+        endDate
       }
     } = req;
     const offerObj = {
@@ -3443,8 +3445,10 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startValidity,
-      endValidity
+      startTime,
+      endTime,
+      startDate,
+      endDate
     }
 
     const newOffer = await Coupon.create(offerObj)
@@ -3588,6 +3592,7 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
   }
 
 })
+
 /**
  * @openapi
  * /admin/offer/delete-offer:
@@ -3780,4 +3785,5 @@ router.get("/penalties/all", async (req, res) => {
     });
   }
 })
+
 module.exports = router;

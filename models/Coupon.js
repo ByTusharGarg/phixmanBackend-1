@@ -13,11 +13,11 @@ const couponSchema = mongoose.Schema({
   maxDisc: Number,
   minCartValue: Number,
 
-// starttime,endtime
-// startdate,enddate
-//   date-string
-  startValidity: Date,
-  endValidity: Date,
+  startTime: { type: String },
+  endTime: { type: String },
+  startDate: { type: String },
+  endDate: { type: String },
+
   isActive: {
     type: Boolean,
     default: true
