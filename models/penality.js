@@ -15,6 +15,7 @@ const penalitySchema = mongoose.Schema(
     },
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true},
     partner: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true },
+    model: {type: mongoose.Schema.Types.ObjectId, ref: "Model", required: true}
     
 
 }, { timestamps: true }

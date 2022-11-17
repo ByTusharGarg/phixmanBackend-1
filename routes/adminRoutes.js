@@ -3617,17 +3617,17 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
-  try{
+router.delete("/offer/delete-offer", checkAdmin, async (req, res) => {
+  try {
     let {
-      body:{offerId}
+      body: { offerId }
     } = req;
 
-    const deleteOffer = await Coupon.deleteOne({_id:offerId}).lean()
-    if(!deleteOffer) return res.status(400).json({message:"Unable to delete offer"})
+    const deleteOffer = await Coupon.deleteOne({ _id: offerId }).lean()
+    if (!deleteOffer) return res.status(400).json({ message: "Unable to delete offer" })
 
     return res.status(200).json({ message: 'offer deleted', data: deleteOffer })
-  }catch (error) {
+  } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
@@ -3659,18 +3659,18 @@ router.delete("/offer/delete-offer", checkAdmin, async(req, res)=>{
  *                    example: Error encountered.
  */
 
-router.get("/notification", checkAdmin,async(req,res)=>{
-  try{
+router.get("/notification", checkAdmin, async (req, res) => {
+  try {
     let {
-      query:{
+      query: {
         customerId
-      } 
-    }= req;
-const foundNotifications = await Notification.find({customerId}).select("title desc").lean()
-if(!foundNotifications) return res.status(400).json({message:"No notification found"})
+      }
+    } = req;
+    const foundNotifications = await Notification.find({ customerId }).select("title desc").lean()
+    if (!foundNotifications) return res.status(400).json({ message: "No notification found" })
 
-return res.status(400).json({message:"Notifications found", data: foundNotifications})
-  }catch (error) {
+    return res.status(400).json({ message: "Notifications found", data: foundNotifications })
+  } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to fetch notifications.",
@@ -3701,27 +3701,27 @@ return res.status(400).json({message:"Notifications found", data: foundNotificat
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/penalties", async(req,res)=>{
+router.get("/penalties", async (req, res) => {
   try {
     let {
-    query:{
-      orderId
-    }
-  } = req;
+      query: {
+        orderId
+      }
+    } = req;
 
-  const foundPenalties = await PenalitySchema.find({orderId}).populate('orderId')
-  if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
+    const foundPenalties = await PenalitySchema.find({ orderId }).populate('orderId')
+    if (foundPenalties.length === 0) return res.status(400).json({ message: 'No Penalties found' })
 
-  return res
-        .status(200)
-        .json({ message: "Penalties found", foundPenalties });
-} catch (error){
-  console.log(error);
-  return res.status(500).json({
-    message: "Error encountered while trying to fetch penality.",
-  });
-}
-})  
+    return res
+      .status(200)
+      .json({ message: "Penalties found", foundPenalties });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+})
 
 /**
  * @openapi
@@ -3743,32 +3743,41 @@ router.get("/penalties", async(req,res)=>{
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/penalties/all", async(req,res)=>{
+router.get("/penalties/all", async (req, res) => {
   try {
-  const foundPenalties = await PenalitySchema.find({})
-  .populate({
-    path: 'orderId',
-    model: Order,
-    select: '-_id',
-    populate: {
-      path: 'Customer',
-      model: Customer,
-    },
-    populate: {
-      path: 'Partner',
-      model: Partner,
-    }
-  })
-  if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
+    const foundPenalties = await PenalitySchema.find({})
+      .populate([
+        {
+          path: 'orderId',
+          model: Order,
+          select: '-_id',
+          populate: {
+            path: 'Partner',
+            model: Partner,
+          }
+        },
+        {
+          path: 'orderId',
+          model: Order,
+          select: '-_id',
+          populate: {
+            path: 'Customer',
+            model: Customer,
+          },
 
-  return res
-        .status(200)
-        .json({ message: "Penalties found", foundPenalties });
-} catch (error){
-  console.log(error);
-  return res.status(500).json({
-    message: "Error encountered while trying to fetch penality.",
-  });
-}
-}) 
+        }
+      ])
+      .populate("model")
+    if (foundPenalties.length === 0) return res.status(400).json({ message: 'No Penalties found' })
+
+    return res
+      .status(200)
+      .json({ message: "Penalties found", foundPenalties });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+})
 module.exports = router;
