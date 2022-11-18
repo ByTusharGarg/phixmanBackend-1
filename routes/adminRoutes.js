@@ -3445,8 +3445,10 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
         percentageOff,
         maxDisc,
         minCartValue,
-        startValidity,
-        endValidity
+        startTime,
+        endTime,
+        startDate,
+        endDate
       }
     } = req;
     const offerObj = {
@@ -3458,8 +3460,10 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startValidity,
-      endValidity
+      startTime,
+      endTime,
+      startDate,
+      endDate
     }
 
     const newOffer = await Coupon.create(offerObj)
@@ -3609,6 +3613,7 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
   }
 
 })
+
 /**
  * @openapi
  * /admin/offer/delete-offer:
@@ -3772,34 +3777,43 @@ router.get("/penalties", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/penalties/all", async(req,res)=>{
+router.get("/penalties/all", async (req, res) => {
   try {
-  const foundPenalties = await PenalitySchema.find({})
-  .populate({
-    path: 'orderId',
-    model: Order,
-    select: '-_id',
-    populate: {
-      path: 'Customer',
-      model: Customer,
-    },
-    populate: {
-      path: 'Partner',
-      model: Partner,
-    }
-  })
-  if(foundPenalties.length===0) return res.status(400).json({message:'No Penalties found'}) 
+    const foundPenalties = await PenalitySchema.find({})
+      .populate([
+        {
+          path: 'orderId',
+          model: Order,
+          select: '-_id',
+          populate: {
+            path: 'Partner',
+            model: Partner,
+          }
+        },
+        {
+          path: 'orderId',
+          model: Order,
+          select: '-_id',
+          populate: {
+            path: 'Customer',
+            model: Customer,
+          },
 
-  return res
-        .status(200)
-        .json({ message: "Penalties found", foundPenalties });
-} catch (error){
-  console.log(error);
-  return res.status(500).json({
-    message: "Error encountered while trying to fetch penality.",
-  });
-}
-}) 
+        }
+      ])
+      .populate("model")
+    if (foundPenalties.length === 0) return res.status(400).json({ message: 'No Penalties found' })
+
+    return res
+      .status(200)
+      .json({ message: "Penalties found", foundPenalties });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+})
 
 // /**
 //  * @openapi
