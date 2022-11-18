@@ -19,11 +19,14 @@ const {
   Zone,
   Notification,
   SubCategory,
-  orderTransaction
+  orderTransaction,
 } = require("../models");
-const PenalitySchema = require("../models/penality")
-const { getAllWallletTranssactionForUser, getCustomerWallet } = require("../services/Wallet");
-const { checkAdmin } = require("../middleware/AuthAdmin")
+const PenalitySchema = require("../models/penality");
+const {
+  getAllWallletTranssactionForUser,
+  getCustomerWallet,
+} = require("../services/Wallet");
+const { checkAdmin } = require("../middleware/AuthAdmin");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
@@ -46,7 +49,7 @@ const {
   getParseModels,
   generateRandomReferralCode,
 } = require("../libs/commonFunction");
-const { adminTypeArray } = require('../enums/adminTypes');
+const { adminTypeArray } = require("../enums/adminTypes");
 const { getWalletTransactions } = require("../services/Wallet");
 
 const verifyOrderValidator = [
@@ -203,7 +206,6 @@ router.post("/resetpassword", AdminAuth.resetPassword);
 router.post("/changepassword", AdminAuth.changePassword);
 
 router.use(AdminAuth.checkAdmin);
-
 
 /**
  * @openapi
@@ -471,7 +473,6 @@ router.post("/customer/create", async (req, res) => {
   }
 });
 
-
 /**
  * @openapi
  * /admin/updatecustomer/{_id}:
@@ -540,7 +541,7 @@ router.patch("/updatecustomer/:id", async (req, res) => {
   const cid = req.params;
 
   if (req.body.phone) {
-    return handelValidationError(res, { message: "phone not allowed" })
+    return handelValidationError(res, { message: "phone not allowed" });
   }
 
   let updateQuery = req.body;
@@ -897,8 +898,6 @@ router.get("/getOrders", async (req, res) => {
   }
 });
 
-
-
 /**
  * @openapi
  * /admin/assignorder:
@@ -982,8 +981,14 @@ router.post("/assignorder", async (req, res) => {
       return res.status(400).json({ message: "No order found" });
     }
 
-    await Order.findByIdAndUpdate(orderId, { Partner: partnerId }, { new: true });
-    return res.status(200).json({ message: "Order successfully assigned to partner" });
+    await Order.findByIdAndUpdate(
+      orderId,
+      { Partner: partnerId },
+      { new: true }
+    );
+    return res
+      .status(200)
+      .json({ message: "Order successfully assigned to partner" });
   } catch (error) {
     return res.status(500).json({ message: "Error encountered." });
   }
@@ -1165,7 +1170,7 @@ router.post("/createpartner", async (req, res) => {
     workingdays,
     bussinessName,
     business_hours,
-    gstCertificateNo
+    gstCertificateNo,
   } = req.body;
 
   let images = [];
@@ -1173,7 +1178,6 @@ router.post("/createpartner", async (req, res) => {
 
   let panObj = {};
   let adadharObj = {};
-
 
   if (!phone || !Name || !Dob) {
     return res.status(400).json({
@@ -1209,12 +1213,14 @@ router.post("/createpartner", async (req, res) => {
 
   if (req.files?.pancardImage) {
     let n = randomImageName();
-    panObj = { number: panNumber, file: n },
+    (panObj = { number: panNumber, file: n }),
       images.push({ ...req.files?.pancardImage, fileName: n });
   }
 
-
-  if (Type === "store" && (!req.files?.gstCertificate || !req.files?.incorprationCertificate)) {
+  if (
+    Type === "store" &&
+    (!req.files?.gstCertificate || !req.files?.incorprationCertificate)
+  ) {
     return res.status(400).json({
       message: "gstCertificate incorprationCertificate documents required",
     });
@@ -1222,15 +1228,23 @@ router.post("/createpartner", async (req, res) => {
     docs["incorprationCertificate"] = req.files?.incorprationCertificate
       ? randomImageName()
       : null;
-    docs["gstCertificate"] = req.files?.gstCertificate ? randomImageName() : null;
+    docs["gstCertificate"] = req.files?.gstCertificate
+      ? randomImageName()
+      : null;
 
     if (req.files?.incorprationCertificate) {
-      images.push({ ...req.files?.incorprationCertificate, fileName: randomImageName() });
+      images.push({
+        ...req.files?.incorprationCertificate,
+        fileName: randomImageName(),
+      });
     } else {
       images.push(undefined);
     }
     if (req.files?.gstCertificate) {
-      images.push({ ...req.files?.gstCertificate, fileName: randomImageName() });
+      images.push({
+        ...req.files?.gstCertificate,
+        fileName: randomImageName(),
+      });
     } else {
       images.push(undefined);
     }
@@ -1241,10 +1255,15 @@ router.post("/createpartner", async (req, res) => {
       .status(500)
       .json({ message: "expCertificate documents required" });
   } else {
-    docs["expCertificate"] = req.files?.expCertificate ? randomImageName() : null;
+    docs["expCertificate"] = req.files?.expCertificate
+      ? randomImageName()
+      : null;
 
     if (req.files?.expCertificate) {
-      images.push({ ...req.files?.expCertificate, fileName: randomImageName() });
+      images.push({
+        ...req.files?.expCertificate,
+        fileName: randomImageName(),
+      });
     } else {
       images.push(undefined);
     }
@@ -3158,35 +3177,30 @@ router.patch("/Zone/:id", async (req, res) => {
 router.post("/create-subcategory", async (req, res) => {
   try {
     let {
-      body: {
-        categoryId,
-        name,
-        description
-      }
+      body: { categoryId, name, description },
     } = req;
 
     let subcategoryObj = {
       category: categoryId,
       name,
-      description
-    }
-    const savedSubcategory = await SubCategory.create(subcategoryObj)
-    if (!savedSubcategory) return res.status(404).send('Failed to save subcategory info')
+      description,
+    };
+    const savedSubcategory = await SubCategory.create(subcategoryObj);
+    if (!savedSubcategory)
+      return res.status(404).send("Failed to save subcategory info");
     return res.send({
       status: 200,
       message: "subcategories created",
-      data: savedSubcategory
-    })
-  }
-  catch (err) {
+      data: savedSubcategory,
+    });
+  } catch (err) {
     console.log("An error occured", err);
     return res.send({
       status: 500,
       message: "An error occured",
-    })
+    });
   }
-
-})
+});
 
 /**
  * @openapi
@@ -3257,27 +3271,28 @@ router.delete("/delete-customer-account", async (req, res) => {
   try {
     const {
       body: { customerId },
-      admin: { type }
+      admin: { type },
     } = req;
 
-    if (customerId.length == 0) return res.status(404).json({ message: "No Customer id found" });
+    if (customerId.length == 0)
+      return res.status(404).json({ message: "No Customer id found" });
 
     if (!type === adminTypeArray[0]) {
       return res.status(400).json({ message: "invalid admin type" });
     }
-    const deleteUser = await Customer.deleteMany({ _id: customerId })
+    const deleteUser = await Customer.deleteMany({ _id: customerId });
 
-    if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
+    if (!deleteUser)
+      return res.status(400).json({ message: "unable to delete account" });
 
     return res.status(200).json({ message: "Customer account deleted" });
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to deleting customer account",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -3314,27 +3329,28 @@ router.delete("/delete-partner-account", async (req, res) => {
   try {
     const {
       body: { partnerId },
-      admin: { type }
+      admin: { type },
     } = req;
 
-    if (partnerId.length == 0) return res.status(404).json({ message: "No partner id found" });
+    if (partnerId.length == 0)
+      return res.status(404).json({ message: "No partner id found" });
 
     if (!type === adminTypeArray[0]) {
       return res.status(400).json({ message: "invalid admin type" });
     }
-    const deleteUser = await Partner.deleteMany({ _id: partnerId })
+    const deleteUser = await Partner.deleteMany({ _id: partnerId });
 
-    if (!deleteUser) return res.status(400).json({ message: "unable to delete account" });
+    if (!deleteUser)
+      return res.status(400).json({ message: "unable to delete account" });
 
     return res.status(200).json({ message: "Partner account deleted" });
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to deleting partner account",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -3361,29 +3377,33 @@ router.delete("/delete-partner-account", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/wallet/customer",
-  checkAdmin,
-  async (req, res) => {
-    try {
-      const {
-        query: { customerId },
-        admin: { type }
-      } = req;
-      if (!type === adminTypeArray[0]) {
-        return res.status(400).json({ message: "invalid admin type" });
-      }
-      const walletData = await getCustomerWallet(customerId);
-      const transactionData = await getAllWallletTranssactionForUser(customerId, "customer")
-      return res
-        .status(200)
-        .json({ message: "customer wallet and transaction", walletData, transactionData });
-
-    } catch (error) {
-      return res.status(500).json({
-        message: "Error encountered while trying to fetch wallet.",
-      });
+router.get("/wallet/customer", checkAdmin, async (req, res) => {
+  try {
+    const {
+      query: { customerId },
+      admin: { type },
+    } = req;
+    if (!type === adminTypeArray[0]) {
+      return res.status(400).json({ message: "invalid admin type" });
     }
-  });
+    const walletData = await getCustomerWallet(customerId);
+    const transactionData = await getAllWallletTranssactionForUser(
+      customerId,
+      "customer"
+    );
+    return res
+      .status(200)
+      .json({
+        message: "customer wallet and transaction",
+        walletData,
+        transactionData,
+      });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch wallet.",
+    });
+  }
+});
 
 /**
  * @openapi
@@ -3445,9 +3465,11 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
         percentageOff,
         maxDisc,
         minCartValue,
-        startValidity,
-        endValidity
-      }
+        startTime,
+        endTime,
+        startDate,
+        endDate,
+      },
     } = req;
     const offerObj = {
       promoCode,
@@ -3458,21 +3480,23 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startValidity,
-      endValidity
-    }
+      startTime,
+      endTime,
+      startDate,
+      endDate,
+    };
 
-    const newOffer = await Coupon.create(offerObj)
-    if (!newOffer) return res.status(400).json({ message: 'Unable to create offer' })
-    return res.status(200).json({ message: "Offer created", data: newOffer })
-  }
-  catch (error) {
+    const newOffer = await Coupon.create(offerObj);
+    if (!newOffer)
+      return res.status(400).json({ message: "Unable to create offer" });
+    return res.status(200).json({ message: "Offer created", data: newOffer });
+  } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to create offer.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -3504,39 +3528,38 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
 router.get("/offer/change-status", async (req, res) => {
   try {
     const {
-      query: {
-        offerId,
-        action
-      }
+      query: { offerId, action },
     } = req;
 
-    if (!['enable', 'disable'].includes(action)) return res.status(400).json({ message: 'invalid action' })
+    if (!["enable", "disable"].includes(action))
+      return res.status(400).json({ message: "invalid action" });
 
-    const status = action === "enable" ? true : false
+    const status = action === "enable" ? true : false;
     const changeOfferStatus = await Coupon.findOneAndUpdate(
-
       { _id: offerId },
       {
-        $set: { isActive: status }
+        $set: { isActive: status },
       },
       { new: true }
-    )
-    if (!changeOfferStatus) return res.status(404).json({ message: 'Unable to change offer status' })
+    );
+    if (!changeOfferStatus)
+      return res.status(404).json({ message: "Unable to change offer status" });
 
-    return res.status(200).json({ message: "Offer status changed", data: changeOfferStatus })
-  }
-  catch (error) {
+    return res
+      .status(200)
+      .json({ message: "Offer status changed", data: changeOfferStatus });
+  } catch (error) {
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
     });
   }
-})
+});
 
 /**
  * @openapi
  * /admin/offer/all:
  *  get:
- *    summary: used to fetch all offers 
+ *    summary: used to fetch all offers
  *    tags:
  *    - Admin Routes
  *    responses:
@@ -3556,15 +3579,16 @@ router.get("/offer/change-status", async (req, res) => {
  */
 router.get("/offer/all", async (req, res) => {
   try {
-    const foundOffer = await Coupon.find({}).lean()
-    if (!foundOffer) return res.status(404).json({ message: 'No offers found' })
-    return res.status(200).json({ message: "Offers found", data: foundOffer })
+    const foundOffer = await Coupon.find({}).lean();
+    if (!foundOffer)
+      return res.status(404).json({ message: "No offers found" });
+    return res.status(200).json({ message: "Offers found", data: foundOffer });
   } catch (error) {
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -3594,21 +3618,21 @@ router.get("/offer/all", async (req, res) => {
 router.get("/offer/get-offer", checkAdmin, async (req, res) => {
   try {
     let {
-      query: { offerId }
+      query: { offerId },
     } = req;
-    const foundOffer = await Coupon.findById({ _id: offerId })
-    if (!foundOffer) return res.status(404).json({ message: "Offer not found" })
+    const foundOffer = await Coupon.findById({ _id: offerId });
+    if (!foundOffer)
+      return res.status(404).json({ message: "Offer not found" });
 
-    return res.status(200).json({ message: 'offer found', data: foundOffer })
-
+    return res.status(200).json({ message: "offer found", data: foundOffer });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
     });
   }
+});
 
-})
 /**
  * @openapi
  * /admin/offer/delete-offer:
@@ -3643,20 +3667,23 @@ router.get("/offer/get-offer", checkAdmin, async (req, res) => {
 router.delete("/offer/delete-offer", checkAdmin, async (req, res) => {
   try {
     let {
-      body: { offerId }
+      body: { offerId },
     } = req;
 
-    const deleteOffer = await Coupon.deleteOne({ _id: offerId }).lean()
-    if (!deleteOffer) return res.status(404).json({ message: "Unable to delete offer" })
+    const deleteOffer = await Coupon.deleteOne({ _id: offerId }).lean();
+    if (!deleteOffer)
+      return res.status(404).json({ message: "Unable to delete offer" });
 
-    return res.status(200).json({ message: 'offer deleted', data: deleteOffer })
+    return res
+      .status(200)
+      .json({ message: "offer deleted", data: deleteOffer });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -3687,21 +3714,24 @@ router.delete("/offer/delete-offer", checkAdmin, async (req, res) => {
 router.get("/notification", checkAdmin, async (req, res) => {
   try {
     let {
-      query: {
-        customerId
-      }
+      query: { customerId },
     } = req;
-    const foundNotifications = await Notification.find({ customerId }).select("title desc").lean()
-    if (!foundNotifications) return res.status(404).json({ message: "No notification found" })
+    const foundNotifications = await Notification.find({ customerId })
+      .select("title desc")
+      .lean();
+    if (!foundNotifications)
+      return res.status(404).json({ message: "No notification found" });
 
-    return res.status(200).json({ message: "Notifications found", data: foundNotifications })
+    return res
+      .status(200)
+      .json({ message: "Notifications found", data: foundNotifications });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to fetch notifications.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -3731,17 +3761,16 @@ router.get("/notification", checkAdmin, async (req, res) => {
 router.get("/penalties", async (req, res) => {
   try {
     let {
-      query: {
-        orderId
-      }
+      query: { orderId },
     } = req;
 
-    const foundPenalties = await PenalitySchema.find({ orderId }).populate('orderId')
-    if (foundPenalties.length === 0) return res.status(200).json({ message: 'No Penalties found' })
+    const foundPenalties = await PenalitySchema.find({ orderId }).populate(
+      "orderId"
+    );
+    if (foundPenalties.length === 0)
+      return res.status(200).json({ message: "No Penalties found" });
 
-    return res
-      .status(200)
-      .json({ message: "Penalties found", foundPenalties });
+    return res.status(200).json({ message: "Penalties found", foundPenalties });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -3772,34 +3801,41 @@ router.get("/penalties", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/penalties/all", async(req,res)=>{
+router.get("/penalties/all", async (req, res) => {
   try {
-  const foundPenalties = await PenalitySchema.find({})
-  .populate({
-    path: 'orderId',
-    model: Order,
-    select: '-_id',
-    populate: {
-      path: 'Customer',
-      model: Customer,
-    },
-    populate: {
-      path: 'Partner',
-      model: Partner,
-    }
-  })
-  if(foundPenalties.length===0) return res.status(200).json({message:'No Penalties found'}) 
+    const foundPenalties = await PenalitySchema.find({})
+      .populate([
+        {
+          path: "orderId",
+          model: Order,
+          select: "-_id",
+          populate: {
+            path: "Partner",
+            model: Partner,
+          },
+        },
+        {
+          path: "orderId",
+          model: Order,
+          select: "-_id",
+          populate: {
+            path: "Customer",
+            model: Customer,
+          },
+        },
+      ])
+      .populate("model");
+    if (foundPenalties.length === 0)
+      return res.status(400).json({ message: "No Penalties found" });
 
-  return res
-        .status(200)
-        .json({ message: "Penalties found", foundPenalties });
-} catch (error){
-  console.log(error);
-  return res.status(500).json({
-    message: "Error encountered while trying to fetch penality.",
-  });
-}
-}) 
+    return res.status(200).json({ message: "Penalties found", foundPenalties });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+});
 
 // /**
 //  * @openapi

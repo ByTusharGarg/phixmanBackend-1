@@ -13,8 +13,11 @@ const couponSchema = mongoose.Schema({
   maxDisc: Number,
   minCartValue: Number,
 
-  startValidity: Date,
-  endValidity: Date,
+  startTime: { type: String },
+  endTime: { type: String },
+  startDate: { type: String },
+  endDate: { type: String },
+
   isActive: {
     type: Boolean,
     default: true
@@ -29,3 +32,14 @@ const couponSchema = mongoose.Schema({
 const Coupon = mongoose.model("Coupon", couponSchema);
 
 module.exports = Coupon;
+
+
+
+// order
+// desc
+// images, -- multiple image
+// audio
+
+
+
+//subadmin
