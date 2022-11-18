@@ -253,6 +253,52 @@ router.post("/createadmin", AdminAuth.createAdmin);
 
 /**
  * @openapi
+ * /admin/createsubadmin:
+ *  post:
+ *    summary: used to create new subadmin admin by superadmmin.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                type:
+ *                  type: string
+ *                zones:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *                category:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createsubadmin", AdminAuth.createSubAdmin )
+
+/**
+ * @openapi
  * /admin:
  *  get:
  *    summary: used to list all admins.
@@ -3801,39 +3847,46 @@ router.get("/penalties/all", async(req,res)=>{
 }
 }) 
 
-// /**
-//  * @openapi
-//  * /admin/ordertranssactions:
-//  *  get:
-//  *    summary: used to fetch penalties
-//  *    tags:
-//  *    - Admin Routes
-//  *    responses:
-//  *      500:
-//  *          description: if internal server error occured while performing request.
-//  *          content:
-//  *            application/json:
-//  *             schema:
-//  *               type: object
-//  *               properties:
-//  *                  message:
-//  *                    type: string
-//  *                    description: a human-readable message describing the response
-//  *                    example: Error encountered.
-//  */
-// router.get("/ordertranssactions", async (req, res) => {
-//   try {
+/**
+ * @openapi
+ * /admin/ordertransaction:
+ *  get:
+ *    summary: used to fetch order transactions
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: orderStatus
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/ordertransaction", async (req, res) => {
+  try {
+    let query = {};
+    const {orderStatus = ''} = req.query
 
-//     const ordersTranssactions = await orderTransaction.find({order_status:'SUCCESS'})
-//     .sort('orderId', -1);
+    if(orderStatus != '' ) {
+      query = {...query, order_status:orderStatus}
+    }
+    const ordersTranssactions = await orderTransaction.find(query).sort({'orderId': -1});
 
-//     return res.status(200).json({ message: "transsaction list", ordersTranssactions });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       message: "Error encountered while trying to fetch penality.",
-//     });
-//   }
-// });
+    return res.status(200).json({ message: "transsaction list", ordersTranssactions });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+});
 
 module.exports = router;
