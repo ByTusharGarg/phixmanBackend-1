@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const payoutsSchema = mongoose.Schema({
-    partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true },
+    partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true,unique: true},
     beneId: {
         type: String,
         unique: true,

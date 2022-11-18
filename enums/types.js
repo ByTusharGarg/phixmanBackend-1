@@ -33,6 +33,24 @@ const orderStatusTypesObj = {
   Reshedulled: "Reshedulled"
 };
 
+const payoutStatusTypes = [
+  null,
+  "WITHDRAWAL",
+  "INITIATED",
+  "INPROGRESS",
+  "SUCCESS",
+  "FAILED",
+];
+
+
+const payoutStatusTypesObject = {
+  WITHDRAWAL:"WITHDRAWAL",
+  INITIATED:"INITIATED",
+  INPROGRESS:"INPROGRESS",
+  SUCCESS:"SUCCESS",
+  FAILED:"FAILED"
+}
+
 const serviceTypes = [];
 const paymentModeTypes = ["cod", "online"];
 const transsactionTypes = ["debit", "credit"];
@@ -80,5 +98,7 @@ module.exports = {
   panalityEnnum,
   paymentStatusObject,
 
-  payoutPaymentStatus
+  payoutPaymentStatus,
+  payoutStatusTypes,
+  payoutStatusTypesObject
 };
