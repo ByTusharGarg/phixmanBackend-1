@@ -17,7 +17,12 @@ const moment = require('moment');
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
-const { handelSuccess, handelValidationError, handelServerError, handelNoteFoundError } = require('../libs/response-handler/handlers')
+const {
+  handelSuccess,
+  handelValidationError,
+  handelServerError,
+  handelNoteFoundError,
+} = require("../libs/response-handler/handlers");
 
 const {
   orderStatusTypes,
@@ -169,9 +174,14 @@ router.post(
         //send otp to user
       }
       sendOtp(req?.body?.phone, otp);
-      return handelSuccess(res, { message: "OTP has been sent successfully", otp: otp });
+      return handelSuccess(res, {
+        message: "OTP has been sent successfully",
+        otp: otp,
+      });
     } catch (error) {
-      return handelServerError(res, { message: "Error encountered while trying to send otp " });
+      return handelServerError(res, {
+        message: "Error encountered while trying to send otp ",
+      });
     }
   }
 );
@@ -294,7 +304,7 @@ router.post(
       }
 
       if (resp.message) {
-        return handelValidationError(res, resp)
+        return handelValidationError(res, resp);
       } else {
         const { accessToken, refreshToken } = tokenService.generateAuthTokens(
           { _id: customer._id, isPublished: customer.isPublished },
@@ -310,7 +320,9 @@ router.post(
         });
       }
     } catch (error) {
-      return handelServerError(res, { message: "Error encountered while trying to verify otp " });
+      return handelServerError(res, {
+        message: "Error encountered while trying to verify otp ",
+      });
     }
   }
 );
@@ -328,7 +340,7 @@ router.post(
  *        required: true
  *        schema:
  *           type: string
- *    
+ *
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -349,19 +361,23 @@ router.get("/category", async (req, res) => {
       query: { categoryId },
     } = req;
 
-    const foundSubcategory = await SubCategory.find({ category: categoryId })
-    if (!foundSubcategory) { return res.status(404).send('No subcategories found') }
+    const foundSubcategory = await SubCategory.find({ category: categoryId });
+    if (!foundSubcategory) {
+      return res.status(404).send("No subcategories found");
+    }
 
-    return handelSuccess(res, { data: foundSubcategory, message: "subcategories found" });
-  }
-  catch (err) {
+    return handelSuccess(res, {
+      data: foundSubcategory,
+      message: "subcategories found",
+    });
+  } catch (err) {
     console.log("An error occured", err);
     return res.send({
       status: 500,
       message: "An error occured",
-    })
+    });
   }
-})
+});
 
 /**
  * @openapi
@@ -376,7 +392,7 @@ router.get("/category", async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *    
+ *
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -393,29 +409,37 @@ router.get("/category", async (req, res) => {
 router.get("/timeslots", async (req, res) => {
   try {
     let {
-      query: { categoryId }
+      query: { categoryId },
     } = req;
-    const foundTimeSlots = await category.findById({ _id: categoryId }).select('Slots')
-    if (!foundTimeSlots) return res.status(404).send('No Timeslots found')
-    return handelSuccess(res, { data: foundTimeSlots, message: "Timeslots found" });
-  }
-  catch (err) {
+    const foundTimeSlots = await category
+      .findById({ _id: categoryId })
+      .select("Slots");
+    if (!foundTimeSlots) return res.status(404).send("No Timeslots found");
+    return handelSuccess(res, {
+      data: foundTimeSlots,
+      message: "Timeslots found",
+    });
+  } catch (err) {
     console.log("An error occured", err);
     return res.send({
       status: 500,
       message: "An error occured",
-    })
+    });
   }
-
-})
+});
 
 // refund webhook
-router.post('/webhook/refund', (req, res) => {
+router.post("/webhook/refund", (req, res) => {
   console.log(req.body);
-  const { type, data: { refund: { refund_id, refund_status, refund_amount, order_id } } } = req.body;
+  const {
+    type,
+    data: {
+      refund: { refund_id, refund_status, refund_amount, order_id },
+    },
+  } = req.body;
 
   if (type !== "REFUND_WEBHOOK") {
-    return res.status(400).json({ message: "not as cashfree request" })
+    return res.status(400).json({ message: "not as cashfree request" });
   }
   try {
     // {
@@ -445,13 +469,14 @@ router.post('/webhook/refund', (req, res) => {
     //   event_time: '2022-02-23T15:28:36+05:30'
     // }
 
-
-    return res.status(200).json({ message: "thanks cashfree for notify us" })
+    return res.status(200).json({ message: "thanks cashfree for notify us" });
   } catch (error) {
     console.log(error);
-    return handelServerError(res, { message: "Error encountered while trying to update user." });
+    return handelServerError(res, {
+      message: "Error encountered while trying to update user.",
+    });
   }
-})
+});
 
 /**
  * middleware to check if customer has access to perform following actions
@@ -559,7 +584,9 @@ router.patch(
       }
       if (req?.body?.Password && req?.body?.Password === "") {
         if (!isStrong(req?.body?.Password)) {
-          return handelValidationError(res, { message: "password is not strong enough." });
+          return handelValidationError(res, {
+            message: "password is not strong enough.",
+          });
         }
         update.Password = hashpassword(req?.body?.Password);
       }
@@ -572,9 +599,13 @@ router.patch(
         update,
         { new: true }
       );
-      return handelValidationError(res, { message: "user updated successfully." });
+      return handelValidationError(res, {
+        message: "user updated successfully.",
+      });
     } catch (error) {
-      return handelServerError(res, { message: "Error encountered while trying to update user." });
+      return handelServerError(res, {
+        message: "Error encountered while trying to update user.",
+      });
     }
   }
 );
@@ -691,7 +722,9 @@ router.get("/", async (req, res) => {
 router.post("/address", async (req, res) => {
   try {
     if (!req?.body?.address || Object.keys(req?.body?.address).length === 0) {
-      return handelValidationError(res, { message: "address field not found." });
+      return handelValidationError(res, {
+        message: "address field not found.",
+      });
     }
     await Customer.findByIdAndUpdate(
       req.Customer._id,
@@ -767,7 +800,7 @@ router.post("/address", async (req, res) => {
 router.patch("/updateprofile", async (req, res) => {
   const cid = req.Customer._id;
   if (req.body.phone) {
-    return handelValidationError(res, { message: "phone not allowed" })
+    return handelValidationError(res, { message: "phone not allowed" });
   }
 
   let updateQuery = req.body;
@@ -959,7 +992,7 @@ router.post(
     try {
       let resp = { message: "Orders created successfully." };
       if (PaymentMode === "cod") {
-        const newOrder = new Order({
+        const newOrder = await Order.create({
           Customer: req.Customer._id,
           OrderId,
           OrderType,
@@ -972,11 +1005,11 @@ router.post(
           address,
           PickUpRequired,
         });
-        resp.order = await newOrder.save();
+        resp.order = newOrder;
         // deduct commission from partner
       } else if (PaymentMode === "online") {
         // initiate payments process
-        const newOrder = new Order({
+        const newOrder = await Order.create({
           Customer: req.Customer._id,
           OrderId,
           OrderType,
@@ -989,7 +1022,7 @@ router.post(
           PickUpRequired,
         });
 
-        resp.order = await newOrder.save();
+        resp.order = newOrder;
         const customer = await Customer.findById(req.Customer._id);
 
         let cashfree = await Payment.createCustomerOrder({
@@ -1004,10 +1037,12 @@ router.post(
       }
 
       // send notifications to all partners
-      return handelSuccess(res, { data: resp });
+      return handelSuccess(res, resp);
     } catch (error) {
       // console.log(error.message);
-      return handelServerError(res, { message: error?.message || "Error encountered" });
+      return handelServerError(res, {
+        message: error?.message || "Error encountered",
+      });
     }
   }
 );
@@ -1061,7 +1096,9 @@ router.post("/verifyOrderStatus", async (req, res) => {
     const resp = await Payment.verifyCustomerOrder(req.body.order_id);
     return handelSuccess(res, { data: resp });
   } catch (error) {
-    return handelServerError(res, { message: error?.message || "Error encountered" });
+    return handelServerError(res, {
+      message: error?.message || "Error encountered",
+    });
   }
 });
 
@@ -1112,14 +1149,20 @@ router.post("/cancel", async (req, res) => {
   const orderStatusTypes = ["Initial", "Requested", "Accepted"];
 
   try {
-    const isOrdrrBelongs = await Order.findOne({ _id: id, Customer }).populate("TxnId");
+    const isOrdrrBelongs = await Order.findOne({ _id: id, Customer }).populate(
+      "TxnId"
+    );
 
     if (!isOrdrrBelongs) {
-      return handelValidationError(res, { message: "This order not belongs to you" })
+      return handelValidationError(res, {
+        message: "This order not belongs to you",
+      });
     }
 
     if (!orderStatusTypes.includes(isOrdrrBelongs.Status)) {
-      return handelValidationError(res, { message: "This order can't be Cancelled" })
+      return handelValidationError(res, {
+        message: "This order can't be Cancelled",
+      });
     }
 
     //  all cod order cancel
@@ -1133,24 +1176,33 @@ router.post("/cancel", async (req, res) => {
     }
 
     // online initial order cancel
-    if (isOrdrrBelongs.PaymentMode === "online" && isOrdrrBelongs.Status === orderStatusTypesObj.Initial && isOrdrrBelongs.TxnId.length === 0) {
+    if (
+      isOrdrrBelongs.PaymentMode === "online" &&
+      isOrdrrBelongs.Status === orderStatusTypesObj.Initial &&
+      isOrdrrBelongs.TxnId.length === 0
+    ) {
       await Order.findByIdAndUpdate(
         isOrdrrBelongs._id,
         { Status: orderStatusTypesObj.Cancelled },
         { new: true }
       );
-      return handelSuccess(res, { message: "initial Orders Cancelled successfully" });
+      return handelSuccess(res, {
+        message: "initial Orders Cancelled successfully",
+      });
     }
-
 
     // all online payment order Accepted cases
 
     if (isOrdrrBelongs.TxnId.length === 0) {
-      return handelValidationError(res, { message: "no transaction found for this order" })
+      return handelValidationError(res, {
+        message: "no transaction found for this order",
+      });
     }
 
     if (isOrdrrBelongs.TxnId.length > 1) {
-      return handelValidationError(res, { message: "more then 1 transsaction found for this can't cancel" })
+      return handelValidationError(res, {
+        message: "more then 1 transsaction found for this can't cancel",
+      });
     }
 
     const transData = isOrdrrBelongs.TxnId[0];
@@ -1158,10 +1210,16 @@ router.post("/cancel", async (req, res) => {
 
     // if in requested state refund all payments
     if (isOrdrrBelongs.Status === orderStatusTypesObj.Requested) {
-      await Payment.initiateRefundPayments(transData.cashfreeOrderId, transData.order_amount, { orderId: id });
+      await Payment.initiateRefundPayments(
+        transData.cashfreeOrderId,
+        transData.order_amount,
+        { orderId: id }
+      );
     }
 
-    let acceptTimeStamp = isOrdrrBelongs.statusLogs.filter((ele) => ele.status === orderStatusTypesObj.Accepted)
+    let acceptTimeStamp = isOrdrrBelongs.statusLogs.filter(
+      (ele) => ele.status === orderStatusTypesObj.Accepted
+    );
     acceptTimeStamp = acceptTimeStamp[0];
     // console.log(acceptTimeStamp);
 
@@ -1170,24 +1228,40 @@ router.post("/cancel", async (req, res) => {
 
     currentDate.setHours(currentDate.getHours() + 2);
 
-    if (isOrdrrBelongs.Status === orderStatusTypesObj.Accepted && dbDate.getTime() < currentDate.getTime()) {
+    if (
+      isOrdrrBelongs.Status === orderStatusTypesObj.Accepted &&
+      dbDate.getTime() < currentDate.getTime()
+    ) {
       // if in the accepted state but less then 2h refund all amount
       // console.log('all amt');
-      await Payment.initiateRefundPayments(transData.cashfreeOrderId, transData.order_amount, { orderId: id });
-    }
-    else if (isOrdrrBelongs.Status === orderStatusTypesObj.Accepted && dbDate.getTime() > currentDate.getTime()) {
+      await Payment.initiateRefundPayments(
+        transData.cashfreeOrderId,
+        transData.order_amount,
+        { orderId: id }
+      );
+    } else if (
+      isOrdrrBelongs.Status === orderStatusTypesObj.Accepted &&
+      dbDate.getTime() > currentDate.getTime()
+    ) {
       // if more the 2hr deduct some amount
       // console.log('less');
-      await Payment.initiateRefundPayments(transData.cashfreeOrderId, (transData.order_amount - process.env.REFUND_AMOUNT), { orderId: id });
+      await Payment.initiateRefundPayments(
+        transData.cashfreeOrderId,
+        transData.order_amount - process.env.REFUND_AMOUNT,
+        { orderId: id }
+      );
     } else {
       return handelValidationError(res, { message: "unable too cancel order" });
     }
 
-    return handelSuccess(res, { message: "Orders Cancelled successfully refund iniitiated" });
-
+    return handelSuccess(res, {
+      message: "Orders Cancelled successfully refund iniitiated",
+    });
   } catch (error) {
     console.log(error);
-    return handelServerError(res, { message: error.message || "Error encountered" });
+    return handelServerError(res, {
+      message: error.message || "Error encountered",
+    });
   }
 });
 
@@ -1241,7 +1315,8 @@ router.get("/myorders/:status", async (req, res) => {
       .populate("Customer", "Name")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
-      .populate("OrderDetails.Items.ModelId");
+      .populate("OrderDetails.Items.ModelId")
+      .sort({ createdAt: -1 });
 
     return handelSuccess(res, { data: orders });
   } catch (error) {
@@ -1262,7 +1337,7 @@ router.get("/myorders/:status", async (req, res) => {
  *        required: true
  *        schema:
  *           type: string
- *    
+ *
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -1279,12 +1354,11 @@ router.get("/myorders/:status", async (req, res) => {
  *    - bearerAuth: []
  */
 
-
 router.get("/order", async (req, res) => {
   try {
     let {
       query: { orderId },
-      Customer: { _id }
+      Customer: { _id },
     } = req;
 
     // const foundUser = await Customer.findById({_id})
@@ -1300,8 +1374,7 @@ router.get("/order", async (req, res) => {
       handelNoteFoundError(res, { message: "No orders found" });
     }
     return handelSuccess(res, { data: foundOrder, message: "Orders found" });
-  }
-  catch (err) {
+  } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
 })
