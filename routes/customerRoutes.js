@@ -1371,7 +1371,7 @@ router.get("/order", async (req, res) => {
       .populate("OrderDetails.Items.ModelId");
 
     if (!foundOrder) {
-      handelNoteFoundError(res, { message: "No orders found" });
+      return handelNoteFoundError(res, { message: "No orders found" });
     }
     return handelSuccess(res, { data: foundOrder, message: "Orders found" });
   } catch (err) {
