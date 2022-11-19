@@ -2,6 +2,6 @@ FROM node:14-alpine
 WORKDIR /app
 COPY package.json .
 RUN npm install
-COPY .env.sample .env
 COPY . .
-CMD ["node","app.js"]
+COPY .env.sample .env
+CMD ["npm","start"]
