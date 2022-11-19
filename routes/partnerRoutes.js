@@ -1502,7 +1502,15 @@ router.post("/order/changestatus", async (req, res) => {
         buttonName: emailDatamapping["pickUp"].buttonName,
         email: order.Customer.email || null,
       };
-    } else if (status === "delivered") {
+    }
+    else if (status === "completed") {
+      // generate invoice id
+      query['invoiceId'] = uuidv4();
+
+      // create payout here
+      await payout.createPayoutOnDb({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode });
+    }
+    else if (status === "delivered") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
         heading1: emailDatamapping["orderComplete"].heading1,
@@ -1511,12 +1519,6 @@ router.post("/order/changestatus", async (req, res) => {
         buttonName: emailDatamapping["orderComplete"].buttonName,
         email: order.Customer.email || null,
       };
-
-      // generate invoice id
-      query['invoiceId'] = uuidv4();
-
-      // create payout here
-
     }
 
     if (emailData && emailData.email) {
@@ -1536,7 +1538,7 @@ router.post("/order/changestatus", async (req, res) => {
       .json({ message: "order status chnages successfully" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
+    return res.status(500).json({ message: error.message || "Error encountered." });
   }
 });
 
@@ -2450,34 +2452,10 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
 
 
 
-router.post("/payout", rejectBadRequests, async (req, res) => {
-  const { OrderId, Items } = req.body;
-  console.log(Items);
-  const partnerId = req.partner._id;
-
-  if (!OrderId || Items.length === 0) {
-    return res
-      .status(400)
-      .json({ message: "please provide OrderId and Items." });
-  }
-
-  let Amount = 0;
-  let grandTotal = 0;
-
-  Items.map((element) => (Amount += element?.Cost));
-  grandTotal = Amount;
-
-  try {
-    
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
-
-(async ()=>{
+(async () => {
   // const {data} = await  payout.initiateCashfreePayout("JOHN18011343",2,"ifjifdddhjuifjfu","remark");
-  // console.log(data);
-})()
+  // const resp = await payout.createPayoutOnDb({partnerId:"63737f86aef6566d1ad854ec",orderId:"63737f86aef6566d1ad854ec",totalAmount:100,paymentMode:"COD"});
+  // console.log(resp);
+})
 
 module.exports = router;

@@ -3,6 +3,8 @@ const axios = require("axios").default;
 const partnerBankDetailsModel = require('../../models/partnerbankDetails');
 const payoutModel = require('../../models/payouts.model');
 const orderModel = require('../../models/Order');
+const partnerModel = require('../../models/Partner');
+
 const { payoutStatusTypesObject } = require('../../enums/types');
 
 let casrfreeUrlLinks =
@@ -122,7 +124,7 @@ class Payouts {
         return axios.request(options)
     }
 
-    async createNewPayoutCreation(partnerId, orderId, data) {
+    async processPayout(partnerId, orderId, data) {
         let partnerAccountDetails = orderDetails = null;
         try {
             partnerAccountDetails = await partnerBankDetailsModel({ partnerId: partnerId });
@@ -157,6 +159,55 @@ class Payouts {
         } catch (error) {
             throw new Error(error.message || "something went wrong");
         }
+    }
+
+    async isPartnerGstExists(partnerId) {
+        try {
+            const partner = await partnerModel.findById(partnerId);
+            if (partner['gstCertificateNo']) {
+                return true;
+            }
+            return false;
+        } catch (error) {
+
+        }
+    }
+
+    async createPayoutOnDb(data) {
+        const { orderId, totalAmount } = data;
+        let totalDeduction = 0;
+        let deduction = [];
+
+        // ----- ducuction cases -----
+
+        // per category commission
+
+
+        // gst deduction
+        if (!this.isPartnerGstExists(data.partnerId)) {
+            let amt = (totalAmount * (18 / 100));
+            totalDeduction += amt;
+            deduction.push({ title: "Gst tax deduction", value: amt, desc: "Tax deduction" })
+        }
+
+        const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 10)}`;
+
+        let payableAmount = (totalAmount - totalDeduction);
+
+        try {
+            const isExist = await payoutModel.findOne({ orderId });
+            if (isExist) {
+                throw new Error("allready initialized or completed");
+            }
+            const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction });
+            return newwithDraw.save();
+        } catch (error) {
+            throw new Error(error.message || "something went wrong");
+        }
+    }
+
+    async myWithdrawals(partnerId) {
+        return payoutModel.find({ partnerId });
     }
 
 }

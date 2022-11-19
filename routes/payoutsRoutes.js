@@ -127,5 +127,82 @@ router.post("/create-update-bankdetails", checkPartner, async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /payouts/mywithdrawal:
+ *  get:
+ *    summary:partners to create and update a bank details:
+ *    tags:
+ *    - payouts Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/mywithdrawal", checkPartner, async (req, res) => {
+    const partnerId = req.partner._id;
+    try {
+        const mypayouts = await Payouts.myWithdrawals(partnerId);
+        return res.status(200).json({ message: "my payouts", mypayouts });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Error encountered." });
+    }
+});
+
+
+/**
+ * @openapi
+ * /payouts/mybankdetails:
+ *  get:
+ *    summary:partners to create and update a bank details:
+ *    tags:
+ *    - payouts Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/mybankdetails", checkPartner, async (req, res) => {
+    const partnerId = req.partner._id;
+    try {
+        const details = await partnerBankDetailsModel.findOne({ partnerId: partnerId });
+        return res.status(200).json({ message: "my payouts", details });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Error encountered." });
+    }
+});
+
+router.get("/initiatewithdrawal", checkPartner, async (req, res) => {
+    const partnerId = req.partner._id;
+    try {
+        const mypayouts = await Payouts.myWithdrawals(partnerId);
+        return res.status(200).json({ message: "my payouts", mypayouts });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Error encountered." });
+    }
+});
 
 module.exports = router;

@@ -1,8 +1,9 @@
 const mongoose = require("mongoose");
+const { payoutStatusTypes, payoutStatusTypesObject } = require('../enums/types');
 
 const payoutsSchema = mongoose.Schema({
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true },
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true,unique: true },
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, unique: true },
     transferId: {
         type: String,
         required: true,
@@ -15,13 +16,23 @@ const payoutsSchema = mongoose.Schema({
     totalDeduction: {
         type: Number
     },
-    deduction: [],
+    deduction: [
+        {
+            title: String,
+            value: Number,
+            desc: String
+        }
+    ],
     payableAmount: {
         type: Number
     },
-    isCounted: {
-        type: Boolean,
-        default: false
+    paymentMode: {
+        type: String
+    },
+    status: {
+        type: String,
+        enum: payoutStatusTypes,
+        default: payoutStatusTypesObject.WITHDRAW
     },
     isPaid: {
         type: Boolean,
