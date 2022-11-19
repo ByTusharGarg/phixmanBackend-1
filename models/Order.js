@@ -59,7 +59,6 @@ const Order = mongoose.model(
     refundId: { type: Schema.Types.ObjectId, ref: "refund", default: null },
     PickUpRequired: { type: Boolean },
     payoutId: { type: Schema.Types.ObjectId, ref: "payouts" },
-    payoutStatus: { type: String, default: null, enum: payoutStatusTypes },
     timeSlot: {
       day: { type: String, default: "" },
       time: { type: String, default: "" },

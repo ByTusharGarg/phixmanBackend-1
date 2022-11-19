@@ -35,20 +35,20 @@ const orderStatusTypesObj = {
 
 const payoutStatusTypes = [
   null,
-  "WITHDRAWAL",
-  "INITIATED",
+  "WITHDRAW",
   "INPROGRESS",
   "SUCCESS",
   "FAILED",
+  "NOT_ALLOWED"
 ];
 
 
 const payoutStatusTypesObject = {
-  WITHDRAWAL:"WITHDRAWAL",
-  INITIATED:"INITIATED",
-  INPROGRESS:"INPROGRESS",
-  SUCCESS:"SUCCESS",
-  FAILED:"FAILED"
+  WITHDRAW: "WITHDRAW",
+  INPROGRESS: "INPROGRESS",
+  SUCCESS: "SUCCESS",
+  FAILED: "FAILED",
+  NOT_ALLOWED:"NOT_ALLOWED"
 }
 
 const serviceTypes = [];
