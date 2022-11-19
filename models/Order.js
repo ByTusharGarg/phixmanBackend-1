@@ -4,6 +4,7 @@ const {
   orderTypes,
   paymentModeTypes,
   paymentStatus,
+  payoutStatusTypes,
 } = require("../enums/types");
 const Schema = mongoose.Schema;
 
@@ -51,12 +52,14 @@ const Order = mongoose.model(
     statusLogs: [
       {
         status: { type: String, enum: orderStatusTypes },
-        timestampLog: { type: Date}
+        timestampLog: { type: Date }
       }
     ],
     refundStatus: { type: String, default: null },
     refundId: { type: Schema.Types.ObjectId, ref: "refund", default: null },
     PickUpRequired: { type: Boolean },
+    payoutId: { type: Schema.Types.ObjectId, ref: "payouts" },
+    payoutStatus: { type: String, default: null, enum: payoutStatusTypes },
     timeSlot: {
       day: { type: String, default: "" },
       time: { type: String, default: "" },

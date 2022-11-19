@@ -1,16 +1,33 @@
 const mongoose = require("mongoose");
-const { payoutPaymentStatus } = require('../enums/types');
 
 const payoutsSchema = mongoose.Schema({
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, unique: true },
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true },
-    amount: {
-        type: String
-    },
-    payoutStatus: {
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true,unique: true },
+    transferId: {
         type: String,
-        enum: payoutPaymentStatus
+        required: true,
+        unique: true
     },
+    totalAmount: {
+        type: Number,
+        required: true
+    },
+    totalDeduction: {
+        type: Number
+    },
+    deduction: [],
+    payableAmount: {
+        type: Number
+    },
+    isCounted: {
+        type: Boolean,
+        default: false
+    },
+    isPaid: {
+        type: Boolean,
+        default: false
+    },
+    metaData: Object
 }, { timestamps: true });
 
 const payoutsModels = mongoose.model("payouts", payoutsSchema);

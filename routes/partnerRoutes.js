@@ -7,6 +7,8 @@ const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypesObj } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
+const { v4: uuidv4 } = require('uuid');
+const payout = require('../libs/payments/payouts.js');
 
 const {
   base64_encode,
@@ -1443,6 +1445,7 @@ router.post("/order/changestatus", async (req, res) => {
   let { status, orderId } = req.body;
   const partnerId = req.partner._id;
   let emailData = null;
+  const query = {};
 
   if (!status || !orderId) {
     return res
@@ -1479,6 +1482,8 @@ router.post("/order/changestatus", async (req, res) => {
       return res.status(200).json({ message: "This is your current status" });
     }
 
+    query['Status'] = status;
+
     if (status === "InRepair") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
@@ -1506,6 +1511,12 @@ router.post("/order/changestatus", async (req, res) => {
         buttonName: emailDatamapping["orderComplete"].buttonName,
         email: order.Customer.email || null,
       };
+
+      // generate invoice id
+      query['invoiceId'] = uuidv4();
+
+      // create payout here
+
     }
 
     if (emailData && emailData.email) {
@@ -1515,7 +1526,7 @@ router.post("/order/changestatus", async (req, res) => {
     await Order.findOneAndUpdate(
       { OrderId: orderId },
       {
-        Status: status,
+        ...query,
         $push: { statusLogs: { status: status, timestampLog: new Date() } },
       },
       { new: true }
@@ -2436,5 +2447,37 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+
+
+router.post("/payout", rejectBadRequests, async (req, res) => {
+  const { OrderId, Items } = req.body;
+  console.log(Items);
+  const partnerId = req.partner._id;
+
+  if (!OrderId || Items.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "please provide OrderId and Items." });
+  }
+
+  let Amount = 0;
+  let grandTotal = 0;
+
+  Items.map((element) => (Amount += element?.Cost));
+  grandTotal = Amount;
+
+  try {
+    
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+(async ()=>{
+  // const {data} = await  payout.initiateCashfreePayout("JOHN18011343",2,"ifjifdddhjuifjfu","remark");
+  // console.log(data);
+})()
 
 module.exports = router;
