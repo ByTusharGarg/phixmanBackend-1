@@ -322,9 +322,9 @@ router.post("/createsubadmin", AdminAuth.createSubAdmin)
 router.get("/alladmin", async (req, res) => {
   try {
     const foundAdmin = await Admin.find().lean()
-    if(foundAdmin.length === 0) return res.status(400).json({message: "No Admin found"})
+    if (foundAdmin.length === 0) return res.status(400).json({ message: "No Admin found" })
 
-    return res.status(200).json({message: "Admins found", data: foundAdmin})
+    return res.status(200).json({ message: "Admins found", data: foundAdmin })
   } catch (error) {
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
@@ -3892,7 +3892,7 @@ router.get("/penalties/all", async (req, res) => {
  *    - Admin Routes
  *    parameters:
  *      - in: query
- *        name: orderStatus
+ *        name: paymentStatus
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -3905,14 +3905,16 @@ router.get("/penalties/all", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 router.get("/ordertransaction", async (req, res) => {
   try {
     let query = {};
-    const { orderStatus = '' } = req.query
+    const { paymentStatus = '' } = req.query
 
-    if (orderStatus != '') {
-      query = { ...query, order_status: orderStatus }
+    if (paymentStatus != '') {
+      query = { ...query, payment_status: paymentStatus }
     }
     const ordersTranssactions = await orderTransaction.find(query).sort({ 'orderId': -1 });
 
@@ -3920,7 +3922,7 @@ router.get("/ordertransaction", async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({
-      message: "Error encountered while trying to fetch penality.",
+      message: "Error encountered while trying to order transaction.",
     });
   }
 });
