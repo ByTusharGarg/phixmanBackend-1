@@ -11,15 +11,16 @@ const ClaimRequest = mongoose.model(
       enum: claimTypesList,
       required: true,
     },
-    orderId: { type: Schema.Types.ObjectId, ref: "Order", required: true },
+    orderId: { type: Schema.Types.ObjectId, ref: "Order" },
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true,
     },
     title: { required: true, type: String },
     description: { required: true, type: String },
     images: [String],
     voiceNote: String,
+
   })
-);
+)
+module.exports = ClaimRequest;
