@@ -885,7 +885,7 @@ router.get("/address", async (req, res) => {
  *                    day:
  *                      type: string
  *                    time:
- *                      type: string
+ *                      type: object
  *                Items:
  *                  type: array
  *                  items:
