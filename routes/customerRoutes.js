@@ -10,10 +10,10 @@ const {
   Counters,
   CustomerWallet,
   category,
-  Coupon
+  Coupon,
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
-const moment = require('moment');
+const moment = require("moment");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
@@ -981,7 +981,8 @@ router.post(
   verifyOrderValidator,
   rejectBadRequests,
   async (req, res) => {
-    const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
+    const { OrderType, Items, PaymentMode, address, PickUpRequired, timeSlot } =
+      req.body;
     const OrderId = commonFunction.genrateID("ORD");
     let Amount = 0;
     let grandTotal = 0;
@@ -996,14 +997,14 @@ router.post(
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypesObj["Requested"],
+          Status: orderStatusTypesObj.Requested,
           PendingAmount: Amount,
-          paidamount: Amount,
           PaymentStatus: paymentStatus[1],
-          OrderDetails: { Amount, Items },
+          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
           PaymentMode,
           address,
           PickUpRequired,
+          timeSlot,
         });
         resp.order = newOrder;
         // deduct commission from partner
@@ -1020,6 +1021,7 @@ router.post(
           PaymentMode,
           address,
           PickUpRequired,
+          timeSlot,
         });
 
         resp.order = newOrder;
@@ -1377,7 +1379,7 @@ router.get("/order", async (req, res) => {
   } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
-})
+});
 
 /**
  * @openapi
@@ -1421,27 +1423,28 @@ router.get("/order", async (req, res) => {
  *     - bearerAuth: []
  */
 
-router.get("/active-offers",async(req,res)=>{
-  try{
-    const today = moment().format('YYYY-MM-DD');
-    const currentTime = moment().format('hh:mm A');
-    console.log("Today : ",currentTime)
-    let foundActiveOffer = await Coupon.find({startDate:{$lte:today},endDate:{$gte:today},isActive:true,startTime:{$lte:currentTime},endTime:{$gte:currentTime}}).lean();
+router.get("/active-offers", async (req, res) => {
+  try {
+    const today = moment().format("YYYY-MM-DD");
+    const currentTime = moment().format("hh:mm A");
+    console.log("Today : ", currentTime);
+    let foundActiveOffer = await Coupon.find({
+      startDate: { $lte: today },
+      endDate: { $gte: today },
+      isActive: true,
+      startTime: { $lte: currentTime },
+      endTime: { $gte: currentTime },
+    }).lean();
 
-    if(foundActiveOffer.length===0) return res.status(400).json({ message: 'No active offers found' })
-    
-    return res.status(200).json({message:"active offers found",data:foundActiveOffer})
-  }catch(err){
+    if (foundActiveOffer.length === 0)
+      return res.status(400).json({ message: "No active offers found" });
+
+    return res
+      .status(200)
+      .json({ message: "active offers found", data: foundActiveOffer });
+  } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
-})
-
-
-
-
-
-
-
-
+});
 
 module.exports = router;

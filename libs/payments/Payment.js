@@ -1,7 +1,5 @@
 // const sdk = require("api")("@cashfreedocs-new/v2#1224ti1hl4o0uyhs");
 const sdk = require('api')('@cashfreedocs-new/v2#5qon17l8k4gqrl');
-
-
 const orderTransactionModel = require("../../models/Ordertransaction");
 const refundModel = require("../../models/refund.model");
 
@@ -67,9 +65,7 @@ class Payment {
         cashfreeOrderId: data.OrderId,
       });
       await newTransaction.save();
-
-
-      // this is move down to 
+      // this is move down to
       // await ordersModel.findOneAndUpdate(
       //   { OrderId: existingOrderId },
       //   { $push: { TxnId: newTransaction._id } },
@@ -100,15 +96,21 @@ class Payment {
       });
 
       if (payment.data.length > 0) {
-        let isExist = await orderTransactionModel.findOneAndUpdate({ cashfreeOrderId: order_id });
-
-        let transaction = await orderTransactionModel.findOneAndUpdate(
-          { cashfreeOrderId: order_id },
-          { order_status: payment.data[0].payment_status, payment_group: payment.data[0].payment_group, payment_method: payment.data[0].payment_method, paymentverified: true },
-          { new: true }
-        );
+        let isExist = await orderTransactionModel.findOne({
+          cashfreeOrderId: order_id,
+        });
 
         if (isExist?.paymentverified === false) {
+          let transaction = await orderTransactionModel.findOneAndUpdate(
+            { cashfreeOrderId: order_id },
+            {
+              order_status: payment.data[0].payment_status,
+              payment_group: payment.data[0].payment_group,
+              payment_method: payment.data[0].payment_method,
+              paymentverified: true,
+            },
+            { new: true }
+          );
           await this.updateOrderPaymentStatus(order_id, transaction._id);
         }
         return transaction;
@@ -282,7 +284,7 @@ class Payment {
           { OrderId: orderId },
           {
             PaymentStatus: paymentStatus[0],
-            Status: orderStatusTypesObj['Requested'],
+            Status: orderStatusTypesObj.Requested,
             PendingAmount: leftAmount,
             $push: { TxnId: transactionId },
             $inc: { paidamount: txnData.order_amount },
@@ -293,7 +295,7 @@ class Payment {
           { OrderId: orderId },
           {
             PaymentStatus: paymentStatus[2],
-            Status: orderStatusTypesObj['Requested'],
+            Status: orderStatusTypesObj.Requested,
             PendingAmount: leftAmount,
             $inc: { paidamount: txnData.order_amount }
           }
