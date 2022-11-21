@@ -26,6 +26,7 @@ const {
   getAllWallletTranssactionForUser,
   getCustomerWallet,
 } = require("../services/Wallet");
+//const commonFunction = require("../utils/commonFunction");
 const { checkAdmin } = require("../middleware/AuthAdmin");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -3418,10 +3419,9 @@ router.get("/wallet/customer", checkAdmin, async (req, res) => {
  *          schema:
  *              type: object
  *              properties:
- *                promoCode:
- *                  type: string
  *                promoType:
  *                  type: string
+ *                  enum: ["flat", "upto"]
  *                title:
  *                  type: string
  *                description:
@@ -3457,7 +3457,6 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
   try {
     const {
       body: {
-        promoCode,
         promoType,
         title,
         description,
@@ -3471,6 +3470,9 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
         endDate,
       },
     } = req;
+
+    const promoCode = commonFunction.generateRandomString(promoType,16)
+    console.log(promoCode);
     const offerObj = {
       promoCode,
       promoType,

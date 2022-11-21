@@ -1,3 +1,5 @@
+var randString = require('rand-token').uid
+
 class common {
     genrateID = (initials = "ORD") => {
         var time = new Date().getTime();
@@ -5,7 +7,12 @@ class common {
         return id;
     }
 
-}
+    generateRandomString = (initials = "PHIXMAN", size = 16) =>{
+        var token = randString(size);
+        let id = `${initials}${token}`
+        return id
+    }
 
+}
 
 module.exports = new common();
