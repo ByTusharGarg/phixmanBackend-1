@@ -1009,7 +1009,19 @@ router.post(
         resp.order = newOrder;
         // deduct commission from partner
       } else if (PaymentMode === "online") {
-        // initiate payments process
+        // initiate payments process        
+
+        resp.order = newOrder;
+        const customer = await Customer.findById(req.Customer._id);
+
+        let cashfree = await Payment.createCustomerOrder({
+          // ourorder_id: newOrder._id,
+          customerid: customer._id,
+          email: customer.email,
+          phone: customer.phone,
+          OrderId,
+          Amount,
+        });
         const newOrder = await Order.create({
           Customer: req.Customer._id,
           OrderId,
@@ -1022,18 +1034,6 @@ router.post(
           address,
           PickUpRequired,
           timeSlot,
-        });
-
-        resp.order = newOrder;
-        const customer = await Customer.findById(req.Customer._id);
-
-        let cashfree = await Payment.createCustomerOrder({
-          ourorder_id: newOrder._id,
-          customerid: customer._id,
-          email: customer.email,
-          phone: customer.phone,
-          OrderId,
-          Amount,
         });
         resp.cashfree = cashfree;
       }

@@ -62,7 +62,7 @@ class Payment {
 
       const newTransaction = await this.createTranssaction({
         ...resp,
-        ourorder_id: data.ourorder_id,
+        // ourorder_id: data.ourorder_id,
         order_id: existingOrderId,
         cashfreeOrderId: data.OrderId,
       });
