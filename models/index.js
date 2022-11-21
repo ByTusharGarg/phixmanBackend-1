@@ -34,6 +34,8 @@ const SubCategory = require("./SubCategory");
 const WalletTransaction = require("./WalletTransaction");
 const orderTransaction = require("./Ordertransaction");
 
+const ClaimRequest = require("./ClaimRequest")
+
 
 const Zone = require("./Zone");
 
@@ -64,4 +66,5 @@ module.exports = {
   WalletTransaction,
   Zone,
   orderTransaction,
+  ClaimRequest
 };
