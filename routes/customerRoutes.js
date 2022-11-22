@@ -10,7 +10,8 @@ const {
   Counters,
   CustomerWallet,
   category,
-  Coupon
+  Coupon,
+  refundModel
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
 const moment = require('moment');
@@ -429,7 +430,7 @@ router.get("/timeslots", async (req, res) => {
 });
 
 // refund webhook
-router.post("/webhook/refund", (req, res) => {
+router.post("/webhook/refund", async (req, res) => {
   console.log(req.body);
   const {
     type,
@@ -438,7 +439,7 @@ router.post("/webhook/refund", (req, res) => {
     },
   } = req.body;
 
-  if (type !== "REFUND_WEBHOOK") {
+  if (type !== "REFUND_STATUS_WEBHOOK") {
     return res.status(400).json({ message: "not as cashfree request" });
   }
   try {
@@ -468,8 +469,12 @@ router.post("/webhook/refund", (req, res) => {
     //   type: 'REFUND_WEBHOOK',
     //   event_time: '2022-02-23T15:28:36+05:30'
     // }
-
-    return res.status(200).json({ message: "thanks cashfree for notify us" });
+    const resp = await refundModel.findOneAndUpdate({ refundId: refund_id, "caashfreeData.refund_amount": refund_amount }, req.body.data.refund, { new: true });
+    if (resp) {
+      return res.status(200).json({ message: "thanks cashfree for notify us" });
+    } else {
+      return res.status(400).json({ message: "nnot found" });
+    }
   } catch (error) {
     console.log(error);
     return handelServerError(res, {
@@ -1421,17 +1426,17 @@ router.get("/order", async (req, res) => {
  *     - bearerAuth: []
  */
 
-router.get("/active-offers",async(req,res)=>{
-  try{
+router.get("/active-offers", async (req, res) => {
+  try {
     const today = moment().format('YYYY-MM-DD');
     const currentTime = moment().format('hh:mm A');
-    console.log("Today : ",currentTime)
-    let foundActiveOffer = await Coupon.find({startDate:{$lte:today},endDate:{$gte:today},isActive:true,startTime:{$lte:currentTime},endTime:{$gte:currentTime}}).lean();
+    console.log("Today : ", currentTime)
+    let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
 
-    if(foundActiveOffer.length===0) return res.status(400).json({ message: 'No active offers found' })
-    
-    return res.status(200).json({message:"active offers found",data:foundActiveOffer})
-  }catch(err){
+    if (foundActiveOffer.length === 0) return res.status(400).json({ message: 'No active offers found' })
+
+    return res.status(200).json({ message: "active offers found", data: foundActiveOffer })
+  } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
 })

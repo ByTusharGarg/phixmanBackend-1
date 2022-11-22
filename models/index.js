@@ -33,7 +33,7 @@ const SubCategory = require("./SubCategory");
 
 const WalletTransaction = require("./WalletTransaction");
 const orderTransaction = require("./Ordertransaction");
-
+const refundModel = require("./refund.model");
 
 const Zone = require("./Zone");
 
@@ -64,4 +64,5 @@ module.exports = {
   WalletTransaction,
   Zone,
   orderTransaction,
+  refundModel,
 };
