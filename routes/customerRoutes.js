@@ -1466,7 +1466,9 @@ router.get("/active-offers", async (req, res) => {
  *              type: string
  *              required: true
  *            images:
- *              type: file
+ *              type: array
+ *              items:
+ *                type: file
  *            audio:
  *              type: file
  *    responses:
