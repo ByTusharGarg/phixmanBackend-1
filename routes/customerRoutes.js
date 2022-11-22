@@ -11,10 +11,10 @@ const {
   CustomerWallet,
   category,
   Coupon,
-  refundModel
+  refundModel,
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
-const moment = require('moment');
+const moment = require("moment");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
@@ -890,7 +890,7 @@ router.get("/address", async (req, res) => {
  *                    day:
  *                      type: string
  *                    time:
- *                      type: string
+ *                      type: object
  *                Items:
  *                  type: array
  *                  items:
@@ -986,7 +986,8 @@ router.post(
   verifyOrderValidator,
   rejectBadRequests,
   async (req, res) => {
-    const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
+    const { OrderType, Items, PaymentMode, address, PickUpRequired, timeSlot } =
+      req.body;
     const OrderId = commonFunction.genrateID("ORD");
     let Amount = 0;
     let grandTotal = 0;
@@ -1001,19 +1002,28 @@ router.post(
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypesObj["Requested"],
+          Status: orderStatusTypesObj.Requested,
           PendingAmount: Amount,
-          paidamount: Amount,
           PaymentStatus: paymentStatus[1],
-          OrderDetails: { Amount, Items },
+          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
           PaymentMode,
           address,
           PickUpRequired,
+          timeSlot,
         });
         resp.order = newOrder;
         // deduct commission from partner
       } else if (PaymentMode === "online") {
-        // initiate payments process
+        const customer = await Customer.findById(req.Customer._id);
+        // initiate payments process   
+        let cashfree = await Payment.createCustomerOrder({
+          // ourorder_id: newOrder._id,
+          customerid: customer._id,
+          email: customer.email,
+          phone: customer.phone,
+          OrderId,
+          Amount,
+        });
         const newOrder = await Order.create({
           Customer: req.Customer._id,
           OrderId,
@@ -1025,19 +1035,9 @@ router.post(
           PaymentMode,
           address,
           PickUpRequired,
+          timeSlot,
         });
-
         resp.order = newOrder;
-        const customer = await Customer.findById(req.Customer._id);
-
-        let cashfree = await Payment.createCustomerOrder({
-          ourorder_id: newOrder._id,
-          customerid: customer._id,
-          email: customer.email,
-          phone: customer.phone,
-          OrderId,
-          Amount,
-        });
         resp.cashfree = cashfree;
       }
 
@@ -1376,13 +1376,13 @@ router.get("/order", async (req, res) => {
       .populate("OrderDetails.Items.ModelId");
 
     if (!foundOrder) {
-      handelNoteFoundError(res, { message: "No orders found" });
+      return handelNoteFoundError(res, { message: "No orders found" });
     }
     return handelSuccess(res, { data: foundOrder, message: "Orders found" });
   } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
-})
+});
 
 /**
  * @openapi
@@ -1426,27 +1426,19 @@ router.get("/order", async (req, res) => {
  *     - bearerAuth: []
  */
 
-router.get("/active-offers", async (req, res) => {
-  try {
+router.get("/active-offers",async(req,res)=>{
+  try{
     const today = moment().format('YYYY-MM-DD');
     const currentTime = moment().format('hh:mm A');
-    console.log("Today : ", currentTime)
-    let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
+    console.log("Today : ",currentTime)
+    let foundActiveOffer = await Coupon.find({startDate:{$lte:today},endDate:{$gte:today},isActive:true,startTime:{$lte:currentTime},endTime:{$gte:currentTime}}).lean();
 
-    if (foundActiveOffer.length === 0) return res.status(400).json({ message: 'No active offers found' })
-
-    return res.status(200).json({ message: "active offers found", data: foundActiveOffer })
-  } catch (err) {
+    if(foundActiveOffer.length===0) return res.status(400).json({ message: 'No active offers found' })
+    
+    return res.status(200).json({message:"active offers found",data:foundActiveOffer})
+  }catch(err){
     return handelServerError(res, { message: "An error occured" });
   }
-})
-
-
-
-
-
-
-
-
+});
 
 module.exports = router;

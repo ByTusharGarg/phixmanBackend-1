@@ -1,7 +1,5 @@
 // const sdk = require("api")("@cashfreedocs-new/v2#1224ti1hl4o0uyhs");
-const sdk = require('api')('@cashfreedocs-new/v2#5qon17l8k4gqrl');
-
-
+const sdk = require("api")("@cashfreedocs-new/v2#5qon17l8k4gqrl");
 const orderTransactionModel = require("../../models/Ordertransaction");
 const refundModel = require("../../models/refund.model");
 
@@ -19,7 +17,7 @@ const {
   updateWallletTransactionByTransactionId,
   updatePartnerWallet,
 } = require("../../services/Wallet");
-const commonFunction = require('../../utils/commonFunction');
+const commonFunction = require("../../utils/commonFunction");
 const axios = require("axios").default;
 
 let casrfreeUrlLinks =
@@ -57,19 +55,19 @@ class Payment {
           "x-api-version": "2022-01-01",
         }
       );
-
+      if (!resp || !resp.order_token) {
+        throw new Error("Couldn't Create the Order transaction");
+      }
       const existingOrderId = data.OrderId.split("-")[0];
 
       const newTransaction = await this.createTranssaction({
         ...resp,
-        ourorder_id: data.ourorder_id,
+        // ourorder_id: data.ourorder_id,
         order_id: existingOrderId,
         cashfreeOrderId: data.OrderId,
       });
       await newTransaction.save();
-
-
-      // this is move down to 
+      // this is move down to
       // await ordersModel.findOneAndUpdate(
       //   { OrderId: existingOrderId },
       //   { $push: { TxnId: newTransaction._id } },
@@ -100,15 +98,21 @@ class Payment {
       });
 
       if (payment.data.length > 0) {
-        let isExist = await orderTransactionModel.findOneAndUpdate({ cashfreeOrderId: order_id });
-
-        let transaction = await orderTransactionModel.findOneAndUpdate(
-          { cashfreeOrderId: order_id },
-          { order_status: payment.data[0].payment_status, payment_group: payment.data[0].payment_group, payment_method: payment.data[0].payment_method, paymentverified: true },
-          { new: true }
-        );
+        let isExist = await orderTransactionModel.findOne({
+          cashfreeOrderId: order_id,
+        });
 
         if (isExist?.paymentverified === false) {
+          let transaction = await orderTransactionModel.findOneAndUpdate(
+            { cashfreeOrderId: order_id },
+            {
+              order_status: payment.data[0].payment_status,
+              payment_group: payment.data[0].payment_group,
+              payment_method: payment.data[0].payment_method,
+              paymentverified: true,
+            },
+            { new: true }
+          );
           await this.updateOrderPaymentStatus(order_id, transaction._id);
         }
         return transaction;
@@ -282,7 +286,7 @@ class Payment {
           { OrderId: orderId },
           {
             PaymentStatus: paymentStatus[0],
-            Status: orderStatusTypesObj['Requested'],
+            Status: orderStatusTypesObj.Requested,
             PendingAmount: leftAmount,
             $push: { TxnId: transactionId },
             $inc: { paidamount: txnData.order_amount },
@@ -293,9 +297,9 @@ class Payment {
           { OrderId: orderId },
           {
             PaymentStatus: paymentStatus[2],
-            Status: orderStatusTypesObj['Requested'],
+            Status: orderStatusTypesObj.Requested,
             PendingAmount: leftAmount,
-            $inc: { paidamount: txnData.order_amount }
+            $inc: { paidamount: txnData.order_amount },
           }
         );
       }
@@ -323,24 +327,33 @@ class Payment {
     try {
       // const newRefund = new refundModel(metadata);
       const options = {
-        method: 'POST',
+        method: "POST",
         url: this.casrfreeUrl + `/orders/${orderid}/refunds`,
         headers: {
-          accept: 'application/json',
-          'x-client-id': this.APPID,
-          'x-client-secret': this.APPSECRET,
-          'x-api-version': '2022-01-01',
-          'content-type': 'application/json'
+          accept: "application/json",
+          "x-client-id": this.APPID,
+          "x-client-secret": this.APPSECRET,
+          "x-api-version": "2022-01-01",
+          "content-type": "application/json",
         },
-        data: { refund_amount: amount, refund_id: refunId }
+        data: { refund_amount: amount, refund_id: refunId },
       };
 
       const refundResp = await axios.request(options);
 
-      const newRefund = new refundModel({ orderId: metadata.orderId, cashfreeOrderId: orderid, refundId: refunId, caashfreeData: refundResp.data });
+      const newRefund = new refundModel({
+        orderId: metadata.orderId,
+        cashfreeOrderId: orderid,
+        refundId: refunId,
+        caashfreeData: refundResp.data,
+      });
       const refundDbData = await newRefund.save();
 
-      return ordersModel.findByIdAndUpdate(metadata['orderId'], { refundId: refundDbData._id, refundStatus: refundResp.data['refund_status'], Status: orderStatusTypesObj.Cancelled });
+      return ordersModel.findByIdAndUpdate(metadata["orderId"], {
+        refundId: refundDbData._id,
+        refundStatus: refundResp.data["refund_status"],
+        Status: orderStatusTypesObj.Cancelled,
+      });
     } catch (error) {
       throw new Error(error.response.data.message || error.message || error);
     }
