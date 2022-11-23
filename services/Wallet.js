@@ -160,9 +160,8 @@ const getWalletTransactions = async () => {
 };
 
 const updatePartnerWallet = async (userId, amount, transsactionType) => {
-  let wallet = getPartnerWallet(userId);
+  let wallet = await getPartnerWallet(userId);
   let finalAmount = 0;
-
   if (transsactionType === "credit") {
     finalAmount = amount;
   } else {
@@ -346,6 +345,6 @@ module.exports = {
   getWalletTransactions,
   updatePartnerWallet,
   updateCustomerWallet,
-  // makePartnerTranssaction,
+  makePartnerTranssaction,
   makeCustomerTranssaction,
 };

@@ -2,13 +2,14 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Partner, PartnerWallet, Order, orderMetaData } = require("../models");
+const { Partner, PartnerWallet, Order, orderMetaData, category } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypesObj } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
 const { v4: uuidv4 } = require('uuid');
 const payout = require('../libs/payments/payouts.js');
+const { makePartnerTranssaction } = require('../services/Wallet');
 
 const {
   base64_encode,
@@ -1211,9 +1212,21 @@ router.post("/order/acceptorder", async (req, res) => {
       return res.status(500).json({ message: "order not exists" });
     }
 
+    const categoryData = await category.findById(order.OrderDetails.Items[0]['CategoryId']);
+    if (!categoryData) {
+      return res.status(404).json({ message: "no category data found" });
+    }
+    const LeadExpense = parseInt(categoryData['LeadExpense']);
+
+    if (!LeadExpense) {
+      return res.status(400).json({ message: "unable to accept LeadExpense not found" });
+    }
+
+    await makePartnerTranssaction("partner", "", partnerId, LeadExpense, `Lead expenses against ${order.OrderId}`, "debit");
+
     if (order.Status !== "Requested") {
       return res
-        .status(204)
+        .status(200)
         .json({ message: "order already Accepted or further processing" });
     }
 
@@ -1234,7 +1247,7 @@ router.post("/order/acceptorder", async (req, res) => {
     return res.status(200).json({ message: "order Accepted" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
+    return res.status(500).json({ message: error.message || "Error encountered." });
   }
 });
 
@@ -1508,7 +1521,8 @@ router.post("/order/changestatus", async (req, res) => {
       query['invoiceId'] = uuidv4();
 
       // create payout here
-      await payout.createPayoutOnDb({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode });
+      await payout.createPayoutOnDb({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode }, order.OrderDetails.Items[0].CategoryId);
+
     }
     else if (status === "delivered") {
       emailData = {

@@ -12,6 +12,7 @@ const Partner = mongoose.model(
     Name: { type: String, default: "" },
     bussinessName: { type: String, default: "" },
     Dob: { type: Date, default: null },
+    codCollection: { type: Number, default: 0 },
     Type: {
       type: String,
       enum: partnerTypes,
@@ -75,8 +76,8 @@ const Partner = mongoose.model(
       state: String,
       country: String,
       landmark: String,
-      billingAddress:String,
-      address:String,
+      billingAddress: String,
+      address: String,
       cood: {
         lattitude: String,
         longitude: String,
@@ -106,7 +107,7 @@ const Partner = mongoose.model(
     gstCertificateNo: {
       type: String,
       default: null,
-    }, 
+    },
     incorprationCertificate: {
       type: String,
       default: null,
