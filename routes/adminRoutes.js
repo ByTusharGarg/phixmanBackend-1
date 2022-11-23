@@ -1926,27 +1926,30 @@ router.get("/getpartnertransaction", async (req, res) => {
  */
 router.post("/categories", async (req, res) => {
   try {
-    console.log(req.files);
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
     req.body.Slots = JSON.parse(req.body.Slots);
     req.body.key = req.body.name.toLowerCase();
     req.body.components = JSON.parse(req.body.components);
-    for (let key in req.body) {
-      if (!req?.body[key]) {
-        return res.status(404).json({ message: `${key} is missing` });
-      }
-    }
+    req.body.details = JSON.parse(req.body.details);
     if (!req?.files?.icon) {
       return res.status(404).json({ message: "icon is missing" });
     }
-    if (!req?.files?.images) {
-      return res.status(404).json({ message: "product images are missing" });
-    }
     let images = [];
-    for (let i = 0; i < req?.files?.images.length; i++) {
-      images.push(encodeImage(req?.files?.images[i]));
+    if (Array.isArray(req?.files?.images)) {
+      for (let i = 0; i < req?.files?.images.length; i++) {
+        images.push(encodeImage(req?.files?.images[i]));
+      }
+    } else {
+      images.push(encodeImage(req?.files?.images));
+    }
+    if (Array.isArray(req?.files?.detailImages)) {
+      for (let i = 0; i < req?.files?.detailImages.length; i++) {
+        req.body.details[i].image = encodeImage(req?.files?.detailImages[i]);
+      }
+    } else {
+      req.body.details[0].image = encodeImage(req?.files?.detailImages);
     }
     req.body.icon = encodeImage(req.files.icon);
     req.body.images = images;
@@ -3391,13 +3394,11 @@ router.get("/wallet/customer", checkAdmin, async (req, res) => {
       customerId,
       "customer"
     );
-    return res
-      .status(200)
-      .json({
-        message: "customer wallet and transaction",
-        walletData,
-        transactionData,
-      });
+    return res.status(200).json({
+      message: "customer wallet and transaction",
+      walletData,
+      transactionData,
+    });
   } catch (error) {
     return res.status(500).json({
       message: "Error encountered while trying to fetch wallet.",

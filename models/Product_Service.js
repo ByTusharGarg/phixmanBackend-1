@@ -5,6 +5,7 @@ const Product_Service = mongoose.model(
   "Product_Service",
   new Schema({
     categoryId: { type: Schema.Types.ObjectId, ref: "category" },
+    subCategoryId: { type: Schema.Types.ObjectId, ref: "SubCategory" },
     modelId: { type: Schema.Types.ObjectId, ref: "Model" },
     serviceName: String,
     cost: Number,
