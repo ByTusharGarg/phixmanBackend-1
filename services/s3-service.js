@@ -31,7 +31,29 @@ function uploadFile(fileBuffer, fileName, mimetype) {
     Key: fileName,
     ContentType: mimetype,
   };
+  console.log('Upload Params',uploadParams)
   return s3Client.send(new PutObjectCommand(uploadParams));
+}
+
+
+function uploadFileToS3(fileBuffer, fileName, mimetype) {
+  return new Promise(async(resolve,reject)=>{
+    try{
+      const uploadParams = {
+        Bucket: bucketName,
+        Body: fileBuffer,
+        Key: fileName,
+        ContentType: mimetype,
+      };
+      console.log('Upload Params',uploadParams)
+      const uploadUrl = await s3Client.send(new PutObjectCommand(uploadParams));
+      if(uploadUrl) return resolve(uploadUrl);
+      return reject("Unable to Upload file")
+    }catch(error){
+      console.log('*************err****************', error)
+      return reject(error)
+    }
+  })
 }
 
 function deleteFile(fileName) {
@@ -61,6 +83,7 @@ async function getObjectSignedUrl(key, seconds = 3600) {
 
 module.exports = {
   uploadFile,
+  uploadFileToS3,
   deleteFile,
   getObjectSignedUrl,
   randomImageName,

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const { claimTypesList } = require("../enums/claimTypes");
 const Schema = mongoose.Schema;
 
@@ -10,6 +11,7 @@ const ClaimRequest = mongoose.model(
       type: String,
       enum: claimTypesList,
       required: true,
+      default: claimTypesList[0]
     },
     orderId: { type: Schema.Types.ObjectId, ref: "Order" },
     customerId: {
@@ -20,6 +22,7 @@ const ClaimRequest = mongoose.model(
     description: { required: true, type: String },
     images: [String],
     voiceNote: String,
+
 
   })
 )
