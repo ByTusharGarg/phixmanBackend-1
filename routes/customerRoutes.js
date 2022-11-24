@@ -11,10 +11,11 @@ const {
   CustomerWallet,
   category,
   Coupon,
-  ClaimRequest
+  ClaimRequest,
+  refundModel,
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
-const moment = require('moment');
+const moment = require("moment");
 const { isEmail, isStrong } = require("../libs/checkLib");
 const tokenService = require("../services/token-service");
 const { hashpassword } = require("../libs/passwordLib");
@@ -435,7 +436,7 @@ router.get("/timeslots", async (req, res) => {
 });
 
 // refund webhook
-router.post("/webhook/refund", (req, res) => {
+router.post("/webhook/refund", async (req, res) => {
   console.log(req.body);
   const {
     type,
@@ -444,7 +445,7 @@ router.post("/webhook/refund", (req, res) => {
     },
   } = req.body;
 
-  if (type !== "REFUND_WEBHOOK") {
+  if (type !== "REFUND_STATUS_WEBHOOK") {
     return res.status(400).json({ message: "not as cashfree request" });
   }
   try {
@@ -474,8 +475,12 @@ router.post("/webhook/refund", (req, res) => {
     //   type: 'REFUND_WEBHOOK',
     //   event_time: '2022-02-23T15:28:36+05:30'
     // }
-
-    return res.status(200).json({ message: "thanks cashfree for notify us" });
+    const resp = await refundModel.findOneAndUpdate({ refundId: refund_id, "caashfreeData.refund_amount": refund_amount }, req.body.data.refund, { new: true });
+    if (resp) {
+      return res.status(200).json({ message: "thanks cashfree for notify us" });
+    } else {
+      return res.status(400).json({ message: "nnot found" });
+    }
   } catch (error) {
     console.log(error);
     return handelServerError(res, {
@@ -891,7 +896,7 @@ router.get("/address", async (req, res) => {
  *                    day:
  *                      type: string
  *                    time:
- *                      type: string
+ *                      type: object
  *                Items:
  *                  type: array
  *                  items:
@@ -987,7 +992,8 @@ router.post(
   verifyOrderValidator,
   rejectBadRequests,
   async (req, res) => {
-    const { OrderType, Items, PaymentMode, address, PickUpRequired } = req.body;
+    const { OrderType, Items, PaymentMode, address, PickUpRequired, timeSlot } =
+      req.body;
     const OrderId = commonFunction.genrateID("ORD");
     let Amount = 0;
     let grandTotal = 0;
@@ -1002,19 +1008,28 @@ router.post(
           Customer: req.Customer._id,
           OrderId,
           OrderType,
-          Status: orderStatusTypesObj["Requested"],
+          Status: orderStatusTypesObj.Requested,
           PendingAmount: Amount,
-          paidamount: Amount,
           PaymentStatus: paymentStatus[1],
-          OrderDetails: { Amount, Items },
+          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
           PaymentMode,
           address,
           PickUpRequired,
+          timeSlot,
         });
         resp.order = newOrder;
         // deduct commission from partner
       } else if (PaymentMode === "online") {
-        // initiate payments process
+        const customer = await Customer.findById(req.Customer._id);
+        // initiate payments process   
+        let cashfree = await Payment.createCustomerOrder({
+          // ourorder_id: newOrder._id,
+          customerid: customer._id,
+          email: customer.email,
+          phone: customer.phone,
+          OrderId,
+          Amount,
+        });
         const newOrder = await Order.create({
           Customer: req.Customer._id,
           OrderId,
@@ -1026,19 +1041,9 @@ router.post(
           PaymentMode,
           address,
           PickUpRequired,
+          timeSlot,
         });
-
         resp.order = newOrder;
-        const customer = await Customer.findById(req.Customer._id);
-
-        let cashfree = await Payment.createCustomerOrder({
-          ourorder_id: newOrder._id,
-          customerid: customer._id,
-          email: customer.email,
-          phone: customer.phone,
-          OrderId,
-          Amount,
-        });
         resp.cashfree = cashfree;
       }
 
@@ -1383,7 +1388,7 @@ router.get("/order", async (req, res) => {
   } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
-})
+});
 
 /**
  * @openapi

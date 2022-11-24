@@ -4,6 +4,7 @@ const partnerBankDetailsModel = require('../../models/partnerbankDetails');
 const payoutModel = require('../../models/payouts.model');
 const orderModel = require('../../models/Order');
 const partnerModel = require('../../models/Partner');
+const { category } = require('../../models');
 
 const { payoutStatusTypesObject } = require('../../enums/types');
 
@@ -173,22 +174,41 @@ class Payouts {
         }
     }
 
-    async createPayoutOnDb(data) {
+    async createPayoutOnDb(data, categoryId) {
         const { orderId, totalAmount } = data;
         let totalDeduction = 0;
         let deduction = [];
 
-        // ----- ducuction cases -----
-
-        // per category commission
-
+        // ----- deduction cases -----
 
         // gst deduction
         if (!this.isPartnerGstExists(data.partnerId)) {
             let amt = (totalAmount * (18 / 100));
             totalDeduction += amt;
-            deduction.push({ title: "Gst tax deduction", value: amt, desc: "Tax deduction" })
+            deduction.push({ title: "Tax collection (Without GST)", value: amt, desc: "Tax deduction" })
+        } else {
+            deduction.push({ title: "Tax collection (Without GST)", value: 0, desc: "Tax deduction" })
         }
+
+
+        // cod amount deductions collections
+        // if (!this.isPartnerGstExists(data.partnerId)) {
+        //     let amt = (totalAmount * (18 / 100));
+        //     totalDeduction += amt;
+        //     deduction.push({ title: "Phixmen Commission", value: amt, desc: "Tax deduction" })
+        // }
+
+        // per category commission
+        const categoryData = await category.findById(categoryId);
+        let companyComissionPercentage = parseInt(categoryData.companyComissionPercentage);
+
+        if (companyComissionPercentage) {
+            let amt = (totalAmount * (companyComissionPercentage / 100));
+            totalDeduction += amt;
+        } else {
+            throw new Error("no commission found");
+        }
+
 
         const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 10)}`;
 

@@ -47,6 +47,12 @@ const emailDatamapping = {
         desc: ` Hey <first_name>, Welcome! Use temprory password for login and`,
         buttonName: "LOGIN"
     },
+    createdSubAdmin: {
+        heading1: "THANKS FOR SIGNING UP",
+        heading2: "WELCOME TO PHIXMAN SUB-ADMIN PORTAL",
+        desc: ` Hey <first_name>, Welcome! Use temperory password for login and`,
+        buttonName: "LOGIN"
+    },    
     ppaymentLink: {
         heading1: "PAYMENT LINK",
         heading2: "COMPLETE THE PAYMENT BY CLICKING THIS LINK",
