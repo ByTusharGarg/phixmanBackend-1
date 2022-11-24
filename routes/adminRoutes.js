@@ -255,6 +255,87 @@ router.post("/createadmin", AdminAuth.createAdmin);
 
 /**
  * @openapi
+ * /admin/createsubadmin:
+ *  post:
+ *    summary: used to create new subadmin admin by superadmmin.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                type:
+ *                  type: string
+ *                zones:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *                category:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createsubadmin", AdminAuth.createSubAdmin)
+
+/**
+ * @openapi
+ * /admin/alladmin:
+ *  post:
+ *    summary: used to fetch list of admins
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/alladmin", async (req, res) => {
+  try {
+    const foundAdmin = await Admin.find().lean()
+    if (foundAdmin.length === 0) return res.status(400).json({ message: "No Admin found" })
+
+    return res.status(200).json({ message: "Admins found", data: foundAdmin })
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while trying to change offer status.",
+    });
+  }
+})
+
+/**
+ * @openapi
  * /admin:
  *  get:
  *    summary: used to list all admins.
@@ -283,6 +364,7 @@ router.get("/", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
 
 /**
  * @openapi
@@ -3804,73 +3886,83 @@ router.get("/penalties", async (req, res) => {
  */
 router.get("/penalties/all", async (req, res) => {
   try {
-    const foundPenalties = await PenalitySchema.find({})
-      .populate([
-        {
-          path: "orderId",
-          model: Order,
-          select: "-_id",
-          populate: {
-            path: "Partner",
-            model: Partner,
-          },
+    const foundPenalties = await PenalitySchema.find({}).populate([
+      {
+        path: "orderId",
+        model: Order,
+        select: "-_id",
+        populate: {
+          path: "Partner",
+          model: Partner,
         },
-        {
-          path: "orderId",
-          model: Order,
-          select: "-_id",
-          populate: {
-            path: "Customer",
-            model: Customer,
-          },
+      },
+      {
+        path: "orderId",
+        model: Order,
+        select: "-_id",
+        populate: {
+          path: "Customer",
+          model: Customer,
         },
-      ])
-      .populate("model");
-    if (foundPenalties.length === 0)
-      return res.status(400).json({ message: "No Penalties found" });
+      },
+    ])
+    .populate("model");
+  if (foundPenalties.length === 0)
+    return res.status(400).json({ message: "No Penalties found" });
 
-    return res.status(200).json({ message: "Penalties found", foundPenalties });
+    return res
+      .status(200)
+      .json({ message: "Penalties found", foundPenalties });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to fetch penality.",
     });
   }
+})
+
+/**
+ * @openapi
+ * /admin/ordertransaction:
+ *  get:
+ *    summary: used to fetch order transactions
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: paymentStatus
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/ordertransaction", async (req, res) => {
+  try {
+    let query = {};
+    const { paymentStatus = '' } = req.query
+
+    if (paymentStatus != '') {
+      query = { ...query, payment_status: paymentStatus }
+    }
+    const ordersTranssactions = await orderTransaction.find(query).sort({ 'orderId': -1 });
+
+    return res.status(200).json({ message: "transsaction list", ordersTranssactions });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
 });
-
-// /**
-//  * @openapi
-//  * /admin/ordertranssactions:
-//  *  get:
-//  *    summary: used to fetch penalties
-//  *    tags:
-//  *    - Admin Routes
-//  *    responses:
-//  *      500:
-//  *          description: if internal server error occured while performing request.
-//  *          content:
-//  *            application/json:
-//  *             schema:
-//  *               type: object
-//  *               properties:
-//  *                  message:
-//  *                    type: string
-//  *                    description: a human-readable message describing the response
-//  *                    example: Error encountered.
-//  */
-// router.get("/ordertranssactions", async (req, res) => {
-//   try {
-
-//     const ordersTranssactions = await orderTransaction.find({order_status:'SUCCESS'})
-//     .sort('orderId', -1);
-
-//     return res.status(200).json({ message: "transsaction list", ordersTranssactions });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       message: "Error encountered while trying to fetch penality.",
-//     });
-//   }
-// });
 
 module.exports = router;
