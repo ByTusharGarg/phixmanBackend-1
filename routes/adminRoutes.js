@@ -364,6 +364,9 @@ router.patch("/updatepassword", updatePassword);
  *                email:
  *                  type: string
  *                  example: example@phixman.in
+ *                gender:
+ *                  type: string
+ *                  enum: ["male", "female", "non-binary"]
  *                address:
  *                  type: object
  *                  properties:
@@ -453,6 +456,7 @@ router.post("/customer/create", async (req, res) => {
       Name: req?.body?.Name,
       email: req?.body?.email,
       address: req?.body?.address,
+      gender: req?.body?.gender,
       isVerified: true,
       isPublished: true,
       isActive: true,
