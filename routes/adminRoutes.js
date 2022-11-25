@@ -443,6 +443,9 @@ router.patch("/updatepassword", updatePassword);
  *                email:
  *                  type: string
  *                  example: example@phixman.in
+ *                gender:
+ *                  type: string
+ *                  enum: ["male", "female", "non-binary"]
  *                address:
  *                  type: object
  *                  properties:
@@ -532,6 +535,7 @@ router.post("/customer/create", async (req, res) => {
       Name: req?.body?.Name,
       email: req?.body?.email,
       address: req?.body?.address,
+      gender: req?.body?.gender,
       isVerified: true,
       isPublished: true,
       isActive: true,
@@ -2042,6 +2046,42 @@ router.post("/categories", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+/**
+ * @openapi
+ * /admin/categories/{id}:
+ *  get:
+ *    summary: get category by id
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/categories/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    let categoryData = await category.findById(id);
+    res.status(200).json({ message: "Category data", data: categoryData });
+  } catch (error) {
+    console.log(error);
+  }
+})
 
 /**
  * @openapi
