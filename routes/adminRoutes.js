@@ -298,7 +298,7 @@ router.post("/createadmin", AdminAuth.createAdmin);
  *    security:
  *    - bearerAuth: []
  */
-router.post("/createsubadmin", AdminAuth.createSubAdmin)
+router.post("/createsubadmin", AdminAuth.createSubAdmin);
 
 /**
  * @openapi
@@ -324,16 +324,17 @@ router.post("/createsubadmin", AdminAuth.createSubAdmin)
  */
 router.get("/alladmin", async (req, res) => {
   try {
-    const foundAdmin = await Admin.find().lean()
-    if (foundAdmin.length === 0) return res.status(400).json({ message: "No Admin found" })
+    const foundAdmin = await Admin.find().lean();
+    if (foundAdmin.length === 0)
+      return res.status(400).json({ message: "No Admin found" });
 
-    return res.status(200).json({ message: "Admins found", data: foundAdmin })
+    return res.status(200).json({ message: "Admins found", data: foundAdmin });
   } catch (error) {
     return res.status(500).json({
       message: "Error encountered while trying to change offer status.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -365,7 +366,6 @@ router.get("/", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 /**
  * @openapi
@@ -2081,7 +2081,7 @@ router.get("/categories/:id", async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-})
+});
 
 /**
  * @openapi
@@ -2188,6 +2188,9 @@ router.put("/categories/:id", async (req, res) => {
   const { id } = req.params;
   // console.log(req.body)
   try {
+    if (!id) {
+      return res.status(404).json({ message: "id is missing" });
+    }
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
@@ -2198,16 +2201,42 @@ router.put("/categories/:id", async (req, res) => {
     req.body.minDisc = JSON.parse(req.body.minDisc);
     req.body.maxDuration = JSON.parse(req.body.maxDuration);
     req.body.minDuration = JSON.parse(req.body.minDuration);
-    req.body.LeadExpense = JSON.parse(req.body.LeadExpense)
-    req.body.companyComissionPercentage = JSON.parse(req.body.companyComissionPercentage)
-    req.body.modelRequired = JSON.parse(req.body.modelRequired)
+    req.body.LeadExpense = JSON.parse(req.body.LeadExpense);
+    req.body.companyComissionPercentage = JSON.parse(
+      req.body.companyComissionPercentage
+    );
+    req.body.modelRequired = JSON.parse(req.body.modelRequired);
+    req.body.details = JSON.parse(req.body.details);
+    if (req.files) {
+      let images = [];
+      if (Array.isArray(req?.files?.images)) {
+        for (let i = 0; i < req?.files?.images.length; i++) {
+          images.push(encodeImage(req?.files?.images[i]));
+        }
+      } else {
+        images.push(encodeImage(req?.files?.images));
+      }
+      if (Array.isArray(req?.files?.detailImages)) {
+        for (let i = 0; i < req?.files?.detailImages.length; i++) {
+          req.body.details[i].image = encodeImage(req?.files?.detailImages[i]);
+        }
+      } else {
+        req.body.details[0].image = encodeImage(req?.files?.detailImages);
+      }
+      if (req.files.icon) {
+        req.body.icon = encodeImage(req.files.icon);
+      }
+      req.body.images = images;
+    }
 
-    const updatedategory = category.findByIdAndUpdate(id, req.body, {
+    const updatedategory = await category.findByIdAndUpdate(id, req.body, {
       new: true,
     });
     // console.log("updatedategory",updatedategory)
-    if(updatedategory){
-      return res.status(200).json({ message: "Category updated successfully."})
+    if (updatedategory) {
+      return res
+        .status(200)
+        .json({ message: "Category updated successfully." });
     } else {
       return res.status(400).json({ message: "Category not found." });
     }
@@ -3584,7 +3613,7 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       },
     } = req;
 
-    const promoCode = commonFunction.generateRandomString(promoType,16)
+    const promoCode = commonFunction.generateRandomString(promoType, 16);
     console.log(promoCode);
     const offerObj = {
       promoCode,
@@ -3918,40 +3947,39 @@ router.get("/penalties", async (req, res) => {
  */
 router.get("/penalties/all", async (req, res) => {
   try {
-    const foundPenalties = await PenalitySchema.find({}).populate([
-      {
-        path: "orderId",
-        model: Order,
-        select: "-_id",
-        populate: {
-          path: "Partner",
-          model: Partner,
+    const foundPenalties = await PenalitySchema.find({})
+      .populate([
+        {
+          path: "orderId",
+          model: Order,
+          select: "-_id",
+          populate: {
+            path: "Partner",
+            model: Partner,
+          },
         },
-      },
-      {
-        path: "orderId",
-        model: Order,
-        select: "-_id",
-        populate: {
-          path: "Customer",
-          model: Customer,
+        {
+          path: "orderId",
+          model: Order,
+          select: "-_id",
+          populate: {
+            path: "Customer",
+            model: Customer,
+          },
         },
-      },
-    ])
-    .populate("model");
-  if (foundPenalties.length === 0)
-    return res.status(400).json({ message: "No Penalties found" });
+      ])
+      .populate("model");
+    if (foundPenalties.length === 0)
+      return res.status(400).json({ message: "No Penalties found" });
 
-    return res
-      .status(200)
-      .json({ message: "Penalties found", foundPenalties });
+    return res.status(200).json({ message: "Penalties found", foundPenalties });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to fetch penality.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -3981,14 +4009,18 @@ router.get("/penalties/all", async (req, res) => {
 router.get("/ordertransaction", async (req, res) => {
   try {
     let query = {};
-    const { paymentStatus = '' } = req.query
+    const { paymentStatus = "" } = req.query;
 
-    if (paymentStatus != '') {
-      query = { ...query, payment_status: paymentStatus }
+    if (paymentStatus != "") {
+      query = { ...query, payment_status: paymentStatus };
     }
-    const ordersTranssactions = await orderTransaction.find(query).sort({ 'orderId': -1 });
+    const ordersTranssactions = await orderTransaction
+      .find(query)
+      .sort({ orderId: -1 });
 
-    return res.status(200).json({ message: "transsaction list", ordersTranssactions });
+    return res
+      .status(200)
+      .json({ message: "transsaction list", ordersTranssactions });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
