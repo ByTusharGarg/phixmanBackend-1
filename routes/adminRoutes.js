@@ -2084,7 +2084,7 @@ router.get("/categories/:id", async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-})
+});
 
 /**
  * @openapi
@@ -2189,34 +2189,57 @@ router.get("/categories/:id", async (req, res) => {
  */
 router.put("/categories/:id", async (req, res) => {
   const { id } = req.params;
-  const data = {};
-  // const { name, forms, availableOn, servedAt, Slots, key, components } = req.body;
-  // const { icon } = req.files;
-
+  // console.log(req.body)
   try {
+    if (!id) {
+      return res.status(404).json({ message: "id is missing" });
+    }
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
     req.body.Slots = JSON.parse(req.body.Slots);
-    req.body.key = req.body.name.toLowerCase();
+    req.body.name = req.body.name.toLowerCase();
     req.body.components = JSON.parse(req.body.components);
-    req.body.icon = encodeImage(req.files.icon);
-
-    for (let key in data) {
-      if (!req?.body[key]) {
-        return res.status(404).json({ message: `${key} is missing` });
+    req.body.maxDisc = JSON.parse(req.body.maxDisc);
+    req.body.minDisc = JSON.parse(req.body.minDisc);
+    req.body.maxDuration = JSON.parse(req.body.maxDuration);
+    req.body.minDuration = JSON.parse(req.body.minDuration);
+    req.body.LeadExpense = JSON.parse(req.body.LeadExpense);
+    req.body.companyComissionPercentage = JSON.parse(
+      req.body.companyComissionPercentage
+    );
+    req.body.modelRequired = JSON.parse(req.body.modelRequired);
+    req.body.details = JSON.parse(req.body.details);
+    if (req.files) {
+      let images = [];
+      if (Array.isArray(req?.files?.images)) {
+        for (let i = 0; i < req?.files?.images.length; i++) {
+          images.push(encodeImage(req?.files?.images[i]));
+        }
+      } else {
+        images.push(encodeImage(req?.files?.images));
       }
+      if (Array.isArray(req?.files?.detailImages)) {
+        for (let i = 0; i < req?.files?.detailImages.length; i++) {
+          req.body.details[i].image = encodeImage(req?.files?.detailImages[i]);
+        }
+      } else {
+        req.body.details[0].image = encodeImage(req?.files?.detailImages);
+      }
+      if (req.files.icon) {
+        req.body.icon = encodeImage(req.files.icon);
+      }
+      req.body.images = images;
     }
 
-    const updatedategory = category.findByIdAndUpdate(id, req.body, {
+    const updatedategory = await category.findByIdAndUpdate(id, req.body, {
       new: true,
     });
-
+    // console.log("updatedategory",updatedategory)
     if (updatedategory) {
-      return res.status(200).json({
-        message: "Category updated successfully.",
-        data: updatedategory,
-      });
+      return res
+        .status(200)
+        .json({ message: "Category updated successfully." });
     } else {
       return res.status(400).json({ message: "Category not found." });
     }
