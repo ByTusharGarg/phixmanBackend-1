@@ -23,7 +23,6 @@ const ClaimRequest = mongoose.model(
     images: [String],
     voiceNote: String,
 
-
   })
 )
 module.exports = ClaimRequest;

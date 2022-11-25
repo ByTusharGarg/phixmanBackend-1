@@ -20,6 +20,7 @@ const {
   Notification,
   SubCategory,
   orderTransaction,
+  Invoice
 } = require("../models");
 const PenalitySchema = require("../models/penality");
 const {
@@ -4119,5 +4120,64 @@ router.get("/ordertransaction", async (req, res) => {
     });
   }
 });
+
+router.get("/invoice/all", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({}).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
+
+router.get("/invoice/phixman/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ taxPayer: "" }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+
+router.get("/invoice/partner", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B" }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+router.get("/invoice/partner/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: '' } }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
 
 module.exports = router;
