@@ -129,8 +129,3 @@ app.listen(process.env.PORT, function (err) {
   }
   console.log("Express Server Running at PORT: " + process.env.PORT);
 });
-
-
-(async () => {
-  // await payout.createBeneficiaryTkoCashhfree();
-})();

@@ -618,7 +618,9 @@ router.get("/services", async (req, res) => {
     if (modelId) filter.modelId = modelId;
     if (subCategoryId) filter.subCategoryId = subCategoryId;
 
-    const services = await Product_Service.find(filter);
+    const services = await Product_Service.find(filter)
+      .populate("modelId")
+      .populate("subCategoryId");
     return res
       .status(200)
       .json({ message: "list of services", data: services });

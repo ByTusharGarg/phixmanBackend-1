@@ -38,6 +38,7 @@ const {
   orderTypes,
   paymentModeTypes,
   orderStatusTypesObj,
+  payoutStatusTypes,
 } = require("../enums/types");
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
@@ -52,6 +53,8 @@ const {
 } = require("../libs/commonFunction");
 const { adminTypeArray } = require("../enums/adminTypes");
 const { getWalletTransactions } = require("../services/Wallet");
+const Payouts = require("../libs/payments/payouts");
+
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -225,8 +228,6 @@ router.use(AdminAuth.checkAdmin);
  *                  type: string
  *                email:
  *                  type: string
- *                type:
- *                  type: string
  *                zones:
  *                  type: array
  *                  items:
@@ -270,8 +271,6 @@ router.post("/createadmin", AdminAuth.createAdmin);
  *                name:
  *                  type: string
  *                email:
- *                  type: string
- *                type:
  *                  type: string
  *                zones:
  *                  type: array
@@ -447,6 +446,9 @@ router.patch("/updatepassword", updatePassword);
  *                email:
  *                  type: string
  *                  example: example@phixman.in
+ *                gender:
+ *                  type: string
+ *                  enum: ["male", "female", "non-binary"]
  *                address:
  *                  type: object
  *                  properties:
@@ -536,6 +538,7 @@ router.post("/customer/create", async (req, res) => {
       Name: req?.body?.Name,
       email: req?.body?.email,
       address: req?.body?.address,
+      gender: req?.body?.gender,
       isVerified: true,
       isPublished: true,
       isActive: true,
@@ -2522,10 +2525,14 @@ router.get("/orders/:status", async (req, res) => {
  *                  description: required
  *                modelId:
  *                  type: string
+ *                subCategoryId:
+ *                  type: string
  *                serviceName:
  *                  type: string
  *                cost:
  *                  type: integer
+ *                isTrivial:
+ *                  type: boolean
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -2544,7 +2551,8 @@ router.get("/orders/:status", async (req, res) => {
  */
 router.post("/service", async (req, res) => {
   try {
-    const { categoryId, modelId, serviceName, cost } = req.body;
+    const { categoryId, modelId, serviceName, cost, subCategoryId, isTrivial } =
+      req.body;
     if (!categoryId)
       return res.status(400).json({ message: "category is reqiured" });
     let categorydoc = await category.findOne({
@@ -2554,18 +2562,81 @@ router.post("/service", async (req, res) => {
     if (!categorydoc) {
       return res.status(400).json({ message: "category not found" });
     }
-    if (categorydoc.key === "mobile" && !modelId) {
+    if (categorydoc.modelRequired && !modelId) {
       return res
         .status(404)
         .json({ message: "modelId is reqiured for mobile services" });
     }
-    let obj = { categoryId, serviceName, cost };
+    let obj = { categoryId, serviceName, cost, subCategoryId, isTrivial };
     if (modelId) obj.modelId = modelId;
     let service = await Product_Service.create(obj);
-    res.status(201).json(service);
+    console.log(service);
+    res.status(201).json({ status: 200, data: service });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "internal server error" });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/services:
+ *  get:
+ *    summary: get all services for specific category
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: query
+ *        name: modelId
+ *        schema:
+ *           type: string
+ *      - in: query
+ *        name: subCategoryId
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/services", async (req, res) => {
+  const { modelId, categoryId, subCategoryId } = req.query;
+
+  if (!categoryId) {
+    return res.status(500).json({ message: "categoryId is required" });
+  }
+
+  try {
+    let filter = { categoryId: categoryId };
+
+    if (modelId) filter.modelId = modelId;
+    if (subCategoryId) filter.subCategoryId = subCategoryId;
+
+    const services = await Product_Service.find(filter)
+      .populate("modelId")
+      .populate("subCategoryId");
+    return res
+      .status(200)
+      .json({ message: "list of services", data: services });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 
@@ -2631,33 +2702,20 @@ router.post("/ratecard", async (req, res) => {
     if (!file) {
       return res.status(400).send("No files were uploaded.");
     }
-    if (
-      isCategoryExists?.name.toLowerCase() === "mobile" ||
-      isCategoryExists?.name.toLowerCase() === "tablet"
-    ) {
+    if (isCategoryExists?.modelRequired) {
       if (!modelId || !brandId) {
         return res.status(400).json({
-          message: "brandid and modelid is required for mobile and tablet",
+          message: "brandid and modelid is required for selected category",
         });
       }
       let brand = await Brand.findById(brandId);
       if (!brand) {
-        // brand = await Brand.create({
-        //   Name: item.brand,
-        //   brandId: item.brand.toLowerCase(),
-        // });
         return res.status(400).json({
           message: "brandid is invalid",
         });
       }
       let model = await Model.findById(modelId);
       if (!model) {
-        // model = await Model.create({
-        //   categoryId,
-        //   Name: item.model,
-        //   modelId: item.model.toLowerCase(),
-        //   brandId: brand._id,
-        // });
         return res.status(400).json({
           message: "modelid is invalid",
         });
@@ -2669,24 +2727,31 @@ router.post("/ratecard", async (req, res) => {
     file.mv(filepath, async (err) => {
       try {
         if (err) {
-          console.log(err);
           return res.status(500).send(err);
         }
         const jsonArray = await csv().fromFile(filepath);
-        console.log(jsonArray);
         let result = await Promise.all(
           jsonArray.map((item) => {
             return new Promise(async (resolve, reject) => {
               try {
                 let obj = {};
                 obj.categoryId = categoryId;
+                if (item.subcategory) {
+                  let subcategory = await SubCategory.findOne({
+                    name: item.subcategory.toLowerCase(),
+                  });
+                  if (!subcategory) {
+                    subcategory = await SubCategory.create({
+                      name: item.subcategory.toLowerCase(),
+                      category: categoryId,
+                    });
+                  }
+                  obj.subCategoryId = subcategory._id;
+                }
                 obj.serviceName = item["service name"];
                 obj.cost = item.cost;
-                obj.isTrivial = item.isTrivial ? item.isTrivial : true;
-                if (
-                  isCategoryExists?.name.toLowerCase() === "mobile" ||
-                  isCategoryExists?.name.toLowerCase() === "tablet"
-                ) {
+                obj.isTrivial = item.isTrivial ? Boolean(item.isTrivial) : true;
+                if (isCategoryExists?.modelRequired) {
                   obj.modelId = modelId;
                 }
                 let newservice = await Product_Service.findOneAndUpdate(
@@ -2701,7 +2766,6 @@ router.post("/ratecard", async (req, res) => {
             });
           })
         );
-        console.log(result);
         fs.unlinkSync(filepath);
 
         return res.send({
@@ -3349,6 +3413,59 @@ router.post("/create-subcategory", async (req, res) => {
 
 /**
  * @openapi
+ * /admin/subcategory:
+ *  get:
+ *    summary: using this route user can get subcategories
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.get("/subcategory", async (req, res) => {
+  try {
+    let {
+      query: { categoryId },
+    } = req;
+
+    const foundSubcategory = await SubCategory.find({ category: categoryId });
+    if (!foundSubcategory) {
+      return res.status(404).send("No subcategories found");
+    }
+
+    return res.send({
+      status: 200,
+      data: foundSubcategory,
+      message: "subcategories found",
+    });
+  } catch (err) {
+    console.log("An error occured", err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    });
+  }
+});
+
+/**
+ * @openapi
  * /admin/get-store-partner:
  *  get:
  *    summary: used to fetch list of all available store partner
@@ -3980,6 +4097,57 @@ router.get("/penalties/all", async (req, res) => {
     });
   }
 });
+
+/**
+ * @openapi
+ * /admin/getpayouts:
+ *  get:
+ *    summary: used to fetch penalties
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["WITHDRAW","INPROGRESS", "SUCCESS", "FAILED","NOT_ALLOWED"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/getpayouts", async (req, res) => {
+  const { status } = req.query;
+  let query = {};
+
+  if (status && !payoutStatusTypes.includes(status)) {
+    return res.status(400).json({ message: "status not allowed" });
+  }
+
+  if (status) {
+    query['status'] = status;
+  }
+
+  try {
+    const payoutsLists = await Payouts.findPayoutsList(query);
+    return res.status(200).json({ message: "payouts list", payoutsLists });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+});
+
 
 /**
  * @openapi

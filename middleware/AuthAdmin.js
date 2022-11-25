@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const { Admin, Counters } = require("../models");
 const { commonMailFunctionToAll } = require("../libs/mailer/mailLib");
 const { generateRandomNumChar } = require('../libs/commonFunction');
-const { adminTypeArray } = require('../enums/adminTypes');
+const { adminTypeArray, adminTypeObject } = require('../enums/adminTypes');
 const emailDatamapping = require('../common/emailcontent');
 
 const registerAdmin = async (req, res) => {
@@ -53,10 +53,7 @@ const registerAdmin = async (req, res) => {
 
 
 const createAdmin = async (req, res) => {
-  const { name, email, type, zones, category } = req.body;
-  if (!adminTypeArray.includes(type)) {
-    return res.status(400).json({ message: "invalid admin type" });
-  }
+  const { name, email, zones, category } = req.body;
 
   if (!isEmail(email)) {
     return res.status(404).json({
@@ -78,7 +75,7 @@ const createAdmin = async (req, res) => {
       Sno: counterValue.seq,
       Name: name,
       email: email,
-      type: type,
+      type: adminTypeObject.SUPERADMIN,
       password: hashpassword(pass),
       category: category,
       zones: zones
@@ -323,10 +320,8 @@ const updatePassword = async (req, res) => {
 };
 
 const createSubAdmin = async (req, res) => {
-  const { name, email, type, zones, category } = req.body;
-  if (type !== 'SUBADMIN') {
-    return res.status(400).json({ message: "invalid admin type" });
-  }
+  const { name, email, zones, category } = req.body;
+  
 
   if (!isEmail(email)) {
     return res.status(404).json({
@@ -348,7 +343,7 @@ const createSubAdmin = async (req, res) => {
       Sno: counterValue.seq,
       Name: name,
       email: email,
-      type: type,
+      type: adminTypeObject.SUBADMIN,
       password: hashpassword(pass),
       category: category,
       zones: zones
