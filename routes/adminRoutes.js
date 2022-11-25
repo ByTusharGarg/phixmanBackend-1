@@ -26,6 +26,7 @@ const {
   getAllWallletTranssactionForUser,
   getCustomerWallet,
 } = require("../services/Wallet");
+//const commonFunction = require("../utils/commonFunction");
 const { checkAdmin } = require("../middleware/AuthAdmin");
 const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
@@ -227,8 +228,6 @@ router.use(AdminAuth.checkAdmin);
  *                  type: string
  *                email:
  *                  type: string
- *                type:
- *                  type: string
  *                zones:
  *                  type: array
  *                  items:
@@ -255,6 +254,86 @@ router.use(AdminAuth.checkAdmin);
  *    - bearerAuth: []
  */
 router.post("/createadmin", AdminAuth.createAdmin);
+
+/**
+ * @openapi
+ * /admin/createsubadmin:
+ *  post:
+ *    summary: used to create new subadmin admin by superadmmin.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                name:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                zones:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *                category:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    example: 630a2cd91fb0df4a3cb75593
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/createsubadmin", AdminAuth.createSubAdmin);
+
+/**
+ * @openapi
+ * /admin/alladmin:
+ *  post:
+ *    summary: used to fetch list of admins
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/alladmin", async (req, res) => {
+  try {
+    const foundAdmin = await Admin.find().lean();
+    if (foundAdmin.length === 0)
+      return res.status(400).json({ message: "No Admin found" });
+
+    return res.status(200).json({ message: "Admins found", data: foundAdmin });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error encountered while trying to change offer status.",
+    });
+  }
+});
 
 /**
  * @openapi
@@ -367,6 +446,9 @@ router.patch("/updatepassword", updatePassword);
  *                email:
  *                  type: string
  *                  example: example@phixman.in
+ *                gender:
+ *                  type: string
+ *                  enum: ["male", "female", "non-binary"]
  *                address:
  *                  type: object
  *                  properties:
@@ -456,6 +538,7 @@ router.post("/customer/create", async (req, res) => {
       Name: req?.body?.Name,
       email: req?.body?.email,
       address: req?.body?.address,
+      gender: req?.body?.gender,
       isVerified: true,
       isPublished: true,
       isActive: true,
@@ -1929,27 +2012,30 @@ router.get("/getpartnertransaction", async (req, res) => {
  */
 router.post("/categories", async (req, res) => {
   try {
-    console.log(req.files);
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
     req.body.Slots = JSON.parse(req.body.Slots);
     req.body.key = req.body.name.toLowerCase();
     req.body.components = JSON.parse(req.body.components);
-    for (let key in req.body) {
-      if (!req?.body[key]) {
-        return res.status(404).json({ message: `${key} is missing` });
-      }
-    }
+    req.body.details = JSON.parse(req.body.details);
     if (!req?.files?.icon) {
       return res.status(404).json({ message: "icon is missing" });
     }
-    if (!req?.files?.images) {
-      return res.status(404).json({ message: "product images are missing" });
-    }
     let images = [];
-    for (let i = 0; i < req?.files?.images.length; i++) {
-      images.push(encodeImage(req?.files?.images[i]));
+    if (Array.isArray(req?.files?.images)) {
+      for (let i = 0; i < req?.files?.images.length; i++) {
+        images.push(encodeImage(req?.files?.images[i]));
+      }
+    } else {
+      images.push(encodeImage(req?.files?.images));
+    }
+    if (Array.isArray(req?.files?.detailImages)) {
+      for (let i = 0; i < req?.files?.detailImages.length; i++) {
+        req.body.details[i].image = encodeImage(req?.files?.detailImages[i]);
+      }
+    } else {
+      req.body.details[0].image = encodeImage(req?.files?.detailImages);
     }
     req.body.icon = encodeImage(req.files.icon);
     req.body.images = images;
@@ -1963,6 +2049,42 @@ router.post("/categories", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+/**
+ * @openapi
+ * /admin/categories/{id}:
+ *  get:
+ *    summary: get category by id
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/categories/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    let categoryData = await category.findById(id);
+    res.status(200).json({ message: "Category data", data: categoryData });
+  } catch (error) {
+    console.log(error);
+  }
+})
 
 /**
  * @openapi
@@ -2380,10 +2502,14 @@ router.get("/orders/:status", async (req, res) => {
  *                  description: required
  *                modelId:
  *                  type: string
+ *                subCategoryId:
+ *                  type: string
  *                serviceName:
  *                  type: string
  *                cost:
  *                  type: integer
+ *                isTrivial:
+ *                  type: boolean
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -2402,7 +2528,8 @@ router.get("/orders/:status", async (req, res) => {
  */
 router.post("/service", async (req, res) => {
   try {
-    const { categoryId, modelId, serviceName, cost } = req.body;
+    const { categoryId, modelId, serviceName, cost, subCategoryId, isTrivial } =
+      req.body;
     if (!categoryId)
       return res.status(400).json({ message: "category is reqiured" });
     let categorydoc = await category.findOne({
@@ -2412,18 +2539,81 @@ router.post("/service", async (req, res) => {
     if (!categorydoc) {
       return res.status(400).json({ message: "category not found" });
     }
-    if (categorydoc.key === "mobile" && !modelId) {
+    if (categorydoc.modelRequired && !modelId) {
       return res
         .status(404)
         .json({ message: "modelId is reqiured for mobile services" });
     }
-    let obj = { categoryId, serviceName, cost };
+    let obj = { categoryId, serviceName, cost, subCategoryId, isTrivial };
     if (modelId) obj.modelId = modelId;
     let service = await Product_Service.create(obj);
-    res.status(201).json(service);
+    console.log(service);
+    res.status(201).json({ status: 200, data: service });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "internal server error" });
+  }
+});
+
+/**
+ * @openapi
+ * /admin/services:
+ *  get:
+ *    summary: get all services for specific category
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *      - in: query
+ *        name: modelId
+ *        schema:
+ *           type: string
+ *      - in: query
+ *        name: subCategoryId
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/services", async (req, res) => {
+  const { modelId, categoryId, subCategoryId } = req.query;
+
+  if (!categoryId) {
+    return res.status(500).json({ message: "categoryId is required" });
+  }
+
+  try {
+    let filter = { categoryId: categoryId };
+
+    if (modelId) filter.modelId = modelId;
+    if (subCategoryId) filter.subCategoryId = subCategoryId;
+
+    const services = await Product_Service.find(filter)
+      .populate("modelId")
+      .populate("subCategoryId");
+    return res
+      .status(200)
+      .json({ message: "list of services", data: services });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 
@@ -2489,33 +2679,20 @@ router.post("/ratecard", async (req, res) => {
     if (!file) {
       return res.status(400).send("No files were uploaded.");
     }
-    if (
-      isCategoryExists?.name.toLowerCase() === "mobile" ||
-      isCategoryExists?.name.toLowerCase() === "tablet"
-    ) {
+    if (isCategoryExists?.modelRequired) {
       if (!modelId || !brandId) {
         return res.status(400).json({
-          message: "brandid and modelid is required for mobile and tablet",
+          message: "brandid and modelid is required for selected category",
         });
       }
       let brand = await Brand.findById(brandId);
       if (!brand) {
-        // brand = await Brand.create({
-        //   Name: item.brand,
-        //   brandId: item.brand.toLowerCase(),
-        // });
         return res.status(400).json({
           message: "brandid is invalid",
         });
       }
       let model = await Model.findById(modelId);
       if (!model) {
-        // model = await Model.create({
-        //   categoryId,
-        //   Name: item.model,
-        //   modelId: item.model.toLowerCase(),
-        //   brandId: brand._id,
-        // });
         return res.status(400).json({
           message: "modelid is invalid",
         });
@@ -2527,24 +2704,31 @@ router.post("/ratecard", async (req, res) => {
     file.mv(filepath, async (err) => {
       try {
         if (err) {
-          console.log(err);
           return res.status(500).send(err);
         }
         const jsonArray = await csv().fromFile(filepath);
-        console.log(jsonArray);
         let result = await Promise.all(
           jsonArray.map((item) => {
             return new Promise(async (resolve, reject) => {
               try {
                 let obj = {};
                 obj.categoryId = categoryId;
+                if (item.subcategory) {
+                  let subcategory = await SubCategory.findOne({
+                    name: item.subcategory.toLowerCase(),
+                  });
+                  if (!subcategory) {
+                    subcategory = await SubCategory.create({
+                      name: item.subcategory.toLowerCase(),
+                      category: categoryId,
+                    });
+                  }
+                  obj.subCategoryId = subcategory._id;
+                }
                 obj.serviceName = item["service name"];
                 obj.cost = item.cost;
-                obj.isTrivial = item.isTrivial ? item.isTrivial : true;
-                if (
-                  isCategoryExists?.name.toLowerCase() === "mobile" ||
-                  isCategoryExists?.name.toLowerCase() === "tablet"
-                ) {
+                obj.isTrivial = item.isTrivial ? Boolean(item.isTrivial) : true;
+                if (isCategoryExists?.modelRequired) {
                   obj.modelId = modelId;
                 }
                 let newservice = await Product_Service.findOneAndUpdate(
@@ -2559,7 +2743,6 @@ router.post("/ratecard", async (req, res) => {
             });
           })
         );
-        console.log(result);
         fs.unlinkSync(filepath);
 
         return res.send({
@@ -3207,6 +3390,59 @@ router.post("/create-subcategory", async (req, res) => {
 
 /**
  * @openapi
+ * /admin/subcategory:
+ *  get:
+ *    summary: using this route user can get subcategories
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: categoryId
+ *        required: true
+ *        schema:
+ *           type: string
+ *
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+
+router.get("/subcategory", async (req, res) => {
+  try {
+    let {
+      query: { categoryId },
+    } = req;
+
+    const foundSubcategory = await SubCategory.find({ category: categoryId });
+    if (!foundSubcategory) {
+      return res.status(404).send("No subcategories found");
+    }
+
+    return res.send({
+      status: 200,
+      data: foundSubcategory,
+      message: "subcategories found",
+    });
+  } catch (err) {
+    console.log("An error occured", err);
+    return res.send({
+      status: 500,
+      message: "An error occured",
+    });
+  }
+});
+
+/**
+ * @openapi
  * /admin/get-store-partner:
  *  get:
  *    summary: used to fetch list of all available store partner
@@ -3394,13 +3630,11 @@ router.get("/wallet/customer", checkAdmin, async (req, res) => {
       customerId,
       "customer"
     );
-    return res
-      .status(200)
-      .json({
-        message: "customer wallet and transaction",
-        walletData,
-        transactionData,
-      });
+    return res.status(200).json({
+      message: "customer wallet and transaction",
+      walletData,
+      transactionData,
+    });
   } catch (error) {
     return res.status(500).json({
       message: "Error encountered while trying to fetch wallet.",
@@ -3421,10 +3655,9 @@ router.get("/wallet/customer", checkAdmin, async (req, res) => {
  *          schema:
  *              type: object
  *              properties:
- *                promoCode:
- *                  type: string
  *                promoType:
  *                  type: string
+ *                  enum: ["flat", "upto"]
  *                title:
  *                  type: string
  *                description:
@@ -3460,7 +3693,6 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
   try {
     const {
       body: {
-        promoCode,
         promoType,
         title,
         description,
@@ -3474,6 +3706,9 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
         endDate,
       },
     } = req;
+
+    const promoCode = commonFunction.generateRandomString(promoType, 16);
+    console.log(promoCode);
     const offerObj = {
       promoCode,
       promoType,
@@ -3891,39 +4126,52 @@ router.get("/getpayouts", async (req, res) => {
 });
 
 
-// /**
-//  * @openapi
-//  * /admin/ordertranssactions:
-//  *  get:
-//  *    summary: used to fetch penalties
-//  *    tags:
-//  *    - Admin Routes
-//  *    responses:
-//  *      500:
-//  *          description: if internal server error occured while performing request.
-//  *          content:
-//  *            application/json:
-//  *             schema:
-//  *               type: object
-//  *               properties:
-//  *                  message:
-//  *                    type: string
-//  *                    description: a human-readable message describing the response
-//  *                    example: Error encountered.
-//  */
-// router.get("/ordertranssactions", async (req, res) => {
-//   try {
+/**
+ * @openapi
+ * /admin/ordertransaction:
+ *  get:
+ *    summary: used to fetch order transactions
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: paymentStatus
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/ordertransaction", async (req, res) => {
+  try {
+    let query = {};
+    const { paymentStatus = "" } = req.query;
 
-//     const ordersTranssactions = await orderTransaction.find({order_status:'SUCCESS'})
-//     .sort('orderId', -1);
+    if (paymentStatus != "") {
+      query = { ...query, payment_status: paymentStatus };
+    }
+    const ordersTranssactions = await orderTransaction
+      .find(query)
+      .sort({ orderId: -1 });
 
-//     return res.status(200).json({ message: "transsaction list", ordersTranssactions });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       message: "Error encountered while trying to fetch penality.",
-//     });
-//   }
-// });
+    return res
+      .status(200)
+      .json({ message: "transsaction list", ordersTranssactions });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+});
 
 module.exports = router;

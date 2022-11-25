@@ -11,6 +11,7 @@ const {
   CustomerWallet,
   category,
   Coupon,
+  ClaimRequest,
   refundModel,
 } = require("../models");
 const checkCustomer = require("../middleware/AuthCustomer");
@@ -32,10 +33,15 @@ const {
   paymentStatus,
   orderStatusTypesObj,
 } = require("../enums/types");
+
+const {
+  claimTypesList
+} = require('../enums/claimTypes')
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
 const Payment = require("../libs/payments/Payment");
 const { encodeImage } = require("../libs/imageLib");
+const { randomImageName, uploadFile, uploadFileToS3 } = require("../services/s3-service");
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -1426,19 +1432,142 @@ router.get("/order", async (req, res) => {
  *     - bearerAuth: []
  */
 
-router.get("/active-offers",async(req,res)=>{
-  try{
+router.get("/active-offers", async (req, res) => {
+  try {
     const today = moment().format('YYYY-MM-DD');
     const currentTime = moment().format('hh:mm A');
-    console.log("Today : ",currentTime)
-    let foundActiveOffer = await Coupon.find({startDate:{$lte:today},endDate:{$gte:today},isActive:true,startTime:{$lte:currentTime},endTime:{$gte:currentTime}}).lean();
+    console.log("Today : ", currentTime)
+    let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
 
-    if(foundActiveOffer.length===0) return res.status(400).json({ message: 'No active offers found' })
-    
-    return res.status(200).json({message:"active offers found",data:foundActiveOffer})
-  }catch(err){
+    if (foundActiveOffer.length === 0) return res.status(400).json({ message: 'No active offers found' })
+
+    return res.status(200).json({ message: "active offers found", data: foundActiveOffer })
+  } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
-});
+})
+
+
+/**
+ * @openapi
+ * /customer/create/claim:
+ *  post:
+ *    summary: used to create claims
+ *    tags:
+ *    - Customer Routes
+ *    requestBody:
+ *     content:
+ *       multipart/form-data:
+ *        schema:
+ *          type: object
+ *          properties:
+ *            orderId:
+ *              type: string
+ *              required: true
+ *            title:
+ *              type: string
+ *              required: true
+ *            description:
+ *              type: string
+ *              required: true
+ *            images:
+ *              type: array
+ *              items:
+ *                type: file
+ *            audio:
+ *              type: file
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/create/claim", async (req, res) => {
+  try {
+    const {
+      body: {
+        orderId,
+        title,
+        description,
+      }
+    } = req
+
+    let imageMedia = [],fileName=[];
+     let audioMedia = []
+
+
+    //console.log(req.files,req.files.images.length);
+
+    if (req.files?.audio){
+      audioMedia.push({...req.files?.audio, fileName:randomImageName()});
+      let audioURL = await uploadFileToS3(audioMedia[0]?.data,audioMedia[0]?.name,audioMedia[0]?.mimetype )
+      console.log('Audio URL',audioURL);
+    }
+
+    if(req.files?.images?.length > 0){
+
+      req.files?.images?.forEach((pic)=>{
+        imageMedia.push({...pic, fileName:randomImageName()})
+      })
+    } else{
+      imageMedia.push({...req.files?.images, fileName:randomImageName()})
+    }  
+    console.log("****",imageMedia)
+    await Promise.all(
+      imageMedia.map((file, i) => {
+        if (file) {
+          fileName.push(file.fileName)
+          console.log(file)
+          return uploadFile(file.data, file.fileName, file.mimetype);
+        } else {
+          return;
+        }
+      })
+    );
+
+    const claimId = commonFunction.genrateID("CLAIM");
+    const customerId = req.Customer._id;
+
+    const claimObj = {
+      claimId,
+      customerId,
+      orderId,
+      title,
+      description,
+      voiceNote: audioMedia[0]?.fileName,
+      images: imageMedia.length > 1 ? fileName : imageMedia[0].fileName,
+    }
+
+    const newClaim = await ClaimRequest.create(claimObj)
+    if(!newClaim) return res.status(400).json({message:"Unable to create claim"})
+
+    return res.status(200).json({message:"New claim created", data:newClaim})
+
+
+  } catch (error) {
+    console.log('$$$$$$$$$',error);
+    return res.status(500).json({
+      message: "Error encountered while trying to create claim.",
+    });
+  }
+
+})
+
+
+
+
+
+
+
+
 
 module.exports = router;

@@ -9,7 +9,7 @@ const {
   Product_Service,
   SystemInfo,
   Partner,
-  Order
+  Order,
 } = require("../models");
 const router = require("express").Router();
 const fs = require("fs");
@@ -19,7 +19,7 @@ const {
   categoryTypesOptionsArray,
   CategoryTypeOptions,
 } = require("../enums/CategoryTypesOptions");
-const checkPartner = require('../middleware/AuthPartner');
+const checkPartner = require("../middleware/AuthPartner");
 const moment = require("moment");
 const pdf = require("pdf-creator-node");
 const path = require("path");
@@ -129,33 +129,39 @@ router.get("/getSubProvidersByStoreID/:_id", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/subprovider/mystoredetails", checkPartner, async (req, response) => {
-  const { Type, isParent } = req.partner;
+router.get(
+  "/subprovider/mystoredetails",
+  checkPartner,
+  async (req, response) => {
+    const { Type, isParent } = req.partner;
 
-  if (Type !== 'sub-provider') {
-    return response.status(400).json({
-      message: "You are not allowed",
-    });
-  }
-
-  try {
-    const partnerDetails = await Partner.findById(isParent);
-
-    if (!partnerDetails) {
+    if (Type !== "sub-provider") {
       return response.status(400).json({
-        message: "no store found store",
+        message: "You are not allowed",
       });
     }
 
-    return response.status(200).json({ message: "sub-provider store details", data: partnerDetails });
-  } catch (error) {
-    console.log(error);
-    return response.status(500).json({
-      message: "Error encountered while trying to fetching sub provider store",
-    });
-  }
-});
+    try {
+      const partnerDetails = await Partner.findById(isParent);
 
+      if (!partnerDetails) {
+        return response.status(400).json({
+          message: "no store found store",
+        });
+      }
+
+      return response
+        .status(200)
+        .json({ message: "sub-provider store details", data: partnerDetails });
+    } catch (error) {
+      console.log(error);
+      return response.status(500).json({
+        message:
+          "Error encountered while trying to fetching sub provider store",
+      });
+    }
+  }
+);
 
 /**
  * @openapi
@@ -181,7 +187,9 @@ router.get("/myhelpers", checkPartner, async (req, res) => {
   const partnerId = req.partner._id;
   try {
     let data = await Partner.findById(partnerId);
-    return res.status(200).json({ message: "helpers details", data: data['helpers'] });
+    return res
+      .status(200)
+      .json({ message: "helpers details", data: data["helpers"] });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -565,18 +573,25 @@ router.get("/models/:categoryId/:brandId", async (req, res) => {
 
 /**
  * @openapi
- * /services/{categoryId}:
+ * /services:
  *  get:
  *    summary: get all services for specific category
  *    tags:
  *    - Index Routes
  *    parameters:
- *      - in: path
+ *      - in: query
  *        name: categoryId
  *        required: true
  *        schema:
  *           type: string
- *
+ *      - in: query
+ *        name: modelId
+ *        schema:
+ *           type: string
+ *      - in: query
+ *        name: subCategoryId
+ *        schema:
+ *           type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -590,70 +605,25 @@ router.get("/models/:categoryId/:brandId", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/services/:categoryId", async (req, res) => {
-  const { categoryId } = req.params;
+router.get("/services", async (req, res) => {
+  const { modelId, categoryId, subCategoryId } = req.query;
 
   if (!categoryId) {
     return res.status(500).json({ message: "categoryId is required" });
   }
 
   try {
-    let filter = { ispublish: true };
-    if (categoryId) filter.categoryId = categoryId;
-    const services = await Product_Service.find(filter);
-    return res.status(200).json({ message: "Models lists", data: services });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Error encountered." });
-  }
-});
+    let filter = { ispublish: true, categoryId: categoryId };
 
-/**
- * @openapi
- * /services/{categoryId}/{modelid}:
- *  get:
- *    summary: get all services for specific category
- *    tags:
- *    - Index Routes
- *    parameters:
- *      - in: path
- *        name: categoryId
- *        required: true
- *        schema:
- *           type: string
- *      - in: path
- *        name: modelid
- *        schema:
- *           type: string
- *
- *    responses:
- *      500:
- *          description: if internal server error occured while performing request.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: Error encountered.
- */
-router.get("/services/:categoryId/:modelid", async (req, res) => {
-  const { modelid, categoryId } = req.params;
+    if (modelId) filter.modelId = modelId;
+    if (subCategoryId) filter.subCategoryId = subCategoryId;
 
-  if (!categoryId) {
-    return res.status(500).json({ message: "categoryId is required" });
-  }
-
-  try {
-    let filter = { ispublish: true };
-
-    if (modelid) filter.modelId = modelid;
-    if (categoryId) filter.categoryId = categoryId;
-
-    const services = await Product_Service.find(filter);
-    return res.status(200).json({ message: "Models lists", data: services });
+    const services = await Product_Service.find(filter)
+      .populate("modelId")
+      .populate("subCategoryId");
+    return res
+      .status(200)
+      .json({ message: "list of services", data: services });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -800,10 +770,10 @@ router.get("/settings", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
- router.post("/generateinvoice",checkTokenOnly, async (req, res, next) => {
+router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
   const { orderid } = req.body;
 
-  if(!orderid) {
+  if (!orderid) {
     return res.status(400).json({ message: "order required" });
   }
 
@@ -833,8 +803,8 @@ router.get("/settings", async (req, res) => {
 
   let array = [];
   orderData.OrderDetails.Items.map((ele) => {
-    array.push({ serviceName: ele.ServiceId.serviceName })
-  })
+    array.push({ serviceName: ele.ServiceId.serviceName });
+  });
 
   let totalAmount = orderData.OrderDetails.Amount;
   let gstnineP = (totalAmount * 9) / 100;
@@ -903,7 +873,7 @@ router.get("/settings", async (req, res) => {
     var fileData = fs.readFileSync(data.filename);
 
     let interval = setTimeout(() => {
-      fs.unlink(data.filename, () => { });
+      fs.unlink(data.filename, () => {});
       clearInterval(interval);
     }, 3000);
 

@@ -97,7 +97,6 @@ module.exports = {
   orderStatusTypesObj,
   panalityEnnum,
   paymentStatusObject,
-
   payoutPaymentStatus,
   payoutStatusTypes,
   payoutStatusTypesObject

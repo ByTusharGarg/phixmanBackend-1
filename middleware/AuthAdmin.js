@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const { Admin, Counters } = require("../models");
 const { commonMailFunctionToAll } = require("../libs/mailer/mailLib");
 const { generateRandomNumChar } = require('../libs/commonFunction');
-const { adminTypeArray } = require('../enums/adminTypes');
+const { adminTypeArray, adminTypeObject } = require('../enums/adminTypes');
 const emailDatamapping = require('../common/emailcontent');
 
 const registerAdmin = async (req, res) => {
@@ -53,10 +53,7 @@ const registerAdmin = async (req, res) => {
 
 
 const createAdmin = async (req, res) => {
-  const { name, email, type, zones, category } = req.body;
-  if (!adminTypeArray.includes(type)) {
-    return res.status(400).json({ message: "invalid admin type" });
-  }
+  const { name, email, zones, category } = req.body;
 
   if (!isEmail(email)) {
     return res.status(404).json({
@@ -78,7 +75,7 @@ const createAdmin = async (req, res) => {
       Sno: counterValue.seq,
       Name: name,
       email: email,
-      type: type,
+      type: adminTypeObject.SUPERADMIN,
       password: hashpassword(pass),
       category: category,
       zones: zones
@@ -111,6 +108,7 @@ const createAdmin = async (req, res) => {
     });
   }
 };
+
 
 const adminLogin = (req, res) => {
   if (isEmpty(req.body.username) || isEmpty(req.body.password)) {
@@ -321,6 +319,67 @@ const updatePassword = async (req, res) => {
   }
 };
 
+const createSubAdmin = async (req, res) => {
+  const { name, email, zones, category } = req.body;
+  
+
+  if (!isEmail(email)) {
+    return res.status(404).json({
+      message: "InValid Email",
+    });
+  }
+
+  try {
+    let counterValue = await Counters.findOneAndUpdate(
+      { name: "SubAdmins" },
+      { $inc: { seq: 1 } },
+      { new: true }
+    );
+    if (!counterValue) {
+      counterValue = await Counters.create({ name: "SubAdmins" });
+    }
+    const pass = generateRandomNumChar(8);
+    await Admin.create({
+      Sno: counterValue.seq,
+      Name: name,
+      email: email,
+      type: adminTypeObject.SUBADMIN,
+      password: hashpassword(pass),
+      category: category,
+      zones: zones
+    });
+
+    // send mail
+
+    emailData = {
+      Subject: "[Phixman] Sub-Admin informaton E-mail",
+      heading1: emailDatamapping['createdSubAdmin'].heading1,
+      heading2: emailDatamapping['createdSubAdmin'].heading2,
+      desc: `Hey ${name}, ` + emailDatamapping['createdSubAdmin'].desc + `
+        email: ${email}
+        password: ${pass}
+      You can change randomly generated password whenever you want to`,
+      buttonName: emailDatamapping['createdSubAdmin'].buttonName,
+      email: email
+    };
+    // console.log(emailData);
+    commonMailFunctionToAll(emailData, "common");
+
+    //send activation mail here
+    return res.status(201).json({
+      message: "SUB-Admin successfull created",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Try again later !!!",
+    });
+  }
+};
+
+
+
+
 module.exports = {
   adminLogin,
   checkAdmin,
@@ -329,4 +388,5 @@ module.exports = {
   resetPassword,
   updatePassword,
   createAdmin,
+  createSubAdmin
 };
