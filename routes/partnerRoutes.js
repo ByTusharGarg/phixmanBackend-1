@@ -2454,7 +2454,6 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
       },
       { new: true }
     );
-    console.log(update);
     return res
       .status(200)
       .json({ message: "Orders successfully reestimated." });
@@ -2463,7 +2462,6 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 
 (async () => {

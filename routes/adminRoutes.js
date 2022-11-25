@@ -37,6 +37,7 @@ const {
   orderTypes,
   paymentModeTypes,
   orderStatusTypesObj,
+  payoutStatusTypes,
 } = require("../enums/types");
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
@@ -51,6 +52,8 @@ const {
 } = require("../libs/commonFunction");
 const { adminTypeArray } = require("../enums/adminTypes");
 const { getWalletTransactions } = require("../services/Wallet");
+const Payouts = require("../libs/payments/payouts");
+
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -3836,6 +3839,57 @@ router.get("/penalties/all", async (req, res) => {
     });
   }
 });
+
+/**
+ * @openapi
+ * /admin/getpayouts:
+ *  get:
+ *    summary: used to fetch penalties
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["WITHDRAW","INPROGRESS", "SUCCESS", "FAILED","NOT_ALLOWED"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/getpayouts", async (req, res) => {
+  const { status } = req.query;
+  let query = {};
+
+  if (status && !payoutStatusTypes.includes(status)) {
+    return res.status(400).json({ message: "status not allowed" });
+  }
+
+  if (status) {
+    query['status'] = status;
+  }
+
+  try {
+    const payoutsLists = await Payouts.findPayoutsList(query);
+    return res.status(200).json({ message: "payouts list", payoutsLists });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+});
+
 
 // /**
 //  * @openapi
