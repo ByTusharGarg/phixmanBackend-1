@@ -225,8 +225,6 @@ router.use(AdminAuth.checkAdmin);
  *                  type: string
  *                email:
  *                  type: string
- *                type:
- *                  type: string
  *                zones:
  *                  type: array
  *                  items:
@@ -270,8 +268,6 @@ router.post("/createadmin", AdminAuth.createAdmin);
  *                name:
  *                  type: string
  *                email:
- *                  type: string
- *                type:
  *                  type: string
  *                zones:
  *                  type: array
