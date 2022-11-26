@@ -4121,6 +4121,28 @@ router.get("/ordertransaction", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /admin/invoice/all:
+ *  get:
+ *    summary: used to fetch invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
 router.get("/invoice/all", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({}).lean();
@@ -4135,6 +4157,28 @@ router.get("/invoice/all", async (req, res) => {
   }
 })
 
+/**
+ * @openapi
+ * /admin/invoice/phixman/tax:
+ *  get:
+ *    summary: used to fetch taxable phixman invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
 router.get("/invoice/phixman/tax", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({ taxPayer: "" }).lean();
@@ -4150,7 +4194,28 @@ router.get("/invoice/phixman/tax", async (req, res) => {
 
 })
 
-
+/**
+ * @openapi
+ * /admin/invoice/partner:
+ *  get:
+ *    summary: used to fetch partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
 router.get("/invoice/partner", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({ type:"ORDER_PART_B" }).lean();
@@ -4166,6 +4231,29 @@ router.get("/invoice/partner", async (req, res) => {
 
 })
 
+
+/**
+ * @openapi
+ * /admin/invoice/partner/tax:
+ *  get:
+ *    summary: used to fetch taxable partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
 router.get("/invoice/partner/tax", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: '' } }).lean();
