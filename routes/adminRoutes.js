@@ -20,6 +20,7 @@ const {
   Notification,
   SubCategory,
   orderTransaction,
+  Invoice
 } = require("../models");
 const PenalitySchema = require("../models/penality");
 const {
@@ -4196,5 +4197,152 @@ router.get("/ordertransaction", async (req, res) => {
     });
   }
 });
+
+/**
+ * @openapi
+ * /admin/invoice/all:
+ *  get:
+ *    summary: used to fetch invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/all", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({}).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/invoice/phixman/tax:
+ *  get:
+ *    summary: used to fetch taxable phixman invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/phixman/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ taxPayer: "" }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+/**
+ * @openapi
+ * /admin/invoice/partner:
+ *  get:
+ *    summary: used to fetch partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/partner", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B" }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+
+/**
+ * @openapi
+ * /admin/invoice/partner/tax:
+ *  get:
+ *    summary: used to fetch taxable partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/partner/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: '' } }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
 
 module.exports = router;
