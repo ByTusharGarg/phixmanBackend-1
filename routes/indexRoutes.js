@@ -747,7 +747,7 @@ router.get("/settings", async (req, res) => {
  * @openapi
  * /generateinvoice:
  *  post:
- *    summary: generate invoice of customer order
+ *    summary: generate invoice of customer order by orderId
  *    tags:
  *    - Index Routes
  *    requestBody:
@@ -873,7 +873,151 @@ router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
     var fileData = fs.readFileSync(data.filename);
 
     let interval = setTimeout(() => {
-      fs.unlink(data.filename, () => {});
+      fs.unlink(data.filename, () => { });
+      clearInterval(interval);
+    }, 3000);
+
+    return res.send(fileData);
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Error encountered while generating pdf." });
+  }
+});
+
+/**
+ * @openapi
+ * /generateinvoicebyInvoiceId:
+ *  post:
+ *    summary: generate invoice order by invoiceId
+ *    tags:
+ *    - Index Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          invoiceId:
+ *              type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/generateinvoicebyInvoiceId/:invoiceId", checkTokenOnly, async (req, res, next) => {
+  const { invoiceId } = req.params;
+
+  if (!invoiceId) {
+    return res.status(400).json({ message: "invoiceId required" });
+  }
+
+  const html = fs.readFileSync(
+    path.join(__dirname, "../libs/mailer/template/invoice.html"),
+    "utf-8"
+  );
+
+  let orderData = null;
+
+  const filename = Math.random() + "_doc" + ".pdf";
+
+  try {
+    orderData = await Order.findOne({ invoiceId: invoiceId })
+      .populate("OrderDetails.Items.ServiceId")
+      .populate("Customer")
+      .populate("Partner");
+
+    if (!orderData) {
+      return res.status(404).json({ message: "order not found" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Error encountered while finding orders pdf." });
+  }
+
+  let array = [];
+  orderData.OrderDetails.Items.map((ele) => {
+    array.push({ serviceName: ele.ServiceId.serviceName });
+  });
+
+  let totalAmount = orderData.OrderDetails.Amount;
+  let gstnineP = (totalAmount * 9) / 100;
+
+  const obj = {
+    prodlist: array,
+    bAmt: 10,
+    eAmt: totalAmount - gstnineP * 2,
+    disCount: 0,
+    tax: gstnineP * 2,
+    cgst: gstnineP,
+    sgst: gstnineP,
+    totalAmt: totalAmount,
+    customer: {
+      name: orderData?.Customer?.Name || "N/A",
+      gst: "N/A",
+      invoiceNum: orderData.invoiceId,
+      address: `${orderData.address.street} ${orderData.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
+      date: orderData.Date,
+      sNc: `${orderData.address.state} & ${orderData.address.pin}`,
+      placeOfSupply: orderData.address.country || "N/A",
+    },
+    partner: {
+      bName: orderData.Partner?.Name || "N/A",
+      bGst: "N/A",
+      bAddress: `${orderData?.address.street} ${orderData?.address.city} ${orderData.address.state} ${orderData.address.country} ${orderData.address.pin}`,
+      sNc: `${orderData.address.state} ${orderData.address.country} & ${orderData.address.pin}`,
+    },
+  };
+
+  const document = {
+    html: html,
+    data: {
+      products: obj,
+    },
+    path: "./docs/" + filename,
+  };
+
+  let options = {
+    formate: "A3",
+    orientation: "portrait",
+    border: "2mm",
+    header: {
+      height: "15mm",
+      contents:
+        '<h4 style=" color: red;font-size:20;font-weight:800;text-align:center;">CUSTOMER INVOICE</h4>',
+    },
+    footer: {
+      height: "20mm",
+      contents: {
+        first: "Cover page",
+        2: "Second page",
+        default:
+          'div style="float: right;">Signature of supplier/authorized representative</div>',
+        last: "Last Page",
+      },
+    },
+  };
+
+  try {
+    const data = await pdf.create(document, options);
+
+    res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
+    res.setHeader("Content-type", "application/pdf");
+
+    var fileData = fs.readFileSync(data.filename);
+
+    let interval = setTimeout(() => {
+      fs.unlink(data.filename, () => { });
       clearInterval(interval);
     }, 3000);
 
