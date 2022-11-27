@@ -20,7 +20,8 @@ const {
   Notification,
   SubCategory,
   orderTransaction,
-  Invoice
+  Invoice, 
+  Vendor
 } = require("../models");
 const PenalitySchema = require("../models/penality");
 const {
@@ -4222,7 +4223,11 @@ router.get("/ordertransaction", async (req, res) => {
  */
 router.get("/invoice/all", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({}).lean();
+    const foundInvoice = await Invoice.find({}).lean()
+    .populate("customer")
+    .populate("partner")
+    .populate("order")
+    .populate("claim")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
@@ -4258,7 +4263,11 @@ router.get("/invoice/all", async (req, res) => {
  */
 router.get("/invoice/phixman/tax", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ taxPayer: "" }).lean();
+    const foundInvoice = await Invoice.find({ taxPayer: "" }).lean()
+    .populate("customer")
+    .populate("partner")
+    .populate("order")
+    .populate("claim")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
@@ -4295,7 +4304,11 @@ router.get("/invoice/phixman/tax", async (req, res) => {
  */
 router.get("/invoice/partner", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B" }).lean();
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B" }).lean()    
+    .populate("customer")
+    .populate("partner")
+    .populate("order")
+    .populate("claim")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
@@ -4333,7 +4346,11 @@ router.get("/invoice/partner", async (req, res) => {
  */
 router.get("/invoice/partner/tax", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: '' } }).lean();
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: '' } }).lean()
+    .populate("customer")
+    .populate("partner")
+    .populate("order")
+    .populate("claim")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })

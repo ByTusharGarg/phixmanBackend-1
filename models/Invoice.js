@@ -6,15 +6,15 @@ const Invoice = mongoose.model(
   "Invoice",
   new Schema({
     date: { type: String, required: true },
-    taxPayer:{type: Schema.Types.ObjectId, ref:"Partner", default: ''},
+    taxPayer:{type: Schema.Types.ObjectId, ref:"Partner"},
     invoiceId:{ type: String,unique: true, index: true },
     type:{type:String, enum: invoiceTypesList},
     status: {type: String,enum: invoiceStatusTypes,},
-    claim:{type: Schema.Types.ObjectId, ref:"ClaimRequest", default: ''},
-    order: { type: Schema.Types.ObjectId, ref:"Order", default: '' },
-    customer :{ type: Schema.Types.ObjectId, ref:"Customer", default: '' },
-    partner:{ type: Schema.Types.ObjectId, ref:"Partner", default: '' },
-    vendor:{ type: Schema.Types.ObjectId, ref:"Vendor", default: '' },
+    claim:{type: Schema.Types.ObjectId, ref:"ClaimRequest"},
+    order: { type: Schema.Types.ObjectId, ref:"Order" },
+    customer :{ type: Schema.Types.ObjectId, ref:"Customer" },
+    partner:{ type: Schema.Types.ObjectId, ref:"Partner" },
+    vendor:{ type: Schema.Types.ObjectId, ref:"Vendor" },
   })
 );
 

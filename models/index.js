@@ -40,6 +40,8 @@ const Zone = require("./Zone");
 
 const Invoice = require("./Invoice")
 
+const Vendor = require("./Vendor")
+
 module.exports = {
   Admin,
   Brand,
@@ -68,5 +70,6 @@ module.exports = {
   orderTransaction,
   ClaimRequest,
   refundModel,
-  Invoice
+  Invoice,
+  Vendor
 };
