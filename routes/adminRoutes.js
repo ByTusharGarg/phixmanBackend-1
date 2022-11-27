@@ -20,7 +20,7 @@ const {
   Notification,
   SubCategory,
   orderTransaction,
-  Invoice, 
+  Invoice,
   Vendor
 } = require("../models");
 const PenalitySchema = require("../models/penality");
@@ -4224,13 +4224,34 @@ router.get("/ordertransaction", async (req, res) => {
 router.get("/invoice/all", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({}).lean()
-    .populate("customer")
-    .populate("partner")
-    .populate("order")
-    .populate("claim")
-    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
+      .populate("vendor")
 
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+    console.log(foundInvoice);
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" });
+
+    let returnObj=[];
+    foundInvoice.forEach((invoice)=>{
+      returnObj.push({
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor.Sno,
+        vendor_name: invoice.vendor.name,
+      })
+    })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -4264,10 +4285,10 @@ router.get("/invoice/all", async (req, res) => {
 router.get("/invoice/phixman/tax", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({ taxPayer: null }).lean()
-    .populate("customer")
-    .populate("partner")
-    .populate("order")
-    .populate("claim")
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
 
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
@@ -4305,11 +4326,11 @@ router.get("/invoice/phixman/tax", async (req, res) => {
  */
 router.get("/invoice/partner", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B" }).lean()    
-    .populate("customer")
-    .populate("partner")
-    .populate("order")
-    .populate("claim")
+    const foundInvoice = await Invoice.find({ type: "ORDER_PART_B" }).lean()
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
@@ -4347,12 +4368,12 @@ router.get("/invoice/partner", async (req, res) => {
  */
 router.get("/invoice/partner/tax", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: null } }).lean()
-    .populate("customer")
-    .populate("partner")
-    .populate("order")
-    .populate("claim")
-    .populate("taxPayer")
+    const foundInvoice = await Invoice.find({ type: "ORDER_PART_B", taxPayer: { $ne: null } }).lean()
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
+      .populate("taxPayer")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
