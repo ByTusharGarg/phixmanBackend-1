@@ -1397,14 +1397,6 @@ router.get("/order", async (req, res) => {
  *    summary: it's used to fetch all active orders.
  *    tags:
  *    - Customer Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          schema:
- *              type: object
- *              properties:
- *                id:
- *                  type: string
  *    responses:
  *      200:
  *          description: if we are able to fetch all active offers
