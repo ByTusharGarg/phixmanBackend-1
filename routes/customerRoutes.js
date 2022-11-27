@@ -1427,9 +1427,9 @@ router.get("/order", async (req, res) => {
 router.get("/active-offers", async (req, res) => {
   try {
     const today = moment().format('YYYY-MM-DD');
-    const currentTime = moment().format('hh:mm A');
+    const currentTime = moment().format();
 
-    let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true }).lean();
+    let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
 
     if (foundActiveOffer.length === 0) return res.status(400).json({ message: 'No active offers found' })
 

@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const { AdminAuth } = require("../middleware");
+const moment = require("moment")
 const {
   Admin,
   Customer,
@@ -3743,8 +3744,8 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startTime,
-      endTime,
+      startTime: moment(startDate).set({"hour": startTime.split(":")[0], "minute":startTime.split(":")[1] }).format(),
+      endTime: moment(endDate).set({"hour": endTime.split(":")[0], "minute":endTime.split(":")[1] }).format(),
       startDate,
       endDate,
     };
@@ -4384,7 +4385,6 @@ router.get("/invoice/partner", async (req, res) => {
   }
 
 })
-
 
 /**
  * @openapi
