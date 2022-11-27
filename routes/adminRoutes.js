@@ -4087,7 +4087,7 @@ router.get("/penalties/all", async (req, res) => {
           },
         },
       ])
-      .populate("model");
+      .populate("partner");
     if (foundPenalties.length === 0)
       return res.status(400).json({ message: "No Penalties found" });
 
