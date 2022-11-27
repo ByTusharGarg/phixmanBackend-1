@@ -3744,8 +3744,8 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startTime: moment(startDate).set({"hour": startTime.split(":")[0], "minute":startTime.split(":")[1] }).format(),
-      endTime: moment(endDate).set({"hour": endTime.split(":")[0], "minute":endTime.split(":")[1] }).format(),
+      startTime: moment(startDate).set({ "hour": startTime.split(":")[0], "minute": startTime.split(":")[1] }).format(),
+      endTime: moment(endDate).set({ "hour": endTime.split(":")[0], "minute": endTime.split(":")[1] }).format(),
       startDate,
       endDate,
     };
@@ -4234,8 +4234,8 @@ router.get("/invoice/all", async (req, res) => {
     console.log(foundInvoice);
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" });
 
-    let returnObj=[];
-    foundInvoice.forEach((invoice)=>{
+    let returnObj = [];
+    foundInvoice.forEach((invoice) => {
       let obj = {
         invoiceId: invoice.invoiceId,
         invoice_type: invoice.type,
@@ -4296,8 +4296,8 @@ router.get("/invoice/phixman/tax", async (req, res) => {
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     let returnObj = [];
-  
-    foundInvoice.forEach((invoice)=>{
+
+    foundInvoice.forEach((invoice) => {
       let obj = {
         invoiceId: invoice.invoiceId,
         invoice_type: invoice.type,
@@ -4312,7 +4312,8 @@ router.get("/invoice/phixman/tax", async (req, res) => {
         vendor_code: invoice.vendor.Sno,
         vendor_name: invoice.vendor.name,
       }
-      returnObj.push(obj)})
+      returnObj.push(obj)
+    })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
   } catch (error) {
@@ -4357,8 +4358,8 @@ router.get("/invoice/partner", async (req, res) => {
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     let returnObj = [];
-  
-    foundInvoice.forEach((invoice)=>{
+
+    foundInvoice.forEach((invoice) => {
       let obj = {
         invoiceId: invoice.invoiceId,
         invoice_type: invoice.type,
@@ -4373,7 +4374,8 @@ router.get("/invoice/partner", async (req, res) => {
         vendor_code: invoice.vendor.Sno,
         vendor_name: invoice.vendor.name,
       }
-      returnObj.push(obj)})
+      returnObj.push(obj)
+    })
 
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
@@ -4419,8 +4421,8 @@ router.get("/invoice/partner/tax", async (req, res) => {
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     let returnObj = [];
-  
-    foundInvoice.forEach((invoice)=>{
+
+    foundInvoice.forEach((invoice) => {
       let obj = {
         invoiceId: invoice.invoiceId,
         invoice_type: invoice.type,
@@ -4436,13 +4438,77 @@ router.get("/invoice/partner/tax", async (req, res) => {
         vendor_name: invoice.vendor.name,
         taxPayer: invoice.taxPayer
       }
-      returnObj.push(obj)})
+      returnObj.push(obj)
+    })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/service/delete:
+ *  delete:
+ *    summary: used to delete offer
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                serviceIds:
+ *                  type: array
+ *                  items:
+ *                      type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.delete("/service/delete", async (req, res) => {
+  try {
+    const {
+      body: {
+        serviceIds
+      }
+    } = req;
+
+    const deleteService = await Product_Service.updateMany(
+      {
+        _id: { $in: serviceIds }
+      },
+      {
+        $set: {
+          ispublish: false
+        }
+      }
+    )
+
+    if (!deleteService) return res.status(400).json({ message: "Unable to delete services" })
+
+    return res.status(200).json({ message: "Successfully deleted services" })
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to delete service.",
     });
   }
 })
