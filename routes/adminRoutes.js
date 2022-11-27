@@ -4235,7 +4235,7 @@ router.get("/invoice/all", async (req, res) => {
 
     let returnObj=[];
     foundInvoice.forEach((invoice)=>{
-      returnObj.push({
+      let obj = {
         invoiceId: invoice.invoiceId,
         invoice_type: invoice.type,
         invoice_dt: invoice.date,
@@ -4248,7 +4248,8 @@ router.get("/invoice/all", async (req, res) => {
         partner_name: invoice.partner?.Name,
         vendor_code: invoice.vendor.Sno,
         vendor_name: invoice.vendor.name,
-      })
+      }
+      returnObj.push(obj)
     })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
@@ -4289,10 +4290,30 @@ router.get("/invoice/phixman/tax", async (req, res) => {
       .populate("partner")
       .populate("order")
       .populate("claim")
+      .populate("vendor")
 
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+    let returnObj = [];
+  
+    foundInvoice.forEach((invoice)=>{
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor.Sno,
+        vendor_name: invoice.vendor.name,
+      }
+      returnObj.push(obj)})
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -4331,9 +4352,30 @@ router.get("/invoice/partner", async (req, res) => {
       .populate("partner")
       .populate("order")
       .populate("claim")
+      .populate("vendor")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+    let returnObj = [];
+  
+    foundInvoice.forEach((invoice)=>{
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor.Sno,
+        vendor_name: invoice.vendor.name,
+      }
+      returnObj.push(obj)})
+
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -4376,7 +4418,27 @@ router.get("/invoice/partner/tax", async (req, res) => {
       .populate("taxPayer")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+    let returnObj = [];
+  
+    foundInvoice.forEach((invoice)=>{
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor.Sno,
+        vendor_name: invoice.vendor.name,
+        taxPayer: invoice.taxPayer
+      }
+      returnObj.push(obj)})
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
   } catch (error) {
     console.log(error);
     return res.status(500).json({
