@@ -20,6 +20,7 @@ const {
   Notification,
   SubCategory,
   orderTransaction,
+  Invoice
 } = require("../models");
 const PenalitySchema = require("../models/penality");
 const {
@@ -38,6 +39,7 @@ const {
   orderTypes,
   paymentModeTypes,
   orderStatusTypesObj,
+  payoutStatusTypes,
 } = require("../enums/types");
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
@@ -52,6 +54,8 @@ const {
 } = require("../libs/commonFunction");
 const { adminTypeArray } = require("../enums/adminTypes");
 const { getWalletTransactions } = require("../services/Wallet");
+const Payouts = require("../libs/payments/payouts");
+
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -2081,7 +2085,7 @@ router.get("/categories/:id", async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-})
+});
 
 /**
  * @openapi
@@ -2186,34 +2190,57 @@ router.get("/categories/:id", async (req, res) => {
  */
 router.put("/categories/:id", async (req, res) => {
   const { id } = req.params;
-  const data = {};
-  // const { name, forms, availableOn, servedAt, Slots, key, components } = req.body;
-  // const { icon } = req.files;
-
+  // console.log(req.body)
   try {
+    if (!id) {
+      return res.status(404).json({ message: "id is missing" });
+    }
     req.body.forms = JSON.parse(req.body.forms);
     req.body.availableOn = JSON.parse(req.body.availableOn);
     req.body.servedAt = JSON.parse(req.body.servedAt);
     req.body.Slots = JSON.parse(req.body.Slots);
-    req.body.key = req.body.name.toLowerCase();
+    req.body.name = req.body.name.toLowerCase();
     req.body.components = JSON.parse(req.body.components);
-    req.body.icon = encodeImage(req.files.icon);
-
-    for (let key in data) {
-      if (!req?.body[key]) {
-        return res.status(404).json({ message: `${key} is missing` });
+    req.body.maxDisc = JSON.parse(req.body.maxDisc);
+    req.body.minDisc = JSON.parse(req.body.minDisc);
+    req.body.maxDuration = JSON.parse(req.body.maxDuration);
+    req.body.minDuration = JSON.parse(req.body.minDuration);
+    req.body.LeadExpense = JSON.parse(req.body.LeadExpense);
+    req.body.companyComissionPercentage = JSON.parse(
+      req.body.companyComissionPercentage
+    );
+    req.body.modelRequired = JSON.parse(req.body.modelRequired);
+    req.body.details = JSON.parse(req.body.details);
+    if (req.files) {
+      let images = [];
+      if (Array.isArray(req?.files?.images)) {
+        for (let i = 0; i < req?.files?.images.length; i++) {
+          images.push(encodeImage(req?.files?.images[i]));
+        }
+      } else {
+        images.push(encodeImage(req?.files?.images));
       }
+      if (Array.isArray(req?.files?.detailImages)) {
+        for (let i = 0; i < req?.files?.detailImages.length; i++) {
+          req.body.details[i].image = encodeImage(req?.files?.detailImages[i]);
+        }
+      } else {
+        req.body.details[0].image = encodeImage(req?.files?.detailImages);
+      }
+      if (req.files.icon) {
+        req.body.icon = encodeImage(req.files.icon);
+      }
+      req.body.images = images;
     }
 
-    const updatedategory = category.findByIdAndUpdate(id, req.body, {
+    const updatedategory = await category.findByIdAndUpdate(id, req.body, {
       new: true,
     });
-
+    // console.log("updatedategory",updatedategory)
     if (updatedategory) {
-      return res.status(200).json({
-        message: "Category updated successfully.",
-        data: updatedategory,
-      });
+      return res
+        .status(200)
+        .json({ message: "Category updated successfully." });
     } else {
       return res.status(400).json({ message: "Category not found." });
     }
@@ -4074,6 +4101,57 @@ router.get("/penalties/all", async (req, res) => {
 
 /**
  * @openapi
+ * /admin/getpayouts:
+ *  get:
+ *    summary: used to fetch penalties
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: status
+ *        required: true
+ *        schema:
+ *           type: string
+ *           enum: ["WITHDRAW","INPROGRESS", "SUCCESS", "FAILED","NOT_ALLOWED"]
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/getpayouts", async (req, res) => {
+  const { status } = req.query;
+  let query = {};
+
+  if (status && !payoutStatusTypes.includes(status)) {
+    return res.status(400).json({ message: "status not allowed" });
+  }
+
+  if (status) {
+    query['status'] = status;
+  }
+
+  try {
+    const payoutsLists = await Payouts.findPayoutsList(query);
+    return res.status(200).json({ message: "payouts list", payoutsLists });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch penality.",
+    });
+  }
+});
+
+
+/**
+ * @openapi
  * /admin/ordertransaction:
  *  get:
  *    summary: used to fetch order transactions
@@ -4119,5 +4197,152 @@ router.get("/ordertransaction", async (req, res) => {
     });
   }
 });
+
+/**
+ * @openapi
+ * /admin/invoice/all:
+ *  get:
+ *    summary: used to fetch invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/all", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({}).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/invoice/phixman/tax:
+ *  get:
+ *    summary: used to fetch taxable phixman invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/phixman/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ taxPayer: "" }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+/**
+ * @openapi
+ * /admin/invoice/partner:
+ *  get:
+ *    summary: used to fetch partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/partner", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B" }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+
+/**
+ * @openapi
+ * /admin/invoice/partner/tax:
+ *  get:
+ *    summary: used to fetch taxable partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/partner/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: '' } }).lean();
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
 
 module.exports = router;

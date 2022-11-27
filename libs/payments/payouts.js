@@ -36,15 +36,7 @@ class Payouts {
             if (!token) {
                 throw new Error("token required");
             }
-            // const body = {
-            //     beneId: 'kihud',
-            //     name: 'oijiijiju',
-            //     email: 'tarun@gmail.com',
-            //     phone: '8510967008',
-            //     bankAccount: '00111122233',
-            //     ifsc: 'HDFC0000001',
-            //     address1: 'ABC Street'
-            // };
+
             const options = {
                 method: 'POST',
                 url: `${casrfreeUrlLinks}/v1/addBeneficiary`,
@@ -125,10 +117,14 @@ class Payouts {
         return axios.request(options)
     }
 
-    async processPayout(partnerId, orderId, data) {
-        let partnerAccountDetails = orderDetails = null;
+    async initiatePayout(partnerId, orderId, payoutId) {
+        let partnerAccountDetails = null;
+        let orderDetails = null;
+        let payoutData = null;
+
         try {
-            partnerAccountDetails = await partnerBankDetailsModel({ partnerId: partnerId });
+            partnerAccountDetails = await partnerBankDetailsModel.findOne({ partnerId: partnerId });
+
             if (!partnerAccountDetails) {
                 throw new Error("partner bank details not found");
             }
@@ -141,22 +137,30 @@ class Payouts {
             if (!orderDetails) {
                 throw new Error("no order details found");
             }
+
+            payoutData = await payoutModel.findById(payoutId);
+            if (!payoutData) {
+                throw new Error("invalid payout or not exists");
+            }
+            console.log(payoutData.status);
+            if (payoutData.status !== payoutStatusTypesObject.WITHDRAW && payoutData.status !== payoutStatusTypesObject.FAILED) {
+                throw new Error("this payment is not allowed to be initiate");
+            }
         } catch (error) {
             throw new Error(error.message || "something is missing");
         }
 
         try {
             // create payout on cashfree
-            const transFerId = `PAY_${Math.floor(Date.now() * Math.random() * 10)}`;
-            const payoutResp = await this.initiateCashfreePayout(partnerAccountDetails.beneId, 100, transFerId, "order payment");
-            console.log(payoutResp.data.data);
-
-            // create on our db
-            const newPayout = new payoutModel({});
-            const newPayoutCreatedResp = await newPayout.save();
-
+            const payoutResp = await this.initiateCashfreePayout(partnerAccountDetails.beneId, payoutData.payableAmount, payoutData.transferId, "order payment");
+            console.log(payoutResp.data);
+            if (payoutResp.data.status === 'ACCEPTED') {
+                // create on our db
+                await payoutModel.findByIdAndUpdate(payoutData._id, { metaData: payoutResp.data.data, status: payoutStatusTypesObject.INPROGRESS });
+                return orderModel.findByIdAndUpdate(orderDetails._id, { payoutId: payoutData._id });
+            }
+            throw new Error("Unable to initiate payout");
             // update on order
-            await orderModel.findByIdAndUpdate(orderDetails._id, { payoutId: newPayoutCreatedResp._id, payoutStatus: payoutStatusTypesObject.INITIATED })
         } catch (error) {
             throw new Error(error.message || "something went wrong");
         }
@@ -178,6 +182,7 @@ class Payouts {
         const { orderId, totalAmount } = data;
         let totalDeduction = 0;
         let deduction = [];
+        let status = payoutStatusTypesObject.WITHDRAW;
 
         // ----- deduction cases -----
 
@@ -191,12 +196,13 @@ class Payouts {
         }
 
 
-        // cod amount deductions collections
-        // if (!this.isPartnerGstExists(data.partnerId)) {
-        //     let amt = (totalAmount * (18 / 100));
-        //     totalDeduction += amt;
-        //     deduction.push({ title: "Phixmen Commission", value: amt, desc: "Tax deduction" })
-        // }
+        // cod order ammount
+        if (data['paymentMode'] === 'cod') {
+            let amt = (totalAmount * (2 / 100));
+            totalDeduction += amt;
+            status = payoutStatusTypesObject.NOT_ALLOWED;
+            deduction.push({ title: "Cash payment/ self 2% Deduction", value: amt, desc: "Cash payment" })
+        }
 
         // per category commission
         const categoryData = await category.findById(categoryId);
@@ -205,6 +211,7 @@ class Payouts {
         if (companyComissionPercentage) {
             let amt = (totalAmount * (companyComissionPercentage / 100));
             totalDeduction += amt;
+            deduction.push({ title: "Phixmen Commision", value: amt, desc: "Phixmen Commision" })
         } else {
             throw new Error("no commission found");
         }
@@ -219,7 +226,7 @@ class Payouts {
             if (isExist) {
                 throw new Error("allready initialized or completed");
             }
-            const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction });
+            const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction, status });
             return newwithDraw.save();
         } catch (error) {
             throw new Error(error.message || "something went wrong");
@@ -228,6 +235,10 @@ class Payouts {
 
     async myWithdrawals(partnerId) {
         return payoutModel.find({ partnerId });
+    }
+
+    async findPayoutsList(query) {
+        return payoutModel.find(query);
     }
 
 }

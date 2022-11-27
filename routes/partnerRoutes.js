@@ -741,6 +741,8 @@ router.get("/myprofile", async (req, res) => {
  *                  type: file
  *                gstCertificate:
  *                  type: file
+ *                gstCertificateNo:
+ *                  type: string
  *                incorprationCertificate:
  *                  type: file
  *                expCertificate:
@@ -1337,7 +1339,15 @@ router.post("/forms/:orderId/:type", async (req, res) => {
         .json({ message: "order not exists or associated" });
     }
 
+
+    if (order.Status === orderStatusTypesObj["Accepted"]) {
+      return res
+        .status(500)
+        .json({ message: "order is not accepted yet" });
+    }
+
     const isFormExists = await orderMetaData.findOne({ orderId });
+
 
     if (isFormExists && type == "checkin") {
       if (!checkIn || checkIn.length === 0) {
@@ -1361,13 +1371,11 @@ router.post("/forms/:orderId/:type", async (req, res) => {
       { upsert: true }
     );
 
-    if (order.Status === orderStatusTypesObj["Accepted"]) {
-      await Order.findByIdAndUpdate(
-        orderId,
-        { Status: orderStatusTypesObj["InRepair"] },
-        { new: true }
-      );
-    }
+    await Order.findByIdAndUpdate(
+      orderId,
+      { Status: orderStatusTypesObj["InRepair"] },
+      { new: true }
+    );
     return res.status(200).json({ message: "Job card created successfully" });
   } catch (error) {
     console.log(error);
@@ -2454,7 +2462,6 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
       },
       { new: true }
     );
-    console.log(update);
     return res
       .status(200)
       .json({ message: "Orders successfully reestimated." });
@@ -2463,7 +2470,6 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 
 (async () => {
