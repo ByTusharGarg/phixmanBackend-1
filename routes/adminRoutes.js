@@ -4263,11 +4263,12 @@ router.get("/invoice/all", async (req, res) => {
  */
 router.get("/invoice/phixman/tax", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ taxPayer: "" }).lean()
+    const foundInvoice = await Invoice.find({ taxPayer: null }).lean()
     .populate("customer")
     .populate("partner")
     .populate("order")
     .populate("claim")
+
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
@@ -4346,11 +4347,12 @@ router.get("/invoice/partner", async (req, res) => {
  */
 router.get("/invoice/partner/tax", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: '' } }).lean()
+    const foundInvoice = await Invoice.find({ type:"ORDER_PART_B",taxPayer: { $ne: null } }).lean()
     .populate("customer")
     .populate("partner")
     .populate("order")
     .populate("claim")
+    .populate("taxPayer")
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
 
     return res.status(200).json({ message: "Successfully fetched Invoice", data: foundInvoice })
