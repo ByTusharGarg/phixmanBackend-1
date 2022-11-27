@@ -672,7 +672,7 @@ router.get("/services", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.put("/:id", async (req, res) => {
+router.put("/services/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const order = await Product_Service.findByIdAndUpdate(id, req.body, {
