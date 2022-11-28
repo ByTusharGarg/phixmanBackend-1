@@ -3,6 +3,7 @@ const userStatusTypes = ["active", "inactive"];
 const partnerTypes = ["store", "individual", "sub-provider", "specialist"];
 const partnerStatusTypes = ["active", "inactive"];
 const storeStatusTypes = ["active", "inactive"];
+const invoiceStatusTypes = ["paid","unpaid","tax-paid"];
 const categoryTypes = [
   "Home service",
   "Store service",
@@ -99,5 +100,6 @@ module.exports = {
   paymentStatusObject,
   payoutPaymentStatus,
   payoutStatusTypes,
-  payoutStatusTypesObject
+  payoutStatusTypesObject,
+  invoiceStatusTypes
 };

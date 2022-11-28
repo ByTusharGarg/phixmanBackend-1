@@ -13,8 +13,6 @@ const City = require("./city");
 const Features = require("./Features");
 const Feedback = require("./feedback");
 
-const Invoice = require("./Invoice");
-
 const Model = require("./Model");
 
 const Notification = require("./Notification");
@@ -40,6 +38,10 @@ const refundModel = require("./refund.model");
 
 const Zone = require("./Zone");
 
+const Invoice = require("./Invoice")
+
+const Vendor = require("./Vendor")
+
 module.exports = {
   Admin,
   Brand,
@@ -52,7 +54,6 @@ module.exports = {
   City,
   Features,
   Feedback,
-  Invoice,
   Model,
   Notification,
   Order,
@@ -69,4 +70,6 @@ module.exports = {
   orderTransaction,
   ClaimRequest,
   refundModel,
+  Invoice,
+  Vendor
 };

@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const { AdminAuth } = require("../middleware");
+const moment = require("moment")
 const {
   Admin,
   Customer,
@@ -20,6 +21,8 @@ const {
   Notification,
   SubCategory,
   orderTransaction,
+  Invoice,
+  Vendor
 } = require("../models");
 const PenalitySchema = require("../models/penality");
 const {
@@ -3741,8 +3744,8 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startTime,
-      endTime,
+      startTime: moment(startDate).set({ "hour": startTime.split(":")[0], "minute": startTime.split(":")[1] }).format(),
+      endTime: moment(endDate).set({ "hour": endTime.split(":")[0], "minute": endTime.split(":")[1] }).format(),
       startDate,
       endDate,
     };
@@ -4085,7 +4088,7 @@ router.get("/penalties/all", async (req, res) => {
           },
         },
       ])
-      .populate("model");
+      .populate("partner");
     if (foundPenalties.length === 0)
       return res.status(400).json({ message: "No Penalties found" });
 
@@ -4268,5 +4271,317 @@ router.get("/forms/:orderId", async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+/**
+ * @openapi
+ * /admin/invoice/all:
+ *  get:
+ *    summary: used to fetch invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/all", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({}).lean()
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
+      .populate("vendor")
+
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" });
+
+    let returnObj = [];
+    foundInvoice.forEach((invoice) => {
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
+      }
+      returnObj.push(obj)
+    })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/invoice/phixman/tax:
+ *  get:
+ *    summary: used to fetch taxable phixman invoices
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/phixman/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ taxPayer: null }).lean()
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
+      .populate("vendor")
+
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    let returnObj = [];
+
+    foundInvoice.forEach((invoice) => {
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
+      }
+      returnObj.push(obj)
+    })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+/**
+ * @openapi
+ * /admin/invoice/partner:
+ *  get:
+ *    summary: used to fetch partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/partner", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type: "ORDER_PART_B" }).lean()
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
+      .populate("vendor")
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    let returnObj = [];
+
+    foundInvoice.forEach((invoice) => {
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
+      }
+      returnObj.push(obj)
+    })
+
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+
+})
+
+/**
+ * @openapi
+ * /admin/invoice/partner/tax:
+ *  get:
+ *    summary: used to fetch taxable partner invoices 
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/invoice/partner/tax", async (req, res) => {
+  try {
+    const foundInvoice = await Invoice.find({ type: "ORDER_PART_B", taxPayer: { $ne: null } }).lean()
+      .populate("customer")
+      .populate("partner")
+      .populate("order")
+      .populate("claim")
+      .populate("taxPayer")
+    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+
+    let returnObj = [];
+
+    foundInvoice.forEach((invoice) => {
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
+        taxPayer: invoice?.taxPayer
+      }
+      returnObj.push(obj)
+    })
+
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to order transaction.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/service/delete:
+ *  delete:
+ *    summary: used to delete offer
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                serviceIds:
+ *                  type: array
+ *                  items:
+ *                      type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.delete("/service/delete", async (req, res) => {
+  try {
+    const {
+      body: {
+        serviceIds
+      }
+    } = req;
+
+    const deleteService = await Product_Service.updateMany(
+      {
+        _id: { $in: serviceIds }
+      },
+      {
+        $set: {
+          ispublish: false
+        }
+      }
+    )
+
+    if (!deleteService) return res.status(400).json({ message: "Unable to delete services" })
+
+    return res.status(200).json({ message: "Successfully deleted services" })
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to delete service.",
+    });
+  }
+})
 
 module.exports = router;
