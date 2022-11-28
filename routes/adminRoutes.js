@@ -4184,6 +4184,7 @@ router.get("/ordertransaction", async (req, res) => {
     }
     const ordersTranssactions = await orderTransaction
       .find(query)
+      .populate("ourorder_id")
       .sort({ orderId: -1 });
 
     return res
@@ -4194,6 +4195,77 @@ router.get("/ordertransaction", async (req, res) => {
     return res.status(500).json({
       message: "Error encountered while trying to order transaction.",
     });
+  }
+});
+
+
+
+/**
+ * @openapi
+ * /admin/forms/:orderId:
+ *  get:
+ *    summary: using this route partner get jobcard and checkin card
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: path
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/forms/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+  const { type } = req.query;
+
+  if (!orderId) {
+    return res
+      .status(500)
+      .json({ message: "type or orderId must be provided" });
+  }
+
+  if (type && !["jobcard", "checkin"].includes(type)) {
+    return res
+      .status(500)
+      .json({ message: "type should be jobCard or checkin" });
+  }
+
+  try {
+    const isFormExists = await orderMetaData.findOne({ orderId });
+
+    if (!isFormExists) {
+      return res.status(404).json({ message: "Job card not found" });
+    }
+
+    // if(type){
+    //   if(type === "jobcard"){
+    //     delete isFormExists['checkIn'];
+    //     console.log(isFormExists)
+    //     return res.status(200).json({ message: "jobcard forms", data: isFormExists });
+    //   }
+    //   else{
+    //     delete isFormExists.jobCard;
+    //     return res.status(200).json({ message: "checking form", data: isFormExists });
+    //   }
+    // }
+    return res.status(200).json({ message: "forms", data: isFormExists });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 
