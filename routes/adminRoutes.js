@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const { AdminAuth } = require("../middleware");
-const moment = require("moment")
+const moment = require("moment");
 const {
   Admin,
   Customer,
@@ -22,7 +22,7 @@ const {
   SubCategory,
   orderTransaction,
   Invoice,
-  Vendor
+  Vendor,
 } = require("../models");
 const PenalitySchema = require("../models/penality");
 const {
@@ -57,7 +57,6 @@ const {
 const { adminTypeArray } = require("../enums/adminTypes");
 const { getWalletTransactions } = require("../services/Wallet");
 const Payouts = require("../libs/payments/payouts");
-
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -2626,7 +2625,7 @@ router.get("/services", async (req, res) => {
   }
 
   try {
-    let filter = { categoryId: categoryId };
+    let filter = { categoryId: categoryId, ispublish: true };
 
     if (modelId) filter.modelId = modelId;
     if (subCategoryId) filter.subCategoryId = subCategoryId;
@@ -3744,8 +3743,12 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startTime: moment(startDate).set({ "hour": startTime.split(":")[0], "minute": startTime.split(":")[1] }).format(),
-      endTime: moment(endDate).set({ "hour": endTime.split(":")[0], "minute": endTime.split(":")[1] }).format(),
+      startTime: moment(startDate)
+        .set({ hour: startTime.split(":")[0], minute: startTime.split(":")[1] })
+        .format(),
+      endTime: moment(endDate)
+        .set({ hour: endTime.split(":")[0], minute: endTime.split(":")[1] })
+        .format(),
       startDate,
       endDate,
     };
@@ -4137,7 +4140,7 @@ router.get("/getpayouts", async (req, res) => {
   }
 
   if (status) {
-    query['status'] = status;
+    query["status"] = status;
   }
 
   try {
@@ -4150,7 +4153,6 @@ router.get("/getpayouts", async (req, res) => {
     });
   }
 });
-
 
 /**
  * @openapi
@@ -4224,14 +4226,16 @@ router.get("/ordertransaction", async (req, res) => {
  */
 router.get("/invoice/all", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({}).lean()
+    const foundInvoice = await Invoice.find({})
+      .lean()
       .populate("customer")
       .populate("partner")
       .populate("order")
       .populate("claim")
-      .populate("vendor")
+      .populate("vendor");
 
-    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" });
+    if (foundInvoice.length === 0)
+      return res.status(400).json({ message: "Invoice not found" });
 
     let returnObj = [];
     foundInvoice.forEach((invoice) => {
@@ -4248,18 +4252,20 @@ router.get("/invoice/all", async (req, res) => {
         partner_name: invoice.partner?.Name,
         vendor_code: invoice.vendor?.Sno,
         vendor_name: invoice.vendor?.name,
-      }
-      returnObj.push(obj)
-    })
+      };
+      returnObj.push(obj);
+    });
 
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+    return res
+      .status(200)
+      .json({ message: "Successfully fetched Invoice", data: returnObj });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to order transaction.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -4285,14 +4291,16 @@ router.get("/invoice/all", async (req, res) => {
  */
 router.get("/invoice/phixman/tax", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ taxPayer: null }).lean()
+    const foundInvoice = await Invoice.find({ taxPayer: null })
+      .lean()
       .populate("customer")
       .populate("partner")
       .populate("order")
       .populate("claim")
-      .populate("vendor")
+      .populate("vendor");
 
-    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+    if (foundInvoice.length === 0)
+      return res.status(400).json({ message: "Invoice not found" });
 
     let returnObj = [];
 
@@ -4310,25 +4318,26 @@ router.get("/invoice/phixman/tax", async (req, res) => {
         partner_name: invoice.partner?.Name,
         vendor_code: invoice.vendor?.Sno,
         vendor_name: invoice.vendor?.name,
-      }
-      returnObj.push(obj)
-    })
+      };
+      returnObj.push(obj);
+    });
 
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+    return res
+      .status(200)
+      .json({ message: "Successfully fetched Invoice", data: returnObj });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to order transaction.",
     });
   }
-
-})
+});
 
 /**
  * @openapi
  * /admin/invoice/partner:
  *  get:
- *    summary: used to fetch partner invoices 
+ *    summary: used to fetch partner invoices
  *    tags:
  *    - Admin Routes
  *    responses:
@@ -4348,13 +4357,15 @@ router.get("/invoice/phixman/tax", async (req, res) => {
  */
 router.get("/invoice/partner", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ type: "ORDER_PART_B" }).lean()
+    const foundInvoice = await Invoice.find({ type: "ORDER_PART_B" })
+      .lean()
       .populate("customer")
       .populate("partner")
       .populate("order")
       .populate("claim")
-      .populate("vendor")
-    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+      .populate("vendor");
+    if (foundInvoice.length === 0)
+      return res.status(400).json({ message: "Invoice not found" });
 
     let returnObj = [];
 
@@ -4372,26 +4383,26 @@ router.get("/invoice/partner", async (req, res) => {
         partner_name: invoice.partner?.Name,
         vendor_code: invoice.vendor?.Sno,
         vendor_name: invoice.vendor?.name,
-      }
-      returnObj.push(obj)
-    })
+      };
+      returnObj.push(obj);
+    });
 
-
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+    return res
+      .status(200)
+      .json({ message: "Successfully fetched Invoice", data: returnObj });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to order transaction.",
     });
   }
-
-})
+});
 
 /**
  * @openapi
  * /admin/invoice/partner/tax:
  *  get:
- *    summary: used to fetch taxable partner invoices 
+ *    summary: used to fetch taxable partner invoices
  *    tags:
  *    - Admin Routes
  *    responses:
@@ -4411,13 +4422,18 @@ router.get("/invoice/partner", async (req, res) => {
  */
 router.get("/invoice/partner/tax", async (req, res) => {
   try {
-    const foundInvoice = await Invoice.find({ type: "ORDER_PART_B", taxPayer: { $ne: null } }).lean()
+    const foundInvoice = await Invoice.find({
+      type: "ORDER_PART_B",
+      taxPayer: { $ne: null },
+    })
+      .lean()
       .populate("customer")
       .populate("partner")
       .populate("order")
       .populate("claim")
-      .populate("taxPayer")
-    if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" })
+      .populate("taxPayer");
+    if (foundInvoice.length === 0)
+      return res.status(400).json({ message: "Invoice not found" });
 
     let returnObj = [];
 
@@ -4435,19 +4451,21 @@ router.get("/invoice/partner/tax", async (req, res) => {
         partner_name: invoice.partner?.Name,
         vendor_code: invoice.vendor?.Sno,
         vendor_name: invoice.vendor?.name,
-        taxPayer: invoice?.taxPayer
-      }
-      returnObj.push(obj)
-    })
+        taxPayer: invoice?.taxPayer,
+      };
+      returnObj.push(obj);
+    });
 
-    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj })
+    return res
+      .status(200)
+      .json({ message: "Successfully fetched Invoice", data: returnObj });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to order transaction.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -4484,32 +4502,30 @@ router.get("/invoice/partner/tax", async (req, res) => {
 router.delete("/service/delete", async (req, res) => {
   try {
     const {
-      body: {
-        serviceIds
-      }
+      body: { serviceIds },
     } = req;
 
     const deleteService = await Product_Service.updateMany(
       {
-        _id: { $in: serviceIds }
+        _id: { $in: serviceIds },
       },
       {
         $set: {
-          ispublish: false
-        }
+          ispublish: false,
+        },
       }
-    )
+    );
 
-    if (!deleteService) return res.status(400).json({ message: "Unable to delete services" })
+    if (!deleteService)
+      return res.status(400).json({ message: "Unable to delete services" });
 
-    return res.status(200).json({ message: "Successfully deleted services" })
-
+    return res.status(200).json({ message: "Successfully deleted services" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to delete service.",
     });
   }
-})
+});
 
 module.exports = router;
