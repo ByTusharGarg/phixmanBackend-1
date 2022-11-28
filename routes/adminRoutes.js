@@ -4231,7 +4231,6 @@ router.get("/invoice/all", async (req, res) => {
       .populate("claim")
       .populate("vendor")
 
-    console.log(foundInvoice);
     if (foundInvoice.length === 0) return res.status(400).json({ message: "Invoice not found" });
 
     let returnObj = [];
@@ -4247,8 +4246,8 @@ router.get("/invoice/all", async (req, res) => {
         customer_name: invoice.customer?.Name,
         partner_code: invoice.partner?.Sno,
         partner_name: invoice.partner?.Name,
-        vendor_code: invoice.vendor.Sno,
-        vendor_name: invoice.vendor.name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
       }
       returnObj.push(obj)
     })
@@ -4309,8 +4308,8 @@ router.get("/invoice/phixman/tax", async (req, res) => {
         customer_name: invoice.customer?.Name,
         partner_code: invoice.partner?.Sno,
         partner_name: invoice.partner?.Name,
-        vendor_code: invoice.vendor.Sno,
-        vendor_name: invoice.vendor.name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
       }
       returnObj.push(obj)
     })
@@ -4371,8 +4370,8 @@ router.get("/invoice/partner", async (req, res) => {
         customer_name: invoice.customer?.Name,
         partner_code: invoice.partner?.Sno,
         partner_name: invoice.partner?.Name,
-        vendor_code: invoice.vendor.Sno,
-        vendor_name: invoice.vendor.name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
       }
       returnObj.push(obj)
     })
@@ -4434,9 +4433,9 @@ router.get("/invoice/partner/tax", async (req, res) => {
         customer_name: invoice.customer?.Name,
         partner_code: invoice.partner?.Sno,
         partner_name: invoice.partner?.Name,
-        vendor_code: invoice.vendor.Sno,
-        vendor_name: invoice.vendor.name,
-        taxPayer: invoice.taxPayer
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
+        taxPayer: invoice?.taxPayer
       }
       returnObj.push(obj)
     })
