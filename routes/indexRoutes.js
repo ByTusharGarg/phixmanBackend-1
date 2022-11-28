@@ -889,7 +889,7 @@ router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
 /**
  * @openapi
  * /generateinvoicebyInvoiceId:
- *  post:
+ *  get:
  *    summary: generate invoice order by invoiceId
  *    tags:
  *    - Index Routes
