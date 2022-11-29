@@ -747,14 +747,17 @@ router.get("/settings", async (req, res) => {
  * @openapi
  * /generateinvoice:
  *  post:
- *    summary: generate invoice of customer order by orderId
+ *    summary: generate invoice order by orderId
  *    tags:
  *    - Index Routes
  *    requestBody:
  *      content:
  *        application/json:
- *          orderid:
- *              type: string
+ *          schema:
+ *              type: object
+ *              properties:
+ *                orderId:
+ *                  type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -767,8 +770,6 @@ router.get("/settings", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
 router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
   const { orderid } = req.body;
@@ -888,16 +889,17 @@ router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
 
 /**
  * @openapi
- * /generateinvoicebyInvoiceId:
+ * /generateinvoicebyInvoiceId/{invoiceId}:
  *  get:
  *    summary: generate invoice order by invoiceId
  *    tags:
  *    - Index Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          invoiceId:
- *              type: string
+ *    parameters:
+ *      - in: path
+ *        name: invoiceId
+ *        required: true
+ *        schema:
+ *           type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
