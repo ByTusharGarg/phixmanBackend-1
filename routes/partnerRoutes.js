@@ -1255,7 +1255,7 @@ router.post("/order/acceptorder", async (req, res) => {
 
 /**
  * @openapi
- * /partner/forms/:orderId/:type:
+ * /partner/forms/{orderId}/{type}:
  *  post:
  *    summary: using this route partner ccreate jobcard and checkin card
  *    tags:
@@ -1317,9 +1317,7 @@ router.post("/forms/:orderId/:type", async (req, res) => {
   let { jobCard, checkIn } = req.body;
 
   if (!type || !orderId) {
-    return res
-      .status(500)
-      .json({ message: "type or orderId must be provided" });
+    return res.status(500).json({ message: "type or orderId must be provided" });
   }
 
   if (!["jobcard", "checkin"].includes(type)) {
@@ -1378,7 +1376,7 @@ router.post("/forms/:orderId/:type", async (req, res) => {
 
 /**
  * @openapi
- * /partner/forms/:orderId:
+ * /partner/forms/{orderId}:
  *  get:
  *    summary: using this route partner get jobcard and checkin card
  *    tags:
@@ -1405,8 +1403,8 @@ router.post("/forms/:orderId/:type", async (req, res) => {
  *    - bearerAuth: []
  */
 router.get("/forms/:orderId", async (req, res) => {
-  const {orderId} = req.params;
-  const {type} = req.query;
+  const { orderId } = req.params;
+  const { type } = req.query;
 
   if (!orderId) {
     return res
