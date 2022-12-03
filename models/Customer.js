@@ -12,7 +12,7 @@ const Customer = mongoose.model(
       default: "",
     },
     email: { type: String, default: "" },
-    phone: { type: String, required: true, unique: true },
+    phone: { type: String, required: true, unique: true,sparse: true },
     Password: { type: String, default: "" },
     image: { type: String, default: "" },
     gender: { type: String, enum: genderTypes },
