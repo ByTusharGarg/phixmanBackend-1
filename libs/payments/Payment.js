@@ -82,6 +82,7 @@ class Payment {
   }
 
   async verifyCustomerOrder(order_id) {
+    let transaction = null;
     try {
       const resp = await sdk.GetOrder({
         order_id,
@@ -103,7 +104,7 @@ class Payment {
         });
 
         if (isExist?.paymentverified === false) {
-          let transaction = await orderTransactionModel.findOneAndUpdate(
+          transaction = await orderTransactionModel.findOneAndUpdate(
             { cashfreeOrderId: order_id },
             {
               order_status: payment.data[0].payment_status,

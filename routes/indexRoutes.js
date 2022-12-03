@@ -16,6 +16,10 @@ const fs = require("fs");
 const { categoryTypes } = require("../enums/types");
 const checkTokenOnly = require("../middleware/checkToken");
 const {
+  getObjectSignedUrl,
+} = require("../services/s3-service");
+
+const {
   categoryTypesOptionsArray,
   CategoryTypeOptions,
 } = require("../enums/CategoryTypesOptions");
@@ -187,9 +191,23 @@ router.get("/myhelpers", checkPartner, async (req, res) => {
   const partnerId = req.partner._id;
   try {
     let data = await Partner.findById(partnerId);
-    return res
-      .status(200)
-      .json({ message: "helpers details", data: data["helpers"] });
+    let arr = data["helpers"];
+
+    const resp = await Promise.all(
+      arr.map(async (file) => {
+        if (file) {
+          return {
+            name: file.name,
+            avtar: await getObjectSignedUrl(file.avtar, 3600 * 60),
+            email: file.email
+          };
+        } else {
+          return;
+        }
+      })
+    );
+
+    return res.status(200).json({ message: "helpers details", data: resp });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });

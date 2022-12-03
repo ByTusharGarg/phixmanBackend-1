@@ -4,7 +4,7 @@ const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, PartnerWallet, Order, orderMetaData, category } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypesObj } = require("../enums/types");
+const { orderStatusTypesObj,paymentStatusObject } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
 const { v4: uuidv4 } = require('uuid');
@@ -899,7 +899,6 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
     );
     return res.status(200).json({ message: "partner updated successfully." });
   } catch (error) {
-    console.log(error);
     return res
       .status(500)
       .json({ message: "Error encountered while trying to update user." });
@@ -1540,11 +1539,15 @@ router.post("/order/changestatus", async (req, res) => {
       };
     }
     else if (status === "completed") {
+      if(order['paidamount'] !== order['OrderDetails']['Amount']){
+        return res.status(400).json({ message: "Whole payment not recived yet" })
+      }
+
       // generate invoice id
       query['invoiceId'] = uuidv4();
 
       // create payout here
-      await payout.createPayoutOnDb({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode }, order.OrderDetails.Items[0].CategoryId);
+      await payout.createPayoutOnDb({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode,codAmount:order.codAmount }, order.OrderDetails.Items[0].CategoryId);
 
     }
     else if (status === "delivered") {
@@ -1861,18 +1864,22 @@ router.delete("/deleteSubProvider/:sid", async (req, response) => {
  */
 router.post("/createhelper", async (req, response) => {
   const partnerID = req?.partner?._id;
-  const { name, email, avtar } = req.body;
+  const { name, email } = req.body;
+  const {avtar} = req.files;
 
   if (!email || !name || !avtar) {
     return response.status(404).json({
       message: "missing required fields",
     });
   }
+  
+  let imageName = randomImageName();
+  await uploadFile(avtar.data,imageName,avtar.mimetype);
 
   try {
     await Partner.findByIdAndUpdate(
       partnerID,
-      { $push: { helpers: { name, email, avtar } } },
+      { $push: { helpers: { name, email, avtar:imageName } } },
       { new: true }
     );
 
@@ -2243,17 +2250,17 @@ router.post("/initiateRecivePayment", async (req, res) => {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount =
-      orderData["OrderDetails"]["Gradtotal"] -
-      orderData["OrderDetails"]["paidamount"];
+    const leftAmount =orderData["OrderDetails"]["Gradtotal"] - orderData["OrderDetails"]["paidamount"];
+
+    if(leftAmount === 0){
+      return res.status(400).json({ message: "payment completed" });
+    }
 
     if (paymentType === "self") {
       const orderData = await Order.findByIdAndUpdate(orderData._id, {
-        $inc: { paidamount: leftAmount },
+        $inc: { paidamount: leftAmount,codAmount:leftAmount,PaymentStatus:paymentStatusObject.SUCCESS },
       });
-      return res
-        .status(200)
-        .json({ message: "Order payment on cash successfull", data });
+      return res.status(200).json({ message: "Order payment on cash successfull", amount:leftAmount  });
     } else if (paymentType === "link") {
       if (!notifyTo) {
         return res
@@ -2486,11 +2493,5 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
   }
 });
 
-
-(async () => {
-  // const {data} = await  payout.initiateCashfreePayout("JOHN18011343",2,"ifjifdddhjuifjfu","remark");
-  // const resp = await payout.createPayoutOnDb({partnerId:"63737f86aef6566d1ad854ec",orderId:"63737f86aef6566d1ad854ec",totalAmount:100,paymentMode:"COD"});
-  // console.log(resp);
-})
 
 module.exports = router;
