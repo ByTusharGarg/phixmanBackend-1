@@ -942,6 +942,7 @@ router.get("/orderdetails/:id", async (req, res) => {
       .populate("Customer", "Name email")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
+      .populate("OrderDetails.Items.CategoryId.forms.features")
       .populate("OrderDetails.Items.ModelId");
 
     if (order) {
