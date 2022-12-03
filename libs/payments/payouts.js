@@ -179,7 +179,7 @@ class Payouts {
     }
 
     async createPayoutOnDb(data, categoryId) {
-        const { orderId, totalAmount } = data;
+        const { orderId, totalAmount, codAmount } = data;
         let totalDeduction = 0;
         let deduction = [];
         let status = payoutStatusTypesObject.WITHDRAW;
@@ -195,13 +195,16 @@ class Payouts {
             deduction.push({ title: "Tax collection (Without GST)", value: 0, desc: "Tax deduction" })
         }
 
-
         // cod order ammount
         if (data['paymentMode'] === 'cod') {
             let amt = (totalAmount * (2 / 100));
             totalDeduction += amt;
             status = payoutStatusTypesObject.NOT_ALLOWED;
             deduction.push({ title: "Cash payment/ self 2% Deduction", value: amt, desc: "Cash payment" })
+        }
+
+        if (codAmount > 0) {
+            deduction.push({ title: "Cash payment", value: amt, desc: "Cash payment" })
         }
 
         // per category commission
@@ -216,10 +219,9 @@ class Payouts {
             throw new Error("no commission found");
         }
 
-
         const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 10)}`;
 
-        let payableAmount = (totalAmount - totalDeduction);
+        let payableAmount = (totalAmount - (totalDeduction + codAmount));
 
         try {
             const isExist = await payoutModel.findOne({ orderId });
@@ -227,7 +229,12 @@ class Payouts {
                 throw new Error("allready initialized or completed");
             }
             const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction, status });
-            return newwithDraw.save();
+            const rep = await newwithDraw.save();
+
+            if (data['paymentMode'] === 'cod') {
+                await partnerModel.findByIdAndUpdate(data.partnerId, { codCollection: payableAmount });
+            }
+            return rep;
         } catch (error) {
             throw new Error(error.message || "something went wrong");
         }

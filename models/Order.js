@@ -22,6 +22,7 @@ const Order = mongoose.model(
         enum: orderStatusTypes,
       },
       paidamount: { type: Number, default: 0 },
+      codAmount: { type: Number, default: 0 },
       OrderDetails: {
         Amount: { type: Number },
         Gradtotal: { type: Number },
@@ -32,7 +33,7 @@ const Order = mongoose.model(
             ServiceId: { type: Schema.Types.ObjectId, ref: "Product_Service" },
             Cost: { type: Number },
           },
-        ],
+        ]
       },
       Date: { type: String },
       PaymentMode: { type: String, enum: paymentModeTypes },
