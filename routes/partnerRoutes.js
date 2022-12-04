@@ -2,14 +2,20 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Partner, PartnerWallet, Order, orderMetaData, category } = require("../models");
+const {
+  Partner,
+  PartnerWallet,
+  Order,
+  orderMetaData,
+  category,
+} = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
+const { orderStatusTypesObj,  paymentStatusObject } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
-const { v4: uuidv4 } = require('uuid');
-const payout = require('../libs/payments/payouts.js');
-const { makePartnerTranssaction } = require('../services/Wallet');
+const { v4: uuidv4 } = require("uuid");
+const payout = require("../libs/payments/payouts.js");
+const { makePartnerTranssaction } = require("../services/Wallet");
 
 const {
   base64_encode,
@@ -941,6 +947,12 @@ router.get("/orderdetails/:id", async (req, res) => {
       .populate("Customer", "Name email")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
+      .populate({
+        path: "OrderDetails.Items.CategoryId",
+        populate: {
+          path: "forms.features",
+        },
+      })
       .populate("OrderDetails.Items.ModelId");
 
     if (order) {
@@ -1213,17 +1225,28 @@ router.post("/order/acceptorder", async (req, res) => {
       return res.status(500).json({ message: "order not exists" });
     }
 
-    const categoryData = await category.findById(order.OrderDetails.Items[0]['CategoryId']);
+    const categoryData = await category.findById(
+      order.OrderDetails.Items[0]["CategoryId"]
+    );
     if (!categoryData) {
       return res.status(404).json({ message: "no category data found" });
     }
-    const LeadExpense = parseInt(categoryData['LeadExpense']);
+    const LeadExpense = parseInt(categoryData["LeadExpense"]);
 
     if (!LeadExpense) {
-      return res.status(400).json({ message: "unable to accept LeadExpense not found" });
+      return res
+        .status(400)
+        .json({ message: "unable to accept LeadExpense not found" });
     }
 
-    await makePartnerTranssaction("partner", "", partnerId, LeadExpense, `Lead expenses against ${order.OrderId}`, "debit");
+    await makePartnerTranssaction(
+      "partner",
+      "",
+      partnerId,
+      LeadExpense,
+      `Lead expenses against ${order.OrderId}`,
+      "debit"
+    );
 
     if (order.Status !== "Requested") {
       return res
@@ -1248,7 +1271,9 @@ router.post("/order/acceptorder", async (req, res) => {
     return res.status(200).json({ message: "order Accepted" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: error.message || "Error encountered." });
+    return res
+      .status(500)
+      .json({ message: error.message || "Error encountered." });
   }
 });
 
@@ -1316,7 +1341,9 @@ router.post("/forms/:orderId/:type", async (req, res) => {
   let { jobCard, checkIn } = req.body;
 
   if (!type || !orderId) {
-    return res.status(500).json({ message: "type or orderId must be provided" });
+    return res
+      .status(500)
+      .json({ message: "type or orderId must be provided" });
   }
 
   if (!["jobcard", "checkin"].includes(type)) {
@@ -1346,7 +1373,7 @@ router.post("/forms/:orderId/:type", async (req, res) => {
     }
 
     if (type == "checkin") {
-      console.log("hete")
+      console.log("hete");
       await orderMetaData.findOneAndUpdate(
         { orderId },
         { checkIn: checkIn },
@@ -1517,7 +1544,7 @@ router.post("/order/changestatus", async (req, res) => {
       return res.status(200).json({ message: "This is your current status" });
     }
 
-    query['Status'] = status;
+    query["Status"] = status;
 
     if (status === "InRepair") {
       emailData = {
@@ -1537,25 +1564,33 @@ router.post("/order/changestatus", async (req, res) => {
         buttonName: emailDatamapping["pickUp"].buttonName,
         email: order.Customer.email || null,
       };
-    }
-    else if (status === "completed") {
-      if (order['paidamount'] !== order['OrderDetails']['Amount']) {
-        return res.status(400).json({ message: "Whole payment not recived yet" })
+    } else if (status === "completed") {
+      if (order["paidamount"] !== order["OrderDetails"]["Amount"]) {
+        return res
+          .status(400)
+          .json({ message: "Whole payment not recived yet" });
       }
 
       // generate invoice id
-      query['invoiceId'] = uuidv4();
+      query["invoiceId"] = uuidv4();
 
 
       // create payout here
       if (order.PaymentMode === 'online') {
-        await payout.createPayoutOnDbOnline({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
+        await payout.createPayoutOnDbOnline(
+        {
+          partnerId,
+          orderId: order._id,
+          totalAmount: order.OrderDetails.Amount,
+          paymentMode: order.PaymentMode, 
+          codAmount:  order.codAmount,
+        },
+        order.OrderDetails.Items[0].CategoryId
       } else {
         await payout.createPayoutOnDbCod({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
       }
-
-    }
-    else if (status === "delivered") {
+      );
+    } else if (status === "delivered") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
         heading1: emailDatamapping["orderComplete"].heading1,
@@ -1583,7 +1618,9 @@ router.post("/order/changestatus", async (req, res) => {
       .json({ message: "order status chnages successfully" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: error.message || "Error encountered." });
+    return res
+      .status(500)
+      .json({ message: error.message || "Error encountered." });
   }
 });
 
@@ -1870,21 +1907,21 @@ router.delete("/deleteSubProvider/:sid", async (req, response) => {
 router.post("/createhelper", async (req, response) => {
   const partnerID = req?.partner?._id;
   const { name, email } = req.body;
-  const { avtar } = req.files;
+  const {avtar} = req.files;
 
   if (!email || !name || !avtar) {
     return response.status(404).json({
       message: "missing required fields",
     });
   }
-
+  
   let imageName = randomImageName();
-  await uploadFile(avtar.data, imageName, avtar.mimetype);
+  await uploadFile(avtar.data,imageName,avtar.mimetype);
 
   try {
     await Partner.findByIdAndUpdate(
       partnerID,
-      { $push: { helpers: { name, email, avtar: imageName } } },
+      { $push: { helpers: { name, email, avtar:imageName } } },
       { new: true }
     );
 
@@ -2258,7 +2295,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
 
     const leftAmount = orderData["OrderDetails"]["Gradtotal"] - orderData["paidamount"];
 
-    if (leftAmount === 0) {
+    if  (leftAmount === 0)  {
       return res.status(400).json({ message: "payment already completed" });
     }
 
@@ -2267,7 +2304,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
         codAmount: leftAmount, PaymentStatus: paymentStatusObject.SUCCESS,
         $inc: { paidamount: leftAmount },
       });
-      return res.status(200).json({ message: "Order payment on cash successfull", amount: leftAmount });
+      return res.status(200).json({ message: "Order payment on cash successfull", amount:leftAmount  });
     } else if (paymentType === "link") {
       if (!notifyTo) {
         return res
@@ -2500,6 +2537,5 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
 
 module.exports = router;
