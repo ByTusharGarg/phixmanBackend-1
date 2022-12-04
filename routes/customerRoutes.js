@@ -1501,6 +1501,8 @@ router.post("/create/claim", async (req, res) => {
         orderId,
         title,
         description,
+        date,
+        time
       }
     } = req
 
@@ -1654,10 +1656,10 @@ router.delete("/delete-account", async(req,res)=>{
  const foundClaim = await ClaimRequest.find({customerId:Customer}).lean()
  if(!foundClaim) return res.status(400).json({message: 'No claims found'})
 
-return res.status(200).json({message:'Claims found', data: foundClaim})
+return handelSuccess(res,{message:'Claims found', data: foundClaim})
   }catch (error) {
     console.log('$$$$$$$$$',error);
-    return res.status(500).json({
+    return handelServerError(res,{
       message: "Error encountered while trying to create claim.",
     });
   }
