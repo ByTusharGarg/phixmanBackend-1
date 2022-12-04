@@ -1659,7 +1659,7 @@ router.delete("/delete-account", async(req,res)=>{
   try{
   const Customer = req.Customer._id;
 
- const foundClaim = await ClaimRequest.find({customerId:Customer}).lean().populate("orderId")
+ const foundClaim = await ClaimRequest.find({customerId:Customer}).lean().populate("orderId", "OrderId -_id")
  if(!foundClaim) return res.status(400).json({message: 'No claims found'})
 
 return handelSuccess(res,{message:'Claims found', data: foundClaim})
