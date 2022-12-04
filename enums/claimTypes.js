@@ -3,5 +3,18 @@ const claimTypes = {
   CUSTOMER: "CUSTOMER_RAISED_CLAIM",
   VENDOR: "VENDOR_RAISED_CLAIM",
 }; 
-
-module.exports = { claimTypesList, claimTypes };
+const claimStatus = {
+  requested:"REQUESTED",
+  approved:"APPROVED",
+  inProgress:"IN-PROGRESS",
+  delivered:"DELIVERED",
+  rejected:"REJECTED"
+}
+const claimStatusList = [
+  "REQUESTED",
+  "APPROVED",
+  "IN-PROGRESS",
+  "DELIVERED",
+  "REJECTED"
+]
+module.exports = { claimTypesList, claimTypes,claimStatus,claimStatusList };

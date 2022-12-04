@@ -1431,9 +1431,9 @@ router.get("/active-offers", async (req, res) => {
 
     let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
 
-    if (foundActiveOffer.length === 0) return res.status(400).json({ message: 'No active offers found' })
+    if (foundActiveOffer.length === 0) return handelNoteFoundError(res,{ message: 'No active offers found' })
 
-    return res.status(200).json({ message: "active offers found", data: foundActiveOffer })
+    return handelSuccess(res,{ message: "active offers found", data: foundActiveOffer })
   } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
@@ -1559,14 +1559,14 @@ router.post("/create/claim", async (req, res) => {
     }
 
     const newClaim = await ClaimRequest.create(claimObj)
-    if(!newClaim) return res.status(400).json({message:"Unable to create claim"})
+    if(!newClaim) return handelNoteFoundError(res,{message:"Unable to create claim"})
 
-    return res.status(200).json({message:"New claim created", data:newClaim})
+    return handelSuccess(res,{message:"New claim created", data:newClaim})
 
 
   } catch (error) {
     console.log('$$$$$$$$$',error);
-    return res.status(500).json({
+    return handelServerError(res,{
       message: "Error encountered while trying to create claim.",
     });
   }
@@ -1612,7 +1612,7 @@ router.delete("/delete-account", async(req,res)=>{
   }
   )
 
-  if(!deleteUser) return res.status(400).json({message:"Unable to delete user"})
+  if(!deleteUser) return handelNoteFoundError(res,{message:"Unable to delete user"})
   return handelSuccess(res, { message: "User deleted successfully" })
 }catch (error) {
   console.log('$$$$$$$$$',error);

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const { claimTypesList } = require("../enums/claimTypes");
+const { claimTypesList,claimStatusList } = require("../enums/claimTypes");
 const Schema = mongoose.Schema;
 
 const ClaimRequest = mongoose.model(
@@ -22,6 +22,13 @@ const ClaimRequest = mongoose.model(
     description: { required: true, type: String },
     images: [String],
     voiceNote: String,
+    date:{type: String},
+    time:{type: String},
+    claimStatus: {
+      type: String,
+      enum: claimStatusList,
+      required: true,
+      default: claimStatusList[0]}
 
   })
 )
