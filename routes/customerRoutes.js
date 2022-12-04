@@ -1660,13 +1660,30 @@ router.delete("/delete-account", async(req,res)=>{
   const Customer = req.Customer._id;
 
  const foundClaim = await ClaimRequest.find({customerId:Customer}).lean().populate("orderId", "OrderId -_id")
- if(!foundClaim) return res.status(400).json({message: 'No claims found'})
+ if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
 
 return handelSuccess(res,{message:'Claims found', data: foundClaim})
   }catch (error) {
     console.log('$$$$$$$$$',error);
     return handelServerError(res,{
       message: "Error encountered while trying to create claim.",
+    });
+  }
+})
+
+router.get("/get-claim-by-id", async(req,res)=>{
+  try{
+    const{
+      query:{claimId}
+    }=req;
+
+    const foundClaim = await ClaimRequest.findOne({claimId}).populate("orderId","OrderId -_id")
+    if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
+    return handelSuccess(res,{message:'Claims found', data: foundClaim})
+  }catch (error) {
+    console.log('$$$$$$$$$',error);
+    return handelServerError(res,{
+      message: "Error encountered while trying to fetch claim.",
     });
   }
 })
