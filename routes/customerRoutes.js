@@ -1459,6 +1459,10 @@ router.get("/active-offers", async (req, res) => {
  *            title:
  *              type: string
  *              required: true
+ *            date:
+ *              type: string
+ *            time:
+ *              type: string
  *            description:
  *              type: string
  *              required: true
@@ -1550,6 +1554,8 @@ router.post("/create/claim", async (req, res) => {
       description,
       voiceNote: audioMedia[0]?.fileName,
       images: imageMedia.length > 1 ? fileName : imageMedia[0].fileName,
+      date,
+      time
     }
 
     const newClaim = await ClaimRequest.create(claimObj)
@@ -1607,10 +1613,10 @@ router.delete("/delete-account", async(req,res)=>{
   )
 
   if(!deleteUser) return res.status(400).json({message:"Unable to delete user"})
-  return res.status(200).json({ message: "User deleted successfully" })
+  return handelSuccess(res, { message: "User deleted successfully" })
 }catch (error) {
   console.log('$$$$$$$$$',error);
-  return res.status(500).json({
+  return handelServerError(res,{
     message: "Error encountered while trying to create claim.",
   });
 }
@@ -1653,7 +1659,7 @@ router.delete("/delete-account", async(req,res)=>{
   try{
   const Customer = req.Customer._id;
 
- const foundClaim = await ClaimRequest.find({customerId:Customer}).lean()
+ const foundClaim = await ClaimRequest.find({customerId:Customer}).lean().populate("orderId")
  if(!foundClaim) return res.status(400).json({message: 'No claims found'})
 
 return handelSuccess(res,{message:'Claims found', data: foundClaim})
