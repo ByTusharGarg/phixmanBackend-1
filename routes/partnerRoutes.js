@@ -4,7 +4,7 @@ const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
 const { Partner, PartnerWallet, Order, orderMetaData, category } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypesObj,paymentStatusObject } = require("../enums/types");
+const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
 const { v4: uuidv4 } = require('uuid');
@@ -1539,15 +1539,20 @@ router.post("/order/changestatus", async (req, res) => {
       };
     }
     else if (status === "completed") {
-      if(order['paidamount'] !== order['OrderDetails']['Amount']){
+      if (order['paidamount'] !== order['OrderDetails']['Amount']) {
         return res.status(400).json({ message: "Whole payment not recived yet" })
       }
 
       // generate invoice id
       query['invoiceId'] = uuidv4();
 
+
       // create payout here
-      await payout.createPayoutOnDb({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode,codAmount:order.codAmount }, order.OrderDetails.Items[0].CategoryId);
+      if (order.PaymentMode === 'online') {
+        await payout.createPayoutOnDbOnline({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
+      } else {
+        await payout.createPayoutOnDbCod({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
+      }
 
     }
     else if (status === "delivered") {
@@ -1565,14 +1570,14 @@ router.post("/order/changestatus", async (req, res) => {
       commonMailFunctionToAll(data, "common");
     }
 
-    await Order.findOneAndUpdate(
-      { OrderId: orderId },
-      {
-        ...query,
-        $push: { statusLogs: { status: status, timestampLog: new Date() } },
-      },
-      { new: true }
-    );
+    // await Order.findOneAndUpdate(
+    //   { OrderId: orderId },
+    //   {
+    //     ...query,
+    //     $push: { statusLogs: { status: status, timestampLog: new Date() } },
+    //   },
+    //   { new: true }
+    // );
     return res
       .status(200)
       .json({ message: "order status chnages successfully" });
@@ -1865,21 +1870,21 @@ router.delete("/deleteSubProvider/:sid", async (req, response) => {
 router.post("/createhelper", async (req, response) => {
   const partnerID = req?.partner?._id;
   const { name, email } = req.body;
-  const {avtar} = req.files;
+  const { avtar } = req.files;
 
   if (!email || !name || !avtar) {
     return response.status(404).json({
       message: "missing required fields",
     });
   }
-  
+
   let imageName = randomImageName();
-  await uploadFile(avtar.data,imageName,avtar.mimetype);
+  await uploadFile(avtar.data, imageName, avtar.mimetype);
 
   try {
     await Partner.findByIdAndUpdate(
       partnerID,
-      { $push: { helpers: { name, email, avtar:imageName } } },
+      { $push: { helpers: { name, email, avtar: imageName } } },
       { new: true }
     );
 
@@ -2231,14 +2236,14 @@ router.post("/initiateRecivePayment", async (req, res) => {
     return res.status(400).json({ message: "Invalid paymentType" });
   }
   const generatedOrderId = commonFunction.genrateID("ORD");
-
-  const id = req.partner._id;
   let notifyTo = null;
 
-  if (notifyMethod["phone"]) {
-    notifyTo = notifyMethod["phone"];
-  } else {
-    notifyTo = notifyMethod["email"];
+  if (paymentType === "link") {
+    if (notifyMethod["phone"]) {
+      notifyTo = notifyMethod["phone"];
+    } else {
+      notifyTo = notifyMethod["email"];
+    }
   }
 
   try {
@@ -2246,21 +2251,23 @@ router.post("/initiateRecivePayment", async (req, res) => {
       Partner: partnerId,
       OrderId: orderId,
     }).populate("Customer", "email Name");
+
     if (!orderData) {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount =orderData["OrderDetails"]["Gradtotal"] - orderData["OrderDetails"]["paidamount"];
+    const leftAmount = orderData["OrderDetails"]["Gradtotal"] - orderData["paidamount"];
 
-    if(leftAmount === 0){
-      return res.status(400).json({ message: "payment completed" });
+    if (leftAmount === 0) {
+      return res.status(400).json({ message: "payment already completed" });
     }
 
     if (paymentType === "self") {
-      const orderData = await Order.findByIdAndUpdate(orderData._id, {
-        $inc: { paidamount: leftAmount,codAmount:leftAmount,PaymentStatus:paymentStatusObject.SUCCESS },
+      await Order.findByIdAndUpdate(orderData._id, {
+        codAmount: leftAmount, PaymentStatus: paymentStatusObject.SUCCESS,
+        $inc: { paidamount: leftAmount },
       });
-      return res.status(200).json({ message: "Order payment on cash successfull", amount:leftAmount  });
+      return res.status(200).json({ message: "Order payment on cash successfull", amount: leftAmount });
     } else if (paymentType === "link") {
       if (!notifyTo) {
         return res
@@ -2280,7 +2287,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
 
       // send link to user
       emailData = {
-        Subject: "[Phixman] Order status E-mail",
+        Subject: "[Phixman] payment links E-mail",
         heading1: emailDatamapping["ppaymentLink"].heading1,
         heading2: emailDatamapping["ppaymentLink"].heading2,
         desc:
@@ -2306,6 +2313,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
         .json({ message: "Invalid payment initialization" });
     }
   } catch (error) {
+    console.log(error);
     return res.status(500).json({
       message: error.message
         ? error.message
