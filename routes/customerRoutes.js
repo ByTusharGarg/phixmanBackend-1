@@ -1601,14 +1601,55 @@ router.delete("/delete-account", async(req,res)=>{
     message: "Error encountered while trying to create claim.",
   });
 }
-
-
 })
 
+/**
+ * @openapi
+ * /customer/get-all-claims:
+ *   get:
+ *    summary: it's used to fetch all claims.
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch all claims
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: All claims fetched successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+ router.get("/get-all-claims", async(req,res)=>{
+  try{
+  const Customer = req.Customer._id;
 
+ const foundClaim = await ClaimRequest.find({customerId:Customer}).lean()
+ if(!foundClaim) return res.status(400).json({message: 'No claims found'})
 
-
-
-
+return res.status(200).json({message:'Claims found', data: foundClaim})
+  }catch (error) {
+    console.log('$$$$$$$$$',error);
+    return res.status(500).json({
+      message: "Error encountered while trying to create claim.",
+    });
+  }
+})
 
 module.exports = router;
