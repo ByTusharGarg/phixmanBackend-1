@@ -1556,6 +1556,55 @@ router.post("/create/claim", async (req, res) => {
 
 /**
  * @openapi
+ * /customer/delete-account:
+ *  delete:
+ *    summary: used to delete account
+ *    tags:
+ *    - Customer Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.delete("/delete-account", async(req,res)=>{
+  try{
+    const Customer1 = req.Customer._id;
+
+  const deleteUser = await Customer.findOneAndUpdate(
+    {_id:Customer1},
+    {
+      $set:{
+      Name:'Anonymous User',
+      email:'anonymous email',
+      address:null,
+      phone:""    
+    }
+  }
+  )
+
+  if(!deleteUser) return res.status(400).json({message:"Unable to delete user"})
+  return res.status(200).json({ message: "User deleted successfully" })
+}catch (error) {
+  console.log('$$$$$$$$$',error);
+  return res.status(500).json({
+    message: "Error encountered while trying to create claim.",
+  });
+}
+})
+
+/**
+ * @openapi
  * /customer/get-all-claims:
  *   get:
  *    summary: it's used to fetch all claims.
@@ -1587,7 +1636,7 @@ router.post("/create/claim", async (req, res) => {
  *    security:
  *     - bearerAuth: []
  */
-router.get("/get-all-claims", async(req,res)=>{
+ router.get("/get-all-claims", async(req,res)=>{
   try{
   const Customer = req.Customer._id;
 
@@ -1602,6 +1651,5 @@ return res.status(200).json({message:'Claims found', data: foundClaim})
     });
   }
 })
-
 
 module.exports = router;

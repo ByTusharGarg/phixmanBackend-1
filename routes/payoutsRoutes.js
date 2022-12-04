@@ -272,9 +272,10 @@ router.post("/webhook", async (req, res) => {
 
     let postData = "";
 
-    console.log(sortedKeys);
     let valuesArray = Object.values(sortedKeys);
-    console.log(valuesArray);
+
+    // console.log(arrayData);
+    // console.log(valuesArray);
 
     valuesArray.map((ele) => {
         postData += ele;
@@ -284,7 +285,8 @@ router.post("/webhook", async (req, res) => {
     const encoded = Buffer.from(postData, 'utf8').toString('base64');
 
     try {
-        const resp = await Cashfree.Payouts.VerifySignature(postData, signature, process.env.PAYOUT_CLIENT_SECRET);
+        console.log(req.body);
+        const resp = await Cashfree.Payouts.VerifySignature(req.body, signature, process.env.PAYOUT_CLIENT_SECRET);
         console.log(resp);
         // await Payouts.initiatePayout(partnerId, orderId, payoutId);
         // return res.status(200).json({ message: "payouts initiates" });

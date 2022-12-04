@@ -16,6 +16,10 @@ const fs = require("fs");
 const { categoryTypes } = require("../enums/types");
 const checkTokenOnly = require("../middleware/checkToken");
 const {
+  getObjectSignedUrl,
+} = require("../services/s3-service");
+
+const {
   categoryTypesOptionsArray,
   CategoryTypeOptions,
 } = require("../enums/CategoryTypesOptions");
@@ -187,9 +191,23 @@ router.get("/myhelpers", checkPartner, async (req, res) => {
   const partnerId = req.partner._id;
   try {
     let data = await Partner.findById(partnerId);
-    return res
-      .status(200)
-      .json({ message: "helpers details", data: data["helpers"] });
+    let arr = data["helpers"];
+
+    const resp = await Promise.all(
+      arr.map(async (file) => {
+        if (file) {
+          return {
+            name: file.name,
+            avtar: await getObjectSignedUrl(file.avtar, 3600 * 60),
+            email: file.email
+          };
+        } else {
+          return;
+        }
+      })
+    );
+
+    return res.status(200).json({ message: "helpers details", data: resp });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -747,14 +765,17 @@ router.get("/settings", async (req, res) => {
  * @openapi
  * /generateinvoice:
  *  post:
- *    summary: generate invoice of customer order by orderId
+ *    summary: generate invoice order by orderId
  *    tags:
  *    - Index Routes
  *    requestBody:
  *      content:
  *        application/json:
- *          orderid:
- *              type: string
+ *          schema:
+ *              type: object
+ *              properties:
+ *                orderId:
+ *                  type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -767,8 +788,6 @@ router.get("/settings", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
- *    security:
- *    - bearerAuth: []
  */
 router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
   const { orderid } = req.body;
@@ -888,16 +907,17 @@ router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
 
 /**
  * @openapi
- * /generateinvoicebyInvoiceId:
- *  post:
+ * /generateinvoicebyInvoiceId/{invoiceId}:
+ *  get:
  *    summary: generate invoice order by invoiceId
  *    tags:
  *    - Index Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          invoiceId:
- *              type: string
+ *    parameters:
+ *      - in: path
+ *        name: invoiceId
+ *        required: true
+ *        schema:
+ *           type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.

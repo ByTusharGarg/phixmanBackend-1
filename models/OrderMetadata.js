@@ -10,7 +10,7 @@ const orderMetaDataSchema = new mongoose.Schema({
     checkIn: [
         { type: Object }
     ]
-});
+}, { timestamps: true });
 
 const orderMetaData = mongoose.model("orderMetaData", orderMetaDataSchema);
 

@@ -2,14 +2,20 @@ const router = require("express").Router();
 const { rejectBadRequests } = require("../middleware");
 const { body } = require("express-validator");
 const { generateOtp, sendOtp } = require("../libs/otpLib");
-const { Partner, PartnerWallet, Order, orderMetaData, category } = require("../models");
+const {
+  Partner,
+  PartnerWallet,
+  Order,
+  orderMetaData,
+  category,
+} = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypesObj } = require("../enums/types");
+const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
-const { v4: uuidv4 } = require('uuid');
-const payout = require('../libs/payments/payouts.js');
-const { makePartnerTranssaction } = require('../services/Wallet');
+const { v4: uuidv4 } = require("uuid");
+const payout = require("../libs/payments/payouts.js");
+const { makePartnerTranssaction } = require("../services/Wallet");
 
 const {
   base64_encode,
@@ -899,7 +905,6 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
     );
     return res.status(200).json({ message: "partner updated successfully." });
   } catch (error) {
-    console.log(error);
     return res
       .status(500)
       .json({ message: "Error encountered while trying to update user." });
@@ -942,6 +947,12 @@ router.get("/orderdetails/:id", async (req, res) => {
       .populate("Customer", "Name email")
       .populate("OrderDetails.Items.ServiceId")
       .populate("OrderDetails.Items.CategoryId")
+      .populate({
+        path: "OrderDetails.Items.CategoryId",
+        populate: {
+          path: "forms.features",
+        },
+      })
       .populate("OrderDetails.Items.ModelId");
 
     if (order) {
@@ -1214,17 +1225,28 @@ router.post("/order/acceptorder", async (req, res) => {
       return res.status(500).json({ message: "order not exists" });
     }
 
-    const categoryData = await category.findById(order.OrderDetails.Items[0]['CategoryId']);
+    const categoryData = await category.findById(
+      order.OrderDetails.Items[0]["CategoryId"]
+    );
     if (!categoryData) {
       return res.status(404).json({ message: "no category data found" });
     }
-    const LeadExpense = parseInt(categoryData['LeadExpense']);
+    const LeadExpense = parseInt(categoryData["LeadExpense"]);
 
     if (!LeadExpense) {
-      return res.status(400).json({ message: "unable to accept LeadExpense not found" });
+      return res
+        .status(400)
+        .json({ message: "unable to accept LeadExpense not found" });
     }
 
-    await makePartnerTranssaction("partner", "", partnerId, LeadExpense, `Lead expenses against ${order.OrderId}`, "debit");
+    await makePartnerTranssaction(
+      "partner",
+      "",
+      partnerId,
+      LeadExpense,
+      `Lead expenses against ${order.OrderId}`,
+      "debit"
+    );
 
     if (order.Status !== "Requested") {
       return res
@@ -1249,13 +1271,15 @@ router.post("/order/acceptorder", async (req, res) => {
     return res.status(200).json({ message: "order Accepted" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: error.message || "Error encountered." });
+    return res
+      .status(500)
+      .json({ message: error.message || "Error encountered." });
   }
 });
 
 /**
  * @openapi
- * /partner/forms/:orderId/:type:
+ * /partner/forms/{orderId}/{type}:
  *  post:
  *    summary: using this route partner ccreate jobcard and checkin card
  *    tags:
@@ -1309,6 +1333,7 @@ router.post("/order/acceptorder", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
+
 router.post("/forms/:orderId/:type", async (req, res) => {
   let { type, orderId } = req.params;
 
@@ -1339,30 +1364,22 @@ router.post("/forms/:orderId/:type", async (req, res) => {
         .json({ message: "order not exists or associated" });
     }
 
-
-    if (order.Status === orderStatusTypesObj["Accepted"]) {
-      return res
-        .status(500)
-        .json({ message: "order is not accepted yet" });
+    if (type === "jobcard" && (!jobCard || jobCard.length === 0)) {
+      return res.status(400).json({ message: "jobCard fields required" });
     }
 
-    const isFormExists = await orderMetaData.findOne({ orderId });
+    if (type === "checkin" && (!checkIn || checkIn.length === 0)) {
+      return res.status(400).json({ message: "checkin fields required" });
+    }
 
-
-    if (isFormExists && type == "checkin") {
-      if (!checkIn || checkIn.length === 0) {
-        return res.status(400).json({ message: "checkin fields required" });
-      }
+    if (type == "checkin") {
+      console.log("hete");
       await orderMetaData.findOneAndUpdate(
         { orderId },
         { checkIn: checkIn },
         { new: true }
       );
       return res.status(200).json({ message: "form checkIn successfully" });
-    }
-
-    if (!jobCard || jobCard.length === 0) {
-      return res.status(400).json({ message: "jobCard fields required" });
     }
 
     await orderMetaData.findOneAndUpdate(
@@ -1385,7 +1402,7 @@ router.post("/forms/:orderId/:type", async (req, res) => {
 
 /**
  * @openapi
- * /partner/forms/:orderId:
+ * /partner/forms/{orderId}:
  *  get:
  *    summary: using this route partner get jobcard and checkin card
  *    tags:
@@ -1412,6 +1429,21 @@ router.post("/forms/:orderId/:type", async (req, res) => {
  *    - bearerAuth: []
  */
 router.get("/forms/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+  const { type } = req.query;
+
+  if (!orderId) {
+    return res
+      .status(500)
+      .json({ message: "type or orderId must be provided" });
+  }
+
+  if (type && !["jobcard", "checkin"].includes(type)) {
+    return res
+      .status(500)
+      .json({ message: "type should be jobCard or checkin" });
+  }
+
   try {
     const isFormExists = await orderMetaData.findOne({ orderId });
 
@@ -1419,9 +1451,18 @@ router.get("/forms/:orderId", async (req, res) => {
       return res.status(404).json({ message: "Job card not found" });
     }
 
-    return res
-      .status(200)
-      .json({ message: "Job card created successfully", data: isFormExists });
+    // if(type){
+    //   if(type === "jobcard"){
+    //     delete isFormExists['checkIn'];
+    //     console.log(isFormExists)
+    //     return res.status(200).json({ message: "jobcard forms", data: isFormExists });
+    //   }
+    //   else{
+    //     delete isFormExists.jobCard;
+    //     return res.status(200).json({ message: "checking form", data: isFormExists });
+    //   }
+    // }
+    return res.status(200).json({ message: "forms", data: isFormExists });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -1503,7 +1544,7 @@ router.post("/order/changestatus", async (req, res) => {
       return res.status(200).json({ message: "This is your current status" });
     }
 
-    query['Status'] = status;
+    query["Status"] = status;
 
     if (status === "InRepair") {
       emailData = {
@@ -1523,16 +1564,32 @@ router.post("/order/changestatus", async (req, res) => {
         buttonName: emailDatamapping["pickUp"].buttonName,
         email: order.Customer.email || null,
       };
-    }
-    else if (status === "completed") {
+    } else if (status === "completed") {
+      if (order["paidamount"] !== order["OrderDetails"]["Amount"]) {
+        return res
+          .status(400)
+          .json({ message: "Whole payment not recived yet" });
+      }
+
       // generate invoice id
-      query['invoiceId'] = uuidv4();
+      query["invoiceId"] = uuidv4();
+
 
       // create payout here
-      await payout.createPayoutOnDb({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode }, order.OrderDetails.Items[0].CategoryId);
-
-    }
-    else if (status === "delivered") {
+      if (order.PaymentMode === 'online') {
+        await payout.createPayoutOnDbOnline(
+          {
+            partnerId,
+            orderId: order._id,
+            totalAmount: order.OrderDetails.Amount,
+            paymentMode: order.PaymentMode,
+            codAmount: order.codAmount,
+          },
+          order.OrderDetails.Items[0].CategoryId);
+      } else {
+        await payout.createPayoutOnDbCod({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
+      }
+    } else if (status === "delivered") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
         heading1: emailDatamapping["orderComplete"].heading1,
@@ -1560,7 +1617,9 @@ router.post("/order/changestatus", async (req, res) => {
       .json({ message: "order status chnages successfully" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: error.message || "Error encountered." });
+    return res
+      .status(500)
+      .json({ message: error.message || "Error encountered." });
   }
 });
 
@@ -1846,7 +1905,8 @@ router.delete("/deleteSubProvider/:sid", async (req, response) => {
  */
 router.post("/createhelper", async (req, response) => {
   const partnerID = req?.partner?._id;
-  const { name, email, avtar } = req.body;
+  const { name, email } = req.body;
+  const { avtar } = req.files;
 
   if (!email || !name || !avtar) {
     return response.status(404).json({
@@ -1854,10 +1914,13 @@ router.post("/createhelper", async (req, response) => {
     });
   }
 
+  let imageName = randomImageName();
+  await uploadFile(avtar.data, imageName, avtar.mimetype);
+
   try {
     await Partner.findByIdAndUpdate(
       partnerID,
-      { $push: { helpers: { name, email, avtar } } },
+      { $push: { helpers: { name, email, avtar: imageName } } },
       { new: true }
     );
 
@@ -2209,14 +2272,14 @@ router.post("/initiateRecivePayment", async (req, res) => {
     return res.status(400).json({ message: "Invalid paymentType" });
   }
   const generatedOrderId = commonFunction.genrateID("ORD");
-
-  const id = req.partner._id;
   let notifyTo = null;
 
-  if (notifyMethod["phone"]) {
-    notifyTo = notifyMethod["phone"];
-  } else {
-    notifyTo = notifyMethod["email"];
+  if (paymentType === "link") {
+    if (notifyMethod["phone"]) {
+      notifyTo = notifyMethod["phone"];
+    } else {
+      notifyTo = notifyMethod["email"];
+    }
   }
 
   try {
@@ -2224,21 +2287,23 @@ router.post("/initiateRecivePayment", async (req, res) => {
       Partner: partnerId,
       OrderId: orderId,
     }).populate("Customer", "email Name");
+
     if (!orderData) {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount =
-      orderData["OrderDetails"]["Gradtotal"] -
-      orderData["OrderDetails"]["paidamount"];
+    const leftAmount = orderData["OrderDetails"]["Gradtotal"] - orderData["paidamount"];
+
+    if (leftAmount === 0) {
+      return res.status(400).json({ message: "payment already completed" });
+    }
 
     if (paymentType === "self") {
-      const orderData = await Order.findByIdAndUpdate(orderData._id, {
+      await Order.findByIdAndUpdate(orderData._id, {
+        codAmount: leftAmount, PaymentStatus: paymentStatusObject.SUCCESS,
         $inc: { paidamount: leftAmount },
       });
-      return res
-        .status(200)
-        .json({ message: "Order payment on cash successfull", data });
+      return res.status(200).json({ message: "Order payment on cash successfull", amount: leftAmount });
     } else if (paymentType === "link") {
       if (!notifyTo) {
         return res
@@ -2258,7 +2323,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
 
       // send link to user
       emailData = {
-        Subject: "[Phixman] Order status E-mail",
+        Subject: "[Phixman] payment links E-mail",
         heading1: emailDatamapping["ppaymentLink"].heading1,
         heading2: emailDatamapping["ppaymentLink"].heading2,
         desc:
@@ -2284,6 +2349,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
         .json({ message: "Invalid payment initialization" });
     }
   } catch (error) {
+    console.log(error);
     return res.status(500).json({
       message: error.message
         ? error.message
@@ -2470,12 +2536,5 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
-
-
-(async () => {
-  // const {data} = await  payout.initiateCashfreePayout("JOHN18011343",2,"ifjifdddhjuifjfu","remark");
-  // const resp = await payout.createPayoutOnDb({partnerId:"63737f86aef6566d1ad854ec",orderId:"63737f86aef6566d1ad854ec",totalAmount:100,paymentMode:"COD"});
-  // console.log(resp);
-})
 
 module.exports = router;

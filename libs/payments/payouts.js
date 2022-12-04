@@ -170,7 +170,7 @@ class Payouts {
         try {
             const partner = await partnerModel.findById(partnerId);
             if (partner['gstCertificateNo']) {
-                return true;
+                return partner;
             }
             return false;
         } catch (error) {
@@ -178,8 +178,79 @@ class Payouts {
         }
     }
 
-    async createPayoutOnDb(data, categoryId) {
-        const { orderId, totalAmount } = data;
+    howMuchCanDeduct(currentAmount, toBeDeduct) {
+        return 0;
+    }
+
+    async createPayoutOnDbOnline(data, categoryId) {
+        const { orderId, totalAmount, codAmount } = data;
+        let totalDeduction = 0;
+        let deduction = [];
+        let status = payoutStatusTypesObject.WITHDRAW;
+
+        // ----- deduction cases -----
+
+        // gst deduction
+        const partnerDataRe = await isPartnerGstExists(data.partnerId)
+        if (!partnerDataRe) {
+            let amt = (totalAmount * (18 / 100));
+            totalDeduction += amt;
+            deduction.push({ title: "Tax collection (Without GST)", value: amt, desc: "Tax deduction" })
+        } else {
+            deduction.push({ title: "Tax collection (Without GST)", value: 0, desc: "Tax deduction" })
+        }
+
+        // per category commission
+        const categoryData = await category.findById(categoryId);
+        let companyComissionPercentage = parseInt(categoryData.companyComissionPercentage);
+
+        if (companyComissionPercentage) {
+            let amt = (totalAmount * (companyComissionPercentage / 100));
+            totalDeduction += amt;
+            deduction.push({ title: "Phixmen Commision", value: amt, desc: "Phixmen Commision" })
+        } else {
+            throw new Error("no commission found");
+        }
+
+        if (codAmount !== 0) {
+            deduction.push({ title: "Partner Cash payment amount", value: codAmount, desc: "Cash payment" });
+        }
+
+        const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 10)}`;
+        let payableAmount = (totalAmount - (totalDeduction + codAmount));
+
+        if (payableAmount < 0) {
+            payableAmount = (totalAmount - codAmount);
+            deduction.push({ title: "This fees will be deducted in next order", value: totalDeduction, desc: "over due" });
+            await partnerModel.findByIdAndUpdate(data.partnerId, { $inc: { codCollection: totalDeduction } });
+        }
+
+        // deduct some amount if any previous exists we can in current order
+        const leftAmount = partnerDataRe.codCollection;
+        if (leftAmount > 0) {
+            let howMuchDeduct = howMuchCanDeduct(payableAmount, leftAmount);
+            if (howMuchDeduct) {
+                payableAmount -= howMuchDeduct;
+                deduction.push({ title: "This fees is deducted againts your previous order", value: howMuchDeduct, desc: "deduction" });
+                await partnerModel.findByIdAndUpdate(data.partnerId, { $inc: { codCollection: -howMuchDeduct } });
+            }
+        }
+
+        try {
+            const isExist = await payoutModel.findOne({ orderId });
+            if (isExist) {
+                throw new Error("allready initialized or completed");
+            }
+            const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction, status });
+            const rep = await newwithDraw.save();
+            return rep;
+        } catch (error) {
+            throw new Error(error.message || "something went wrong");
+        }
+    }
+
+    async createPayoutOnDbCod(data, categoryId) {
+        const { orderId, totalAmount, codAmount } = data;
         let totalDeduction = 0;
         let deduction = [];
         let status = payoutStatusTypesObject.WITHDRAW;
@@ -195,12 +266,10 @@ class Payouts {
             deduction.push({ title: "Tax collection (Without GST)", value: 0, desc: "Tax deduction" })
         }
 
-
         // cod order ammount
         if (data['paymentMode'] === 'cod') {
             let amt = (totalAmount * (2 / 100));
             totalDeduction += amt;
-            status = payoutStatusTypesObject.NOT_ALLOWED;
             deduction.push({ title: "Cash payment/ self 2% Deduction", value: amt, desc: "Cash payment" })
         }
 
@@ -216,10 +285,18 @@ class Payouts {
             throw new Error("no commission found");
         }
 
-
+        let payableAmount = 0;
         const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 10)}`;
 
-        let payableAmount = (totalAmount - totalDeduction);
+        if (codAmount === 0) {
+            payableAmount = (totalAmount - totalDeduction);
+        } else {
+            payableAmount = 0;
+            status = payoutStatusTypesObject.NOT_ALLOWED;
+            deduction.push({ title: "Partner Cash payment amount", value: codAmount, desc: "Cash payment" });
+            deduction.push({ title: "This fees will be deducted in next order", value: totalDeduction, desc: "over due" });
+            await partnerModel.findByIdAndUpdate(data.partnerId, { $inc: { codCollection: totalDeduction } });
+        }
 
         try {
             const isExist = await payoutModel.findOne({ orderId });
@@ -227,7 +304,8 @@ class Payouts {
                 throw new Error("allready initialized or completed");
             }
             const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction, status });
-            return newwithDraw.save();
+            const rep = await newwithDraw.save();
+            return rep;
         } catch (error) {
             throw new Error(error.message || "something went wrong");
         }
