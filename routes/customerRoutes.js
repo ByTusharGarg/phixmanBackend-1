@@ -1469,6 +1469,17 @@ router.get("/active-offers", async (req, res) => {
  *            audio:
  *              type: file
  *    responses:
+ *      200:
+ *          description: if claim created successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: claim created successfully.
  *      500:
  *          description: if internal server error occured while performing request.
  *          content:
