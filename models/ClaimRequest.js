@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const { claimTypesList } = require("../enums/claimTypes");
+const { claimTypesList, claimT } = require("../enums/claimTypes");
 const Schema = mongoose.Schema;
 
 const ClaimRequest = mongoose.model(
@@ -13,6 +13,11 @@ const ClaimRequest = mongoose.model(
       required: true,
       default: claimTypesList[0]
     },
+    claim:{
+      type: String,
+      enum: claimT,
+      required: true,
+    },
     orderId: { type: Schema.Types.ObjectId, ref: "Order" },
     customerId: {
       type: Schema.Types.ObjectId,
@@ -22,6 +27,16 @@ const ClaimRequest = mongoose.model(
     description: { required: true, type: String },
     images: [String],
     voiceNote: String,
+    partnerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Partner",
+    },
+    customerDetails:{
+      address: {type:String},
+      deliveryAddress:{type:String, default: ''},
+      name:{type:String},
+      phoneNumber:{type:String},
+    }
 
   })
 )

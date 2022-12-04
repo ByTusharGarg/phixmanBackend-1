@@ -22,8 +22,11 @@ const {
   SubCategory,
   orderTransaction,
   Invoice,
-  Vendor,
+  ClaimRequest,
+  Vendor
 } = require("../models");
+
+
 const PenalitySchema = require("../models/penality");
 const {
   getAllWallletTranssactionForUser,
@@ -4599,5 +4602,122 @@ router.delete("/service/delete", async (req, res) => {
     });
   }
 });
+
+/**
+ * @openapi
+ * /admin/create/claim:
+ *   post:
+ *    summary: it's use to create claim.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                orderId:
+ *                   type: string
+ *                claimType:
+ *                   type: string
+ *                   enum: ["CUSTOMER_RAISED_CLAIM", "VENDOR_RAISED_CLAIM"]
+ *                claim:
+ *                   type: string
+ *                   enum: ["complaint", "warranty", "installation", "repair", "delivery"]
+ *                title:
+ *                   type: string
+ *                description:
+ *                   type: string
+ *                address:
+ *                   type: string
+ *                deliveryAddress:
+ *                   type: string  
+ *                partnerId:
+ *                    type: string
+ *                customerId:
+ *                    type: string
+ *                name:
+ *                    type: string
+ *                phoneNumber:
+ *                    type: string                    
+ *    responses:
+ *      200:
+ *          description: if claim created successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: claim created successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+router.post('/create/claim', async(req,res)=>{
+  try {
+    const {
+      body: {
+        claimType,
+        orderId,
+        title,
+        description,
+        address,
+        deliveryAddress,
+        claim,
+        partnerId,
+        customerId,
+        name,
+        phoneNumber
+      }
+    } = req
+
+    
+    const claimId = commonFunction.genrateID("CLAIM");
+
+    // const customerId = req.Customer._id;
+
+    const claimObj = {
+      customerId,
+      claimType,
+      claim,
+      claimId,
+      orderId,
+      title,
+      description,
+      customerDetails:{
+        address,
+        deliveryAddress,
+        name,
+        phoneNumber
+      },
+      partnerId
+
+    }
+
+    const newClaim = await ClaimRequest.create(claimObj)
+    if(!newClaim) return res.status(400).json({message:"Unable to create claim"})
+
+    return res.status(200).json({message:"New claim created", data:newClaim})
+
+  } catch (error) {
+    console.log('$$$$$$$$$',error);
+    return res.status(500).json({
+      message: "Error encountered while trying to create claim.",
+    });
+  }
+})
 
 module.exports = router;
