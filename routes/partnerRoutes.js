@@ -10,7 +10,7 @@ const {
   category,
 } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
-const { orderStatusTypesObj,  paymentStatusObject } = require("../enums/types");
+const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
 const { v4: uuidv4 } = require("uuid");
@@ -1578,18 +1578,17 @@ router.post("/order/changestatus", async (req, res) => {
       // create payout here
       if (order.PaymentMode === 'online') {
         await payout.createPayoutOnDbOnline(
-        {
-          partnerId,
-          orderId: order._id,
-          totalAmount: order.OrderDetails.Amount,
-          paymentMode: order.PaymentMode, 
-          codAmount:  order.codAmount,
-        },
-        order.OrderDetails.Items[0].CategoryId
+          {
+            partnerId,
+            orderId: order._id,
+            totalAmount: order.OrderDetails.Amount,
+            paymentMode: order.PaymentMode,
+            codAmount: order.codAmount,
+          },
+          order.OrderDetails.Items[0].CategoryId);
       } else {
         await payout.createPayoutOnDbCod({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
       }
-      );
     } else if (status === "delivered") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
@@ -1605,14 +1604,14 @@ router.post("/order/changestatus", async (req, res) => {
       commonMailFunctionToAll(data, "common");
     }
 
-    // await Order.findOneAndUpdate(
-    //   { OrderId: orderId },
-    //   {
-    //     ...query,
-    //     $push: { statusLogs: { status: status, timestampLog: new Date() } },
-    //   },
-    //   { new: true }
-    // );
+    await Order.findOneAndUpdate(
+      { OrderId: orderId },
+      {
+        ...query,
+        $push: { statusLogs: { status: status, timestampLog: new Date() } },
+      },
+      { new: true }
+    );
     return res
       .status(200)
       .json({ message: "order status chnages successfully" });
@@ -1907,21 +1906,21 @@ router.delete("/deleteSubProvider/:sid", async (req, response) => {
 router.post("/createhelper", async (req, response) => {
   const partnerID = req?.partner?._id;
   const { name, email } = req.body;
-  const {avtar} = req.files;
+  const { avtar } = req.files;
 
   if (!email || !name || !avtar) {
     return response.status(404).json({
       message: "missing required fields",
     });
   }
-  
+
   let imageName = randomImageName();
-  await uploadFile(avtar.data,imageName,avtar.mimetype);
+  await uploadFile(avtar.data, imageName, avtar.mimetype);
 
   try {
     await Partner.findByIdAndUpdate(
       partnerID,
-      { $push: { helpers: { name, email, avtar:imageName } } },
+      { $push: { helpers: { name, email, avtar: imageName } } },
       { new: true }
     );
 
@@ -2295,7 +2294,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
 
     const leftAmount = orderData["OrderDetails"]["Gradtotal"] - orderData["paidamount"];
 
-    if  (leftAmount === 0)  {
+    if (leftAmount === 0) {
       return res.status(400).json({ message: "payment already completed" });
     }
 
@@ -2304,7 +2303,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
         codAmount: leftAmount, PaymentStatus: paymentStatusObject.SUCCESS,
         $inc: { paidamount: leftAmount },
       });
-      return res.status(200).json({ message: "Order payment on cash successfull", amount:leftAmount  });
+      return res.status(200).json({ message: "Order payment on cash successfull", amount: leftAmount });
     } else if (paymentType === "link") {
       if (!notifyTo) {
         return res
