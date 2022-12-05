@@ -23,6 +23,12 @@ const payoutsSchema = mongoose.Schema({
             desc: String
         }
     ],
+    logs: [
+        {
+            status: { type: String, enum: payoutStatusTypes },
+            timestampLog: { type: Date },
+        },
+    ],
     payableAmount: {
         type: Number
     },

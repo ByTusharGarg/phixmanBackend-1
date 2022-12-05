@@ -183,6 +183,14 @@ class Payouts {
     }
 
     async createPayoutOnDbOnline(data, categoryId) {
+        await Order.findOneAndUpdate(
+            { OrderId: orderId },
+            {
+                ...query,
+                $push: { statusLogs: { status: status, timestampLog: new Date() } },
+            },
+            { new: true }
+        );
         const { orderId, totalAmount, codAmount } = data;
         let totalDeduction = 0;
         let deduction = [];
@@ -241,7 +249,8 @@ class Payouts {
             if (isExist) {
                 throw new Error("allready initialized or completed");
             }
-            const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction, status });
+
+            const newwithDraw = new payoutModel({ ...data, transferId, logs: [{ status: payoutStatusTypesObject.WITHDRAW, timestampLog: new Date() }], totalDeduction, payableAmount, deduction, status });
             const rep = await newwithDraw.save();
             return rep;
         } catch (error) {
@@ -303,7 +312,7 @@ class Payouts {
             if (isExist) {
                 throw new Error("allready initialized or completed");
             }
-            const newwithDraw = new payoutModel({ ...data, transferId, totalDeduction, payableAmount, deduction, status });
+            const newwithDraw = new payoutModel({ ...data, transferId, logs: [{ status: payoutStatusTypesObject.WITHDRAW, timestampLog: new Date() }], totalDeduction, payableAmount, deduction, status });
             const rep = await newwithDraw.save();
             return rep;
         } catch (error) {
@@ -316,9 +325,8 @@ class Payouts {
     }
 
     async findPayoutsList(query) {
-        return payoutModel.find(query);
+        return payoutModel.find(query).populate("partnerId", "Sno Name");
     }
-
 }
 
 module.exports = new Payouts();
