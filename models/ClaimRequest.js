@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
-
-const { claimTypesList, claimT } = require("../enums/claimTypes");
+const {
+  claimTypesList,
+  claimT,
+  claimStatusList,
+} = require("../enums/claimTypes");
 const Schema = mongoose.Schema;
 
 const ClaimRequest = mongoose.model(
@@ -11,9 +14,9 @@ const ClaimRequest = mongoose.model(
       type: String,
       enum: claimTypesList,
       required: true,
-      default: claimTypesList[0]
+      default: claimTypesList[0],
     },
-    claim:{
+    claim: {
       type: String,
       enum: claimT,
       required: true,
@@ -31,13 +34,20 @@ const ClaimRequest = mongoose.model(
       type: Schema.Types.ObjectId,
       ref: "Partner",
     },
-    customerDetails:{
-      address: {type:String},
-      deliveryAddress:{type:String, default: ''},
-      name:{type:String},
-      phoneNumber:{type:String},
-    }
-
+    customerDetails: {
+      address: { type: String },
+      deliveryAddress: { type: String, default: "" },
+      name: { type: String },
+      phoneNumber: { type: String },
+    },
+    date: { type: String },
+    time: { type: String },
+    claimStatus: {
+      type: String,
+      enum: claimStatusList,
+      required: true,
+      default: claimStatusList[0],
+    },
   })
-)
+);
 module.exports = ClaimRequest;

@@ -1431,9 +1431,9 @@ router.get("/active-offers", async (req, res) => {
 
     let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
 
-    if (foundActiveOffer.length === 0) return res.status(400).json({ message: 'No active offers found' })
+    if (foundActiveOffer.length === 0) return handelNoteFoundError(res,{ message: 'No active offers found' })
 
-    return res.status(200).json({ message: "active offers found", data: foundActiveOffer })
+    return handelSuccess(res,{ message: "active offers found", data: foundActiveOffer })
   } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
@@ -1459,6 +1459,10 @@ router.get("/active-offers", async (req, res) => {
  *            title:
  *              type: string
  *              required: true
+ *            date:
+ *              type: string
+ *            time:
+ *              type: string
  *            description:
  *              type: string
  *              required: true
@@ -1469,6 +1473,17 @@ router.get("/active-offers", async (req, res) => {
  *            audio:
  *              type: file
  *    responses:
+ *      200:
+ *          description: if claim created successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: claim created successfully.
  *      500:
  *          description: if internal server error occured while performing request.
  *          content:
@@ -1490,6 +1505,8 @@ router.post("/create/claim", async (req, res) => {
         orderId,
         title,
         description,
+        date,
+        time
       }
     } = req
 
@@ -1537,17 +1554,19 @@ router.post("/create/claim", async (req, res) => {
       description,
       voiceNote: audioMedia[0]?.fileName,
       images: imageMedia.length > 1 ? fileName : imageMedia[0].fileName,
+      date,
+      time
     }
 
     const newClaim = await ClaimRequest.create(claimObj)
-    if(!newClaim) return res.status(400).json({message:"Unable to create claim"})
+    if(!newClaim) return handelNoteFoundError(res,{message:"Unable to create claim"})
 
-    return res.status(200).json({message:"New claim created", data:newClaim})
+    return handelSuccess(res,{message:"New claim created", data:newClaim})
 
 
   } catch (error) {
     console.log('$$$$$$$$$',error);
-    return res.status(500).json({
+    return handelServerError(res,{
       message: "Error encountered while trying to create claim.",
     });
   }
@@ -1593,11 +1612,11 @@ router.delete("/delete-account", async(req,res)=>{
   }
   )
 
-  if(!deleteUser) return res.status(400).json({message:"Unable to delete user"})
-  return res.status(200).json({ message: "User deleted successfully" })
+  if(!deleteUser) return handelNoteFoundError(res,{message:"Unable to delete user"})
+  return handelSuccess(res, { message: "User deleted successfully" })
 }catch (error) {
   console.log('$$$$$$$$$',error);
-  return res.status(500).json({
+  return handelServerError(res,{
     message: "Error encountered while trying to create claim.",
   });
 }
@@ -1640,14 +1659,31 @@ router.delete("/delete-account", async(req,res)=>{
   try{
   const Customer = req.Customer._id;
 
- const foundClaim = await ClaimRequest.find({customerId:Customer}).lean()
- if(!foundClaim) return res.status(400).json({message: 'No claims found'})
+ const foundClaim = await ClaimRequest.find({customerId:Customer}).lean().populate("orderId", "OrderId -_id")
+ if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
 
-return res.status(200).json({message:'Claims found', data: foundClaim})
+return handelSuccess(res,{message:'Claims found', data: foundClaim})
   }catch (error) {
     console.log('$$$$$$$$$',error);
-    return res.status(500).json({
+    return handelServerError(res,{
       message: "Error encountered while trying to create claim.",
+    });
+  }
+})
+
+router.get("/get-claim-by-id", async(req,res)=>{
+  try{
+    const{
+      query:{claimId}
+    }=req;
+
+    const foundClaim = await ClaimRequest.findOne({claimId}).populate("orderId","OrderId -_id")
+    if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
+    return handelSuccess(res,{message:'Claims found', data: foundClaim})
+  }catch (error) {
+    console.log('$$$$$$$$$',error);
+    return handelServerError(res,{
+      message: "Error encountered while trying to fetch claim.",
     });
   }
 })
