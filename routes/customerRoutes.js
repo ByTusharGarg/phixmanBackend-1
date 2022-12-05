@@ -1671,6 +1671,47 @@ return handelSuccess(res,{message:'Claims found', data: foundClaim})
   }
 })
 
+/**
+ * @openapi
+ * /customer/get-claim-by-id:
+ *  get:
+ *    summary: using this route user can get a specific claim by id.
+ *    tags:
+ *    - Customer Routes
+ *    parameters:
+ *      - in: query
+ *        name: claimId
+ *        required: true
+ *        schema:
+ *           type: string
+ *
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch claim by id.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: All claims fetched successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
 router.get("/get-claim-by-id", async(req,res)=>{
   try{
     const{

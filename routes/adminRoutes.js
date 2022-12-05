@@ -46,6 +46,12 @@ const {
   orderStatusTypesObj,
   payoutStatusTypes,
 } = require("../enums/types");
+const {
+  handelSuccess,
+  handelValidationError,
+  handelServerError,
+  handelNoteFoundError,
+} = require("../libs/response-handler/handlers");
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
 const { randomImageName, uploadFile } = require("../services/s3-service");
@@ -4716,6 +4722,64 @@ router.post('/create/claim', async(req,res)=>{
     console.log('$$$$$$$$$',error);
     return res.status(500).json({
       message: "Error encountered while trying to create claim.",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/get-claim-by-id:
+ *  get:
+ *    summary: using this route user can get a specific claim by id.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: claimId
+ *        required: true
+ *        schema:
+ *           type: string
+ *
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch claim by id.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: All claims fetched successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/get-claim-by-id", async(req,res)=>{
+  try{
+    const{
+      query:{claimId}
+    }=req;
+
+    const foundClaim = await ClaimRequest.findOne({claimId}).populate("orderId","OrderId -_id")
+    if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
+    return handelSuccess(res,{message:'Claims found', data: foundClaim})
+  }catch (error) {
+    console.log('$$$$$$$$$',error);
+    return handelServerError(res,{
+      message: "Error encountered while trying to fetch claim.",
     });
   }
 })
