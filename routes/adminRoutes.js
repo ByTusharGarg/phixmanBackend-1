@@ -26,6 +26,7 @@ const {
   Vendor
 } = require("../models");
 
+const {claimTypes}=require("../enums/claimTypes")
 
 const PenalitySchema = require("../models/penality");
 const {
@@ -46,6 +47,12 @@ const {
   orderStatusTypesObj,
   payoutStatusTypes,
 } = require("../enums/types");
+const {
+  handelSuccess,
+  handelValidationError,
+  handelServerError,
+  handelNoteFoundError,
+} = require("../libs/response-handler/handlers");
 const { body } = require("express-validator");
 const { makePartnerTranssaction } = require("./walletRoute");
 const { randomImageName, uploadFile } = require("../services/s3-service");
@@ -60,6 +67,7 @@ const {
 const { adminTypeArray } = require("../enums/adminTypes");
 const { getWalletTransactions } = require("../services/Wallet");
 const Payouts = require("../libs/payments/payouts");
+const { query } = require("express");
 
 const verifyOrderValidator = [
   body("OrderType")
@@ -4718,6 +4726,134 @@ router.post('/create/claim', async(req,res)=>{
       message: "Error encountered while trying to create claim.",
     });
   }
+})
+
+/**
+ * @openapi
+ * /admin/get-claim-by-id:
+ *  get:
+ *    summary: using this route user can get a specific claim by id.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: claimId
+ *        required: true
+ *        schema:
+ *           type: string
+ *
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch claim by id.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: All claims fetched successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/get-claim-by-id", async(req,res)=>{
+  try{
+    const{
+      query:{claimId}
+    }=req;
+
+    const foundClaim = await ClaimRequest.findOne({claimId}).populate("orderId","OrderId -_id")
+    if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
+    return handelSuccess(res,{message:'Claims found', data: foundClaim})
+  }catch (error) {
+    console.log('$$$$$$$$$',error);
+    return handelServerError(res,{
+      message: "Error encountered while trying to fetch claim.",
+    });
+  }
+})
+
+
+/**
+ * @openapi
+ * /admin/get-claim:
+ *  get:
+ *    summary: using this route user can get claim.
+ *    tags:
+ *    - Admin Routes
+ *    parameters:
+ *      - in: query
+ *        name: claim
+ *        schema:
+ *           type: string
+ *           enum: ["CUSTOMER","VENDOR"]
+ *
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch claims.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: All claims fetched successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/get-claim", async(req,res)=>{
+  try{let {
+    query:{
+      claim = ''
+    }
+  }=req;
+
+  let queryObj = {};
+
+  if(claim !== ''){
+      if (!['customer-raised','vendor-raised'].includes(claimTypes[`${claim}`])) {
+        queryObj={...queryObj,claimType:claimTypes[`${claim}`]}
+      }
+  }
+
+  const foundClaims = await ClaimRequest.find(queryObj)
+  if(foundClaims.length===0) return res.status(400).json({message:"no claims found"})
+  return handelSuccess(res,{message:'Claims found', data: foundClaims})}
+  catch (error) {
+    console.log('$$$$$$$$$',error);
+    return handelServerError(res,{
+      message: "Error encountered while trying to fetch claim.",
+    });
+  }
+
+
+
 })
 
 module.exports = router;
