@@ -1,8 +1,8 @@
 const invoiceTypesList = [
   "ORDER_PART_A",
-  "ORDER_PART_B",
-  "LEAD_BOUGHT_INVOICE",
-  "CLAIM_INVOICE"
+    "ORDER_PART_B",
+    "LEAD_BOUGHT_INVOICE",
+    "CLAIM_INVOICE"
 ];
 const invoiceTypes = {
   ORDER_PART_A: "ORDER_PART_A", //commission
