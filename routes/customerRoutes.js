@@ -1718,7 +1718,10 @@ router.get("/get-claim-by-id", async(req,res)=>{
       query:{claimId}
     }=req;
 
-    const foundClaim = await ClaimRequest.findOne({claimId}).populate("orderId","OrderId -_id")
+    const foundClaim = await ClaimRequest.findOne({claimId})
+    .populate("orderId","OrderId -_id")
+    .populate("customerId")
+    .populate("partnerId")
     if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
     return handelSuccess(res,{message:'Claims found', data: foundClaim})
   }catch (error) {
