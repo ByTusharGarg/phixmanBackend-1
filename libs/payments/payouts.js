@@ -178,19 +178,15 @@ class Payouts {
         }
     }
 
-    howMuchCanDeduct(currentAmount, toBeDeduct) {
-        return 0;
+    howMuchCanDeduct(currentAmount, toBeTaken) {
+        const fiftyPercentageOfPayable = (currentAmount * (50 / 100));
+        if (fiftyPercentageOfPayable < toBeTaken) {
+            return fiftyPercentageOfPayable;
+        }
+        return toBeTaken;
     }
 
     async createPayoutOnDbOnline(data, categoryId) {
-        await Order.findOneAndUpdate(
-            { OrderId: orderId },
-            {
-                ...query,
-                $push: { statusLogs: { status: status, timestampLog: new Date() } },
-            },
-            { new: true }
-        );
         const { orderId, totalAmount, codAmount } = data;
         let totalDeduction = 0;
         let deduction = [];

@@ -15,7 +15,7 @@ const Order = mongoose.model(
       Partner: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
       Customer: { type: Schema.Types.ObjectId, ref: "Customer" },
       OrderId: { type: String, unique: true, index: true },
-      invoiceId: { type: String, default: null },
+      invoiceId: [{ type: Schema.Types.ObjectId, ref: "Invoice" }],
       OrderType: { type: String, enum: orderTypes },
       Status: {
         type: String,

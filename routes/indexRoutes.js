@@ -10,6 +10,7 @@ const {
   SystemInfo,
   Partner,
   Order,
+  orderMetaData,
 } = require("../models");
 const router = require("express").Router();
 const fs = require("fs");
@@ -25,8 +26,10 @@ const {
 } = require("../enums/CategoryTypesOptions");
 const checkPartner = require("../middleware/AuthPartner");
 const moment = require("moment");
-const pdf = require("pdf-creator-node");
+// const pdf = require("pdf-creator-node");
 const path = require("path");
+let pdf = require("html-pdf");
+const ejs = require("ejs");
 
 const getServiceParamValidators = [
   param("serviceType")
@@ -763,19 +766,15 @@ router.get("/settings", async (req, res) => {
 
 /**
  * @openapi
- * /generateinvoice:
- *  post:
+ * /generateinvoice/{orderId}:
+ *  get:
  *    summary: generate invoice order by orderId
  *    tags:
  *    - Index Routes
- *    requestBody:
- *      content:
- *        application/json:
- *          schema:
- *              type: object
- *              properties:
- *                orderId:
- *                  type: string
+ *    parameters:
+ *      - in: path
+ *        name: orderId
+ *        required: true
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -789,20 +788,16 @@ router.get("/settings", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
-  const { orderid } = req.body;
+router.get("/generateinvoice/:orderid", checkTokenOnly, async (req, res, next) => {
+  const { orderid } = req.params;
 
   if (!orderid) {
     return res.status(400).json({ message: "order required" });
   }
 
-  const html = fs.readFileSync(
-    path.join(__dirname, "../libs/mailer/template/invoice.html"),
-    "utf-8"
-  );
   let orderData = null;
 
-  const filename = Math.random() + "_doc" + ".pdf";
+  const filename = Math.random() + ".pdf";
 
   try {
     orderData = await Order.findById(orderid)
@@ -854,49 +849,39 @@ router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
     },
   };
 
-  const document = {
-    html: html,
-    data: {
-      products: obj,
-    },
-    path: "./docs/" + filename,
-  };
-
-  let options = {
-    formate: "A3",
-    orientation: "portrait",
-    border: "2mm",
-    header: {
-      height: "15mm",
-      contents:
-        '<h4 style=" color: red;font-size:20;font-weight:800;text-align:center;">CUSTOMER INVOICE</h4>',
-    },
-    footer: {
-      height: "20mm",
-      contents: {
-        first: "Cover page",
-        2: "Second page",
-        default:
-          'div style="float: right;">Signature of supplier/authorized representative</div>',
-        last: "Last Page",
-      },
-    },
-  };
-
   try {
-    const data = await pdf.create(document, options);
+    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "invoice.ejs"), { data: obj }, (err, data) => {
+      if (err) {
+        res.send(err);
+      } else {
+        let options = {
+          "height": "11.25in",
+          "width": "8.5in",
+          "header": {
+            "height": "20mm"
+          },
+          "footer": {
+            "height": "20mm",
+          },
+        };
+        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
+          if (err) {
+            res.send(err);
+          }
+          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
+          res.setHeader("Content-type", "application/pdf");
+          var fileData = fs.readFileSync(data.filename);
+          let interval = setTimeout(() => {
+            fs.unlink(data.filename, () => { });
+            clearInterval(interval);
+          }, 3000);
 
-    res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
-    res.setHeader("Content-type", "application/pdf");
+          return res.send(fileData);
+        });
+      }
+    });
 
-    var fileData = fs.readFileSync(data.filename);
 
-    let interval = setTimeout(() => {
-      fs.unlink(data.filename, () => { });
-      clearInterval(interval);
-    }, 3000);
-
-    return res.send(fileData);
   } catch (error) {
     console.log(error);
     return res
@@ -933,21 +918,16 @@ router.post("/generateinvoice", checkTokenOnly, async (req, res, next) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/generateinvoicebyInvoiceId/:invoiceId", checkTokenOnly, async (req, res, next) => {
+router.get("/generateinvoicebyInvoiceId/:invoiceId", async (req, res, next) => {
   const { invoiceId } = req.params;
 
   if (!invoiceId) {
     return res.status(400).json({ message: "invoiceId required" });
   }
 
-  const html = fs.readFileSync(
-    path.join(__dirname, "../libs/mailer/template/invoice.html"),
-    "utf-8"
-  );
-
   let orderData = null;
 
-  const filename = Math.random() + "_doc" + ".pdf";
+  const filename = Math.random() + ".pdf";
 
   try {
     orderData = await Order.findOne({ invoiceId: invoiceId })
@@ -999,49 +979,39 @@ router.get("/generateinvoicebyInvoiceId/:invoiceId", checkTokenOnly, async (req,
     },
   };
 
-  const document = {
-    html: html,
-    data: {
-      products: obj,
-    },
-    path: "./docs/" + filename,
-  };
-
-  let options = {
-    formate: "A3",
-    orientation: "portrait",
-    border: "2mm",
-    header: {
-      height: "15mm",
-      contents:
-        '<h4 style=" color: red;font-size:20;font-weight:800;text-align:center;">CUSTOMER INVOICE</h4>',
-    },
-    footer: {
-      height: "20mm",
-      contents: {
-        first: "Cover page",
-        2: "Second page",
-        default:
-          'div style="float: right;">Signature of supplier/authorized representative</div>',
-        last: "Last Page",
-      },
-    },
-  };
-
   try {
-    const data = await pdf.create(document, options);
+    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "invoice.ejs"), { data: obj }, (err, data) => {
+      if (err) {
+        res.send(err);
+      } else {
+        let options = {
+          "height": "11.25in",
+          "width": "8.5in",
+          "header": {
+            "height": "20mm"
+          },
+          "footer": {
+            "height": "20mm",
+          },
+        };
+        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
+          if (err) {
+            res.send(err);
+          }
+          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
+          res.setHeader("Content-type", "application/pdf");
+          var fileData = fs.readFileSync(data.filename);
+          let interval = setTimeout(() => {
+            fs.unlink(data.filename, () => { });
+            clearInterval(interval);
+          }, 3000);
 
-    res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
-    res.setHeader("Content-type", "application/pdf");
+          return res.send(fileData);
+        });
+      }
+    });
 
-    var fileData = fs.readFileSync(data.filename);
 
-    let interval = setTimeout(() => {
-      fs.unlink(data.filename, () => { });
-      clearInterval(interval);
-    }, 3000);
-
-    return res.send(fileData);
   } catch (error) {
     console.log(error);
     return res
@@ -1049,4 +1019,173 @@ router.get("/generateinvoicebyInvoiceId/:invoiceId", checkTokenOnly, async (req,
       .json({ message: "Error encountered while generating pdf." });
   }
 });
+
+
+/**
+ * @openapi
+ * /checkin/{orderId}:
+ *  get:
+ *    summary: using this route get checkin card pdf
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/checkin/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+  let data = {};
+
+  if (!orderId) {
+    return res
+      .status(500)
+      .json({ message: "type or orderId must be provided" });
+  }
+
+  const filename = Math.random() + ".pdf";
+
+  try {
+    const isFormExists = await orderMetaData.findOne({ orderId });
+
+    if (!isFormExists) {
+      return res.status(404).json({ message: "Checkin card not found" });
+    }
+
+    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "chechin.ejs"), { data: data }, (err, data) => {
+      if (err) {
+        res.send(err);
+      } else {
+        let options = {
+          "height": "11.25in",
+          "width": "8.5in",
+          "header": {
+            "height": "20mm"
+          },
+          "footer": {
+            "height": "20mm",
+          },
+        };
+        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
+          if (err) {
+            res.send(err);
+          }
+          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
+          res.setHeader("Content-type", "application/pdf");
+          var fileData = fs.readFileSync(data.filename);
+          let interval = setTimeout(() => {
+            fs.unlink(data.filename, () => { });
+            clearInterval(interval);
+          }, 3000);
+
+          return res.send(fileData);
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+/**
+ * @openapi
+ * /jobcard/{orderId}:
+ *  get:
+ *    summary: using this route get jobcard card pdf
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: orderId
+ *        required: true
+ *        schema:
+ *           type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/jobcard/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+  let data = {};
+
+  const filename = Math.random() + ".pdf";
+
+  if (!orderId) {
+    return res
+      .status(500)
+      .json({ message: "type or orderId must be provided" });
+  }
+
+  try {
+    const isFormExists = await orderMetaData.findOne({ orderId });
+
+    if (!isFormExists) {
+      return res.status(404).json({ message: "jobcard card not found" });
+    }
+
+    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "jobcard.ejs"), { data: data }, (err, data) => {
+      if (err) {
+        res.send(err);
+      } else {
+        let options = {
+          "height": "11.25in",
+          "width": "8.5in",
+          "header": {
+            "height": "20mm"
+          },
+          "footer": {
+            "height": "20mm",
+          },
+        };
+        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
+          if (err) {
+            res.send(err);
+          }
+          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
+          res.setHeader("Content-type", "application/pdf");
+          var fileData = fs.readFileSync(data.filename);
+          let interval = setTimeout(() => {
+            fs.unlink(data.filename, () => { });
+            clearInterval(interval);
+          }, 3000);
+
+          return res.send(fileData);
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
+
+
 module.exports = router;
