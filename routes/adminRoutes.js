@@ -4859,4 +4859,76 @@ router.get("/get-claim", async(req,res)=>{
 
 })
 
+
+/**
+ * @openapi
+ * /admin/claim-status:
+ *   post:
+ *    summary: it's use to update claim-status.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                status:
+ *                   type: string
+ *                   enum: ["APPROVED", "REJECTED"]
+ *                claimId:
+ *                   type: string                  
+ *    responses:
+ *      200:
+ *          description: if claim's status is updated successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: claim status updated successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+router.post("/claim-status", async(req,res)=>{
+  try{
+
+    const {
+      body:{claimId, status}
+    } = req;
+if(!["APPROVED","REJECTED"].includes(status)){
+  return res.status(400).json({message: "Invalid status"})}
+
+  const statusUpdate = await ClaimRequest.findOneAndUpdate(
+    {claimId},
+    {$set:{claimStatus:status}},
+    {new:true}
+  )
+
+  if(!statusUpdate)return res.status(400).json({message:"Status not updated"})
+
+  return handelSuccess(res,{message:'Claim status updated', data: statusUpdate})
+
+  }catch (error) {
+    console.log('$$$$$$$$$',error);
+    return handelServerError(res,{
+      message: "Error encountered while trying to fetch claim.",
+    });
+  }
+})
+
 module.exports = router;
