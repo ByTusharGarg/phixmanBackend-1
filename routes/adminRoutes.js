@@ -39,7 +39,7 @@ const { rejectBadRequests } = require("../middleware");
 const { encodeImage } = require("../libs/imageLib");
 const Feature = require("../models/Features");
 const commonFunction = require("../utils/commonFunction");
-const { trim, escapeRegExp } = require("lodash");
+const { trim, escapeRegExp, update } = require("lodash");
 const {
   paymentStatus,
   orderTypes,
@@ -4926,5 +4926,81 @@ if(!["APPROVED","REJECTED"].includes(status)){
     });
   }
 })
+
+
+ /**
+ * @openapi
+ * /admin/claim/update-partner:
+ *  post:
+ *    summary: used to update partner.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                claimId:
+ *                  type: string
+ *                partnerId:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if claim's partner is updated successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: claim partner updated successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/claim/update-partner", async(req,res)=>{
+  try{
+  const {
+    body:{
+      claimId, partnerId
+    } 
+  } = req;
+
+
+  const updatePartnerr = await ClaimRequest.findOneAndUpdate(
+    {claimId},
+    {
+      $set:{partnerId}
+    },
+    {new:true}
+    )
+    console.log(updatePartnerr);
+    if(!updatePartnerr) return res.status(400).json({message:"Partner not updated"})
+
+    return handelSuccess(res,{message:'Partner updated', data: updatePartnerr})
+  }catch (error) {
+    console.log('$$$$$$$$$',error);
+    return handelServerError(res,{
+      message: "Error encountered while trying to fetch claim.",
+    });
+  }
+
+})
+
+
 
 module.exports = router;
