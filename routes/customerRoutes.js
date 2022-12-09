@@ -1023,7 +1023,7 @@ router.post(
         const customer = await Customer.findById(req.Customer._id);
         // initiate payments process   
         let cashfree = await Payment.createCustomerOrder({
-          // ourorder_id: newOrder._id,
+          ourorder_id: newOrder._id,
           customerid: customer._id,
           email: customer.email,
           phone: customer.phone,

@@ -2,6 +2,8 @@
 const sdk = require("api")("@cashfreedocs-new/v2#5qon17l8k4gqrl");
 const orderTransactionModel = require("../../models/Ordertransaction");
 const refundModel = require("../../models/refund.model");
+const paymentLinkModel = require("../../models/paymentLink");
+
 
 const ordersModel = require("../../models/Order");
 const {
@@ -62,7 +64,7 @@ class Payment {
 
       const newTransaction = await this.createTranssaction({
         ...resp,
-        // ourorder_id: data.ourorder_id,
+        ourorder_id: data.ourorder_id,
         order_id: existingOrderId,
         cashfreeOrderId: data.OrderId,
       });
@@ -75,6 +77,87 @@ class Payment {
       // );
 
       return newTransaction;
+    } catch (error) {
+      console.log(error);
+      throw new Error("Couldn't Create the Order transaction");
+    }
+  }
+
+  async createPaymentLinkCashFree(data) {
+    try {
+      const options = {
+        method: 'POST',
+        url: `${casrfreeUrlLinks}/links`,
+        headers: {
+          accept: 'application/json',
+          'x-client-id': this.APPID,
+          'x-client-secret': this.APPSECRET,
+          'x-api-version': '2022-09-01',
+          'content-type': 'application/json'
+        },
+        data: {
+          customer_details: {
+            customer_phone: data['phone'],
+            customer_email: data['email']
+          },
+          link_notify: { send_sms: true, send_email: true },
+          link_id: data['linkId'],
+          link_amount: data['amount'],
+          link_purpose: 'left amout',
+          link_currency: 'INR'
+        }
+      };
+
+      const resp = await axios.request(options);
+
+      if (!resp.data || !resp.data.cf_link_id) {
+        throw new Error("Couldn't Create the transaction link");
+      }
+
+      const newTransaction = await this.createTranssaction({
+        ...resp,
+        ourorder_id: data.ourorder_id,
+        order_id: data.orderId,
+        cashfreeLinkId: data['linkId'],
+      });
+      await newTransaction.save();
+
+      const newLink = new paymentLinkModel({ linkid: data['linkId'], order_id: data['orderId'], amount: data['amount'], metaData: resp.data })
+      return newLink.save();
+    } catch (error) {
+      console.log(error);
+      throw new Error("Couldn't Create the Order transaction");
+    }
+  }
+
+  async verifyPaymentLinkCashFree(linkId) {
+    try {
+      const options = {
+        method: 'GET',
+        url: `${casrfreeUrlLinks}/links/${linkId}`,
+        headers: {
+          accept: 'application/json',
+          'x-client-id': this.APPID,
+          'x-client-secret': this.APPSECRET,
+          'x-api-version': '2022-09-01'
+        }
+      };
+
+      return axios.request(options)
+
+      if (!resp.data || !resp.data.cf_link_id) {
+        throw new Error("Couldn't Create the transaction link");
+      }
+
+      // const newTransaction = await this.createTranssaction({
+      //   ...resp,
+      //   // ourorder_id: data.ourorder_id,
+      //   order_id: existingOrderId,
+      //   cashfreeLinkId: data.OrderId,
+      // });
+
+      const newLink = new paymentLinkModel({ linkid: data['linkId'], order_id: data['orderId'], amount: data['amount'], metaData: resp.data })
+      return newLink.save();
     } catch (error) {
       console.log(error);
       throw new Error("Couldn't Create the Order transaction");

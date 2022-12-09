@@ -141,7 +141,7 @@ router.post("/payment", paymentObjectValidator, rejectBadRequests, checkCustomer
             }
 
 
-            let paymentObj = await Payment.createCustomerOrder({ customerid: customer._id, email: customer.email, phone: customer.phone, OrderId: carhfreeOrderId, Amount: isOrderExist.PendingAmount });
+            let paymentObj = await Payment.createCustomerOrder({ customerid: customer._id, email: customer.email, ourorder_id: isOrderExist._id, phone: customer.phone, OrderId: carhfreeOrderId, Amount: isOrderExist.PendingAmount });
 
             // initialized the payment methods
             const initiateObj = await Payment.initializeOrderPay(paymentObj['order_token'], paymentMethod, payment_method);

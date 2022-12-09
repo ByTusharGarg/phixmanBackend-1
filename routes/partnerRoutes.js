@@ -2271,7 +2271,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
   if (!paymentAcceptedType.includes(paymentType)) {
     return res.status(400).json({ message: "Invalid paymentType" });
   }
-  const generatedOrderId = commonFunction.genrateID("ORD");
+  const generatedLinkId = commonFunction.genrateID("LINK_");
   let notifyTo = null;
 
   if (paymentType === "link") {
@@ -2304,22 +2304,23 @@ router.post("/initiateRecivePayment", async (req, res) => {
         $inc: { paidamount: leftAmount },
       });
       return res.status(200).json({ message: "Order payment on cash successfull", amount: leftAmount });
-    } else if (paymentType === "link") {
+    }
+    else if (paymentType === "link") {
       if (!notifyTo) {
-        return res
-          .status(400)
-          .json({ message: "notifyMethod object required" });
+        return res.status(400).json({ message: "notifyMethod object required" });
       }
 
       let paymentObj = {
         customerid: customer._id,
+        ourorder_id:orderData._id,
         email: customer.email,
         phone: customer.phone,
-        OrderId: generatedOrderId,
-        Amount: leftAmount,
+        linkId: generatedLinkId,
+        amount: leftAmount,
+        orderId: orderData._id
       };
-      let cashfree = await Payment.createCustomerOrder(paymentObj);
-      const paymentLink = cashfree.payment_link;
+      let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
+      const paymentLink = cashfree.metaData.link_url;
 
       // send link to user
       emailData = {
@@ -2357,6 +2358,20 @@ router.post("/initiateRecivePayment", async (req, res) => {
     });
   }
 });
+
+(async()=>{
+  let paymentObj = {
+    customerid: '638b131b22a255844e5c8c0d3a',
+    email: 'arunaggarwal096@gmail.com',
+    phone: '8510967005',
+    linkId: 'dol455ss5j5doidjk64oijdidj',
+    ourorder_id:'638b131b22a2844e5c8c0d3a',
+    amount: 100,
+    orderId:'638b131b22a2844e5c8c0d3a'
+  };
+  let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
+  console.log(cashfree)
+})
 
 /**
  * @openapi

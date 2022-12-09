@@ -30,6 +30,7 @@ const moment = require("moment");
 const path = require("path");
 let pdf = require("html-pdf");
 const ejs = require("ejs");
+const pdfGenerator = require('../libs/pdfgenrator');
 
 const getServiceParamValidators = [
   param("serviceType")
@@ -797,7 +798,6 @@ router.get("/generateinvoice/:orderid", checkTokenOnly, async (req, res, next) =
 
   let orderData = null;
 
-  const filename = Math.random() + ".pdf";
 
   try {
     orderData = await Order.findById(orderid)
@@ -850,38 +850,7 @@ router.get("/generateinvoice/:orderid", checkTokenOnly, async (req, res, next) =
   };
 
   try {
-    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "invoice.ejs"), { data: obj }, (err, data) => {
-      if (err) {
-        res.send(err);
-      } else {
-        let options = {
-          "height": "11.25in",
-          "width": "8.5in",
-          "header": {
-            "height": "20mm"
-          },
-          "footer": {
-            "height": "20mm",
-          },
-        };
-        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
-          if (err) {
-            res.send(err);
-          }
-          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
-          res.setHeader("Content-type", "application/pdf");
-          var fileData = fs.readFileSync(data.filename);
-          let interval = setTimeout(() => {
-            fs.unlink(data.filename, () => { });
-            clearInterval(interval);
-          }, 3000);
-
-          return res.send(fileData);
-        });
-      }
-    });
-
-
+    return pdfGenerator.generatePdfFile(obj, 'invoice.ejs', res);
   } catch (error) {
     console.log(error);
     return res
@@ -980,38 +949,7 @@ router.get("/generateinvoicebyInvoiceId/:invoiceId", async (req, res, next) => {
   };
 
   try {
-    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "invoice.ejs"), { data: obj }, (err, data) => {
-      if (err) {
-        res.send(err);
-      } else {
-        let options = {
-          "height": "11.25in",
-          "width": "8.5in",
-          "header": {
-            "height": "20mm"
-          },
-          "footer": {
-            "height": "20mm",
-          },
-        };
-        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
-          if (err) {
-            res.send(err);
-          }
-          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
-          res.setHeader("Content-type", "application/pdf");
-          var fileData = fs.readFileSync(data.filename);
-          let interval = setTimeout(() => {
-            fs.unlink(data.filename, () => { });
-            clearInterval(interval);
-          }, 3000);
-
-          return res.send(fileData);
-        });
-      }
-    });
-
-
+    return pdfGenerator.generatePdfFile(obj, 'invoice.ejs', res);
   } catch (error) {
     console.log(error);
     return res
@@ -1059,8 +997,6 @@ router.get("/checkin/:orderId", async (req, res) => {
       .json({ message: "type or orderId must be provided" });
   }
 
-  const filename = Math.random() + ".pdf";
-
   try {
     const isFormExists = await orderMetaData.findOne({ orderId });
 
@@ -1068,36 +1004,8 @@ router.get("/checkin/:orderId", async (req, res) => {
       return res.status(404).json({ message: "Checkin card not found" });
     }
 
-    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "chechin.ejs"), { data: data }, (err, data) => {
-      if (err) {
-        res.send(err);
-      } else {
-        let options = {
-          "height": "11.25in",
-          "width": "8.5in",
-          "header": {
-            "height": "20mm"
-          },
-          "footer": {
-            "height": "20mm",
-          },
-        };
-        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
-          if (err) {
-            res.send(err);
-          }
-          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
-          res.setHeader("Content-type", "application/pdf");
-          var fileData = fs.readFileSync(data.filename);
-          let interval = setTimeout(() => {
-            fs.unlink(data.filename, () => { });
-            clearInterval(interval);
-          }, 3000);
+    return pdfGenerator.generatePdfFile(data, "checkin.ejs", res);
 
-          return res.send(fileData);
-        });
-      }
-    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
@@ -1136,8 +1044,6 @@ router.get("/jobcard/:orderId", async (req, res) => {
   const { orderId } = req.params;
   let data = {};
 
-  const filename = Math.random() + ".pdf";
-
   if (!orderId) {
     return res
       .status(500)
@@ -1151,36 +1057,7 @@ router.get("/jobcard/:orderId", async (req, res) => {
       return res.status(404).json({ message: "jobcard card not found" });
     }
 
-    ejs.renderFile(path.join(__dirname, '../libs/mailer/template/', "jobcard.ejs"), { data: data }, (err, data) => {
-      if (err) {
-        res.send(err);
-      } else {
-        let options = {
-          "height": "11.25in",
-          "width": "8.5in",
-          "header": {
-            "height": "20mm"
-          },
-          "footer": {
-            "height": "20mm",
-          },
-        };
-        pdf.create(data, options).toFile(`temp/${filename}`, function (err, data) {
-          if (err) {
-            res.send(err);
-          }
-          res.setHeader("Content-disposition", 'inline; filename="test.pdf"');
-          res.setHeader("Content-type", "application/pdf");
-          var fileData = fs.readFileSync(data.filename);
-          let interval = setTimeout(() => {
-            fs.unlink(data.filename, () => { });
-            clearInterval(interval);
-          }, 3000);
-
-          return res.send(fileData);
-        });
-      }
-    });
+    return pdfGenerator.generatePdfFile(data, 'jobcard.ejs', res);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });

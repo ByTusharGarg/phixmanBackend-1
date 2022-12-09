@@ -1,14 +1,16 @@
 const mongoose = require('mongoose');
 const { transsactionStatus } = require('../enums/types');
+const Schema = mongoose.Schema;
 
 const transactionSchema = mongoose.Schema({
     cf_order_id: {
         type: String
     },
-    ourorder_id: {
+    ourorder_id: { type: Schema.Types.ObjectId, ref: "Order" },
+    order_id: {
         type: String
     },
-    order_id: {
+    cashfreeLinkId: {
         type: String
     },
     cashfreeOrderId: { type: String },
