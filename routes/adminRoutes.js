@@ -3754,12 +3754,8 @@ router.post("/offer/create", checkAdmin, async (req, res) => {
       percentageOff,
       maxDisc,
       minCartValue,
-      startTime: moment(startDate)
-        .set({ hour: startTime.split(":")[0], minute: startTime.split(":")[1] })
-        .format(),
-      endTime: moment(endDate)
-        .set({ hour: endTime.split(":")[0], minute: endTime.split(":")[1] })
-        .format(),
+      startTime,
+      endTime,
       startDate,
       endDate,
     };
