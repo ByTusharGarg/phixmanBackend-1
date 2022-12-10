@@ -2286,13 +2286,13 @@ router.post("/initiateRecivePayment", async (req, res) => {
     const orderData = await Order.findOne({
       Partner: partnerId,
       OrderId: orderId,
-    }).populate("Customer", "email Name");
+    }).populate("Customer", "email Name phone");
 
     if (!orderData) {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount = orderData["OrderDetails"]["Gradtotal"] - orderData["paidamount"];
+    const leftAmount = orderData["OrderDetails"]["Gradtotal"] - (orderData["paidamount"] + orderData["codAmount"]);
 
     if (leftAmount === 0) {
       return res.status(400).json({ message: "payment already completed" });
@@ -2311,36 +2311,37 @@ router.post("/initiateRecivePayment", async (req, res) => {
       }
 
       let paymentObj = {
-        customerid: customer._id,
-        ourorder_id:orderData._id,
-        email: customer.email,
-        phone: customer.phone,
+        ourorder_id: orderData._id,
+        email: notifyMethod.email || orderData.Customer.email,
+        phone: notifyMethod.phone || orderData.Customer.phone,
         linkId: generatedLinkId,
         amount: leftAmount,
-        orderId: orderData._id
+        orderId: orderData.OrderId
       };
+
       let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
-      const paymentLink = cashfree.metaData.link_url;
+      const paymentLink = cashfree.payment_link;
 
       // send link to user
-      emailData = {
-        Subject: "[Phixman] payment links E-mail",
-        heading1: emailDatamapping["ppaymentLink"].heading1,
-        heading2: emailDatamapping["ppaymentLink"].heading2,
-        desc:
-          `Hey ${first_name}, ` +
-          emailDatamapping["ppaymentLink"].desc +
-          ` <a href='${paymentLink}'>${paymentLink}</a>`,
-        buttonName: emailDatamapping["ppaymentLink"].buttonName,
-        email: order.Customer.email || null,
-      };
+      // emailData = {
+      //   Subject: "[Phixman] payment links E-mail",
+      //   heading1: emailDatamapping["ppaymentLink"].heading1,
+      //   heading2: emailDatamapping["ppaymentLink"].heading2,
+      //   desc:
+      //     `Hey ${first_name}, ` +
+      //     emailDatamapping["ppaymentLink"].desc +
+      //     ` <a href='${paymentLink}'>${paymentLink}</a>`,
+      //   buttonName: emailDatamapping["ppaymentLink"].buttonName,
+      //   email: order.Customer.email || null,
+      // };
 
       // commonMailFunctionToAll(data, "common");
       // sendOtp()
+
       return res.status(200).json({
         message: "Payment link successfully sent",
-        paymentLink,
-        transactionId: generatedOrderId,
+        paymentLink: paymentLink,
+        transactionId: generatedLinkId,
       });
     } else if (paymentType === "qr") {
       return res.status(400).json({ message: "currently unavailable" });
@@ -2359,19 +2360,73 @@ router.post("/initiateRecivePayment", async (req, res) => {
   }
 });
 
-(async()=>{
-  let paymentObj = {
-    customerid: '638b131b22a255844e5c8c0d3a',
-    email: 'arunaggarwal096@gmail.com',
-    phone: '8510967005',
-    linkId: 'dol455ss5j5doidjk64oijdidj',
-    ourorder_id:'638b131b22a2844e5c8c0d3a',
-    amount: 100,
-    orderId:'638b131b22a2844e5c8c0d3a'
-  };
-  let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
-  console.log(cashfree)
-})
+/**
+ * @openapi
+ * /partner/verifylinkorderstatus:
+ *   post:
+ *    summary: it's use to verify link payment status.
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                order_id:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if order cancelled successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *     - bearerAuth: []
+ */
+router.post("/verifylinkstatus", async (req, res) => {
+  try {
+    if (!req.body.link_id) {
+      return handelValidationError(res, { message: "link_id is required" });
+    }
+    const resp = await Payment.verifyPaymentLinkCashFree(req.body.link_id);
+    // return handelSuccess(res, { data: resp });
+    return res.status(200).json({ message: "payment succesfully completed" });
+  } catch (error) {
+    return res.status(500).json({ message: error?.message || "Error encountered." });
+  }
+});
+
+// (async()=>{
+//   let paymentObj = {
+//     customerid: '638b131b22a255844e5c8c0d3a',
+//     email: 'arunaggarwal096@gmail.com',
+//     phone: '8510967005',
+//     linkId: 'dol455s5j5doidjk64oijdidj',
+//     ourorder_id:'638b131b22a2844e5c8c0d3a',
+//     amount: 100,
+//     orderId:'638b131b22a2844e5c8c0d3a'
+//   };
+//   let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
+//   console.log(cashfree)
+// })
 
 /**
  * @openapi

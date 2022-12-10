@@ -115,15 +115,19 @@ class Payment {
       }
 
       const newTransaction = await this.createTranssaction({
-        ...resp,
+        ...resp.data,
         ourorder_id: data.ourorder_id,
         order_id: data.orderId,
         cashfreeLinkId: data['linkId'],
+        order_amount: resp.data.link_amount,
+        order_currency: resp.data.link_currency,
+        order_status: resp.data.link_status,
+        payment_link: resp.data.link_url
       });
-      await newTransaction.save();
 
-      const newLink = new paymentLinkModel({ linkid: data['linkId'], order_id: data['orderId'], amount: data['amount'], metaData: resp.data })
-      return newLink.save();
+      return newTransaction.save();
+      // const newLink = new paymentLinkModel({ linkid: data['linkId'], order_id: data['orderId'], amount: data['amount'], metaData: resp.data })
+      // return newLink.save();
     } catch (error) {
       console.log(error);
       throw new Error("Couldn't Create the Order transaction");
@@ -131,6 +135,7 @@ class Payment {
   }
 
   async verifyPaymentLinkCashFree(linkId) {
+    let transaction = null;
     try {
       const options = {
         method: 'GET',
@@ -143,24 +148,30 @@ class Payment {
         }
       };
 
-      return axios.request(options)
+      const { data } = await axios.request(options)
 
-      if (!resp.data || !resp.data.cf_link_id) {
-        throw new Error("Couldn't Create the transaction link");
+      if (data.link_status === 'PAID') {
+        let isExist = await orderTransactionModel.findOne({
+          cashfreeLinkId: linkId,
+        });
+
+        if (isExist?.paymentverified === false) {
+          transaction = await orderTransactionModel.findOneAndUpdate(
+            { cashfreeLinkId: linkId },
+            {
+              order_status: data.link_status,
+              paymentverified: true,
+            },
+            { new: true }
+          );
+          await this.updateOrderPaymentStatus(isExist.order_id, transaction._id);
+        }
+        return transaction;
       }
-
-      // const newTransaction = await this.createTranssaction({
-      //   ...resp,
-      //   // ourorder_id: data.ourorder_id,
-      //   order_id: existingOrderId,
-      //   cashfreeLinkId: data.OrderId,
-      // });
-
-      const newLink = new paymentLinkModel({ linkid: data['linkId'], order_id: data['orderId'], amount: data['amount'], metaData: resp.data })
-      return newLink.save();
+      throw new Error("Payment not completed yet");
     } catch (error) {
       console.log(error);
-      throw new Error("Couldn't Create the Order transaction");
+      throw new Error(error.message || "Couldn't Create the Order transaction");
     }
   }
 
@@ -364,7 +375,6 @@ class Payment {
       const orderData = await ordersModel.findOne({ OrderId: orderId });
 
       const leftAmount = orderData.PendingAmount - txnData.order_amount;
-
       if (leftAmount === 0) {
         await ordersModel.findOneAndUpdate(
           { OrderId: orderId },
