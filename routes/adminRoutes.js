@@ -23,10 +23,10 @@ const {
   orderTransaction,
   Invoice,
   ClaimRequest,
-  Vendor
+  Vendor,
 } = require("../models");
 
-const {claimTypes}=require("../enums/claimTypes")
+const { claimTypes } = require("../enums/claimTypes");
 
 const PenalitySchema = require("../models/penality");
 const {
@@ -1653,22 +1653,22 @@ router.get("/getspecialist", async (req, response) => {
  *    - bearerAuth: []
  */
 router.get("/get/partners/:type", async (req, res) => {
-  const { type } = req.params;
-
-  if (type === "kycpending") {
-    query = {
-      isProfileCompleted: true,
-      isVerified: false,
-      isApproved: false,
-      Type: { $ne: "sub-provider" },
-    };
-  } else if (type === "block") {
-    query = { isPublished: false, Type: { $ne: "sub-provider" } };
-  } else {
-    query = { Type: { $ne: "sub-provider" } };
-  }
-
   try {
+    const { type } = req.params;
+    let query;
+    if (type === "kycpending") {
+      query = {
+        isProfileCompleted: true,
+        isVerified: false,
+        isApproved: false,
+        Type: { $ne: "sub-provider" },
+      };
+    } else if (type === "block") {
+      query = { isPublished: false, Type: { $ne: "sub-provider" } };
+    } else {
+      query = { Type: { $ne: "sub-provider" } };
+    }
+
     let partners = await Partner.find(query);
     res.status(200).json({ message: "Partners list", data: partners });
   } catch (error) {
@@ -4210,8 +4210,6 @@ router.get("/ordertransaction", async (req, res) => {
   }
 });
 
-
-
 /**
  * @openapi
  * /admin/forms/:orderId:
@@ -4635,7 +4633,7 @@ router.delete("/service/delete", async (req, res) => {
  *                address:
  *                   type: string
  *                deliveryAddress:
- *                   type: string  
+ *                   type: string
  *                partnerId:
  *                    type: string
  *                customerId:
@@ -4643,7 +4641,7 @@ router.delete("/service/delete", async (req, res) => {
  *                name:
  *                    type: string
  *                phoneNumber:
- *                    type: string                    
+ *                    type: string
  *    responses:
  *      200:
  *          description: if claim created successfully
@@ -4670,7 +4668,7 @@ router.delete("/service/delete", async (req, res) => {
  *    security:
  *     - bearerAuth: []
  */
-router.post('/create/claim', async(req,res)=>{
+router.post("/create/claim", async (req, res) => {
   try {
     const {
       body: {
@@ -4684,11 +4682,10 @@ router.post('/create/claim', async(req,res)=>{
         partnerId,
         customerId,
         name,
-        phoneNumber
-      }
-    } = req
+        phoneNumber,
+      },
+    } = req;
 
-    
     const claimId = commonFunction.genrateID("CLAIM");
 
     // const customerId = req.Customer._id;
@@ -4701,28 +4698,29 @@ router.post('/create/claim', async(req,res)=>{
       orderId,
       title,
       description,
-      customerDetails:{
+      customerDetails: {
         address,
         deliveryAddress,
         name,
-        phoneNumber
+        phoneNumber,
       },
-      partnerId
+      partnerId,
+    };
 
-    }
+    const newClaim = await ClaimRequest.create(claimObj);
+    if (!newClaim)
+      return res.status(400).json({ message: "Unable to create claim" });
 
-    const newClaim = await ClaimRequest.create(claimObj)
-    if(!newClaim) return res.status(400).json({message:"Unable to create claim"})
-
-    return res.status(200).json({message:"New claim created", data:newClaim})
-
+    return res
+      .status(200)
+      .json({ message: "New claim created", data: newClaim });
   } catch (error) {
-    console.log('$$$$$$$$$',error);
+    console.log("$$$$$$$$$", error);
     return res.status(500).json({
       message: "Error encountered while trying to create claim.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -4765,26 +4763,26 @@ router.post('/create/claim', async(req,res)=>{
  *    - bearerAuth: []
  */
 
-router.get("/get-claim-by-id", async(req,res)=>{
-  try{
-    const{
-      query:{claimId}
-    }=req;
+router.get("/get-claim-by-id", async (req, res) => {
+  try {
+    const {
+      query: { claimId },
+    } = req;
 
-    const foundClaim = await ClaimRequest.findOne({claimId})
-    .populate("orderId","OrderId -_id")
-    .populate("customerId")
-    .populate("partnerId")
-    if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
-    return handelSuccess(res,{message:'Claims found', data: foundClaim})
-  }catch (error) {
-    console.log('$$$$$$$$$',error);
-    return handelServerError(res,{
+    const foundClaim = await ClaimRequest.findOne({ claimId })
+      .populate("orderId", "OrderId -_id")
+      .populate("customerId")
+      .populate("partnerId");
+    if (!foundClaim)
+      return handelNoteFoundError(res, { message: "No claims found" });
+    return handelSuccess(res, { message: "Claims found", data: foundClaim });
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
       message: "Error encountered while trying to fetch claim.",
     });
   }
-})
-
+});
 
 /**
  * @openapi
@@ -4826,35 +4824,33 @@ router.get("/get-claim-by-id", async(req,res)=>{
  *    security:
  *    - bearerAuth: []
  */
-router.get("/get-claim", async(req,res)=>{
-  try{let {
-    query:{
-      claim = ''
-    }
-  }=req;
+router.get("/get-claim", async (req, res) => {
+  try {
+    let {
+      query: { claim = "" },
+    } = req;
 
-  let queryObj = {};
+    let queryObj = {};
 
-  if(claim !== ''){
-      if (!['customer-raised','vendor-raised'].includes(claimTypes[`${claim}`])) {
-        queryObj={...queryObj,claimType:claimTypes[`${claim}`]}
+    if (claim !== "") {
+      if (
+        !["customer-raised", "vendor-raised"].includes(claimTypes[`${claim}`])
+      ) {
+        queryObj = { ...queryObj, claimType: claimTypes[`${claim}`] };
       }
-  }
+    }
 
-  const foundClaims = await ClaimRequest.find(queryObj)
-  if(foundClaims.length===0) return res.status(400).json({message:"no claims found"})
-  return handelSuccess(res,{message:'Claims found', data: foundClaims})}
-  catch (error) {
-    console.log('$$$$$$$$$',error);
-    return handelServerError(res,{
+    const foundClaims = await ClaimRequest.find(queryObj);
+    if (foundClaims.length === 0)
+      return res.status(400).json({ message: "no claims found" });
+    return handelSuccess(res, { message: "Claims found", data: foundClaims });
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
       message: "Error encountered while trying to fetch claim.",
     });
   }
-
-
-
-})
-
+});
 
 /**
  * @openapi
@@ -4873,7 +4869,7 @@ router.get("/get-claim", async(req,res)=>{
  *                   type: string
  *                   enum: ["APPROVED", "REJECTED"]
  *                claimId:
- *                   type: string                  
+ *                   type: string
  *    responses:
  *      200:
  *          description: if claim's status is updated successfully
@@ -4900,35 +4896,37 @@ router.get("/get-claim", async(req,res)=>{
  *    security:
  *     - bearerAuth: []
  */
-router.post("/claim-status", async(req,res)=>{
-  try{
-
+router.post("/claim-status", async (req, res) => {
+  try {
     const {
-      body:{claimId, status}
+      body: { claimId, status },
     } = req;
-if(!["APPROVED","REJECTED"].includes(status)){
-  return res.status(400).json({message: "Invalid status"})}
+    if (!["APPROVED", "REJECTED"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
 
-  const statusUpdate = await ClaimRequest.findOneAndUpdate(
-    {claimId},
-    {$set:{claimStatus:status}},
-    {new:true}
-  )
+    const statusUpdate = await ClaimRequest.findOneAndUpdate(
+      { claimId },
+      { $set: { claimStatus: status } },
+      { new: true }
+    );
 
-  if(!statusUpdate)return res.status(400).json({message:"Status not updated"})
+    if (!statusUpdate)
+      return res.status(400).json({ message: "Status not updated" });
 
-  return handelSuccess(res,{message:'Claim status updated', data: statusUpdate})
-
-  }catch (error) {
-    console.log('$$$$$$$$$',error);
-    return handelServerError(res,{
+    return handelSuccess(res, {
+      message: "Claim status updated",
+      data: statusUpdate,
+    });
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
       message: "Error encountered while trying to fetch claim.",
     });
   }
-})
+});
 
-
- /**
+/**
  * @openapi
  * /admin/claim/update-partner:
  *  post:
@@ -4972,35 +4970,33 @@ if(!["APPROVED","REJECTED"].includes(status)){
  *    security:
  *    - bearerAuth: []
  */
-router.post("/claim/update-partner", async(req,res)=>{
-  try{
-  const {
-    body:{
-      claimId, partnerId
-    } 
-  } = req;
+router.post("/claim/update-partner", async (req, res) => {
+  try {
+    const {
+      body: { claimId, partnerId },
+    } = req;
 
-
-  const updatePartnerr = await ClaimRequest.findOneAndUpdate(
-    {claimId},
-    {
-      $set:{partnerId}
-    },
-    {new:true}
-    )
+    const updatePartnerr = await ClaimRequest.findOneAndUpdate(
+      { claimId },
+      {
+        $set: { partnerId },
+      },
+      { new: true }
+    );
     console.log(updatePartnerr);
-    if(!updatePartnerr) return res.status(400).json({message:"Partner not updated"})
+    if (!updatePartnerr)
+      return res.status(400).json({ message: "Partner not updated" });
 
-    return handelSuccess(res,{message:'Partner updated', data: updatePartnerr})
-  }catch (error) {
-    console.log('$$$$$$$$$',error);
-    return handelServerError(res,{
+    return handelSuccess(res, {
+      message: "Partner updated",
+      data: updatePartnerr,
+    });
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
       message: "Error encountered while trying to fetch claim.",
     });
   }
-
-})
-
-
+});
 
 module.exports = router;
