@@ -1,49 +1,86 @@
-class InvoicesController {
-    // async createCustomerOrder(orderId,customerId) {
-    //     try {
-    //       const resp = await sdk.CreateOrder(
-    //         {
-    //           customer_details: {
-    //             customer_id: data.customerid,
-    //             customer_email: data.email,
-    //             customer_phone: data.phone,
-    //           },
-    //           order_id: data.OrderId,
-    //           order_amount: data.Amount,
-    //           order_currency: "INR",
-    //         },
-    //         {
-    //           "x-client-id": this.APPID,
-    //           "x-client-secret": this.APPSECRET,
-    //           "x-api-version": "2022-01-01",
-    //         }
-    //       );
-    //       if (!resp || !resp.order_token) {
-    //         throw new Error("Couldn't Create the Order transaction");
-    //       }
-    //       const existingOrderId = data.OrderId.split("-")[0];
-    
-    //       const newTransaction = await this.createTranssaction({
-    //         ...resp,
-    //         // ourorder_id: data.ourorder_id,
-    //         order_id: existingOrderId,
-    //         cashfreeOrderId: data.OrderId,
-    //       });
-    //       await newTransaction.save();
-    //       // this is move down to
-    //       // await ordersModel.findOneAndUpdate(
-    //       //   { OrderId: existingOrderId },
-    //       //   { $push: { TxnId: newTransaction._id } },
-    //       //   { new: true }
-    //       // );
-    
-    //       return newTransaction;
-    //     } catch (error) {
-    //       console.log(error);
-    //       throw new Error("Couldn't Create the Order transaction");
-    //     }
-    //   }
-}
+const { invoiceTypesList, invoiceTypes } = require("../../enums/invoiceTypes");
+const Invoice = require("../../models/Invoice");
 
+class InvoicesController {
+  async createInvoice(
+    date,
+    taxPayer,
+    type,
+    claim,
+    order,
+    customer,
+    partner,
+    vendor,
+    items,
+    bookingAmt,
+    estAmt,
+    discount,
+    promo,
+    tax
+  ) {
+    try {
+      if (!invoiceTypesList.includes(type)) {
+        throw new Error("invalid invoice type");
+      }
+      let ob;
+      if (
+        type === invoiceTypes.ORDER_PART_A ||
+        type === invoiceTypes.ORDER_PART_B
+      ) {
+        ob = {
+          date,
+          taxPayer,
+          order,
+          type,
+          customer,
+          partner,
+          items,
+          bookingAmt,
+          estAmt,
+          discount,
+          promo,
+          tax,
+        };
+      }
+
+      if (type === invoiceTypes.CLAIM_INVOICE) {
+        ob = {
+          date,
+          taxPayer,
+          claim,
+          type,
+          customer,
+          partner,
+          vendor,
+          items,
+          bookingAmt,
+          estAmt,
+          discount,
+          promo,
+          tax,
+        };
+      }
+      if (type === invoiceTypes.LEAD_BOUGHT_INVOICE) {
+        ob = {
+          date,
+          taxPayer,
+          order,
+          type,
+          partner,
+          items,
+          bookingAmt,
+          estAmt,
+          discount,
+          promo,
+          tax,
+        };
+      }
+      let invoice = await Invoice.create(ob);
+      return invoice;
+    } catch (error) {
+      throw new Error("error creating and invoice");
+    }
+  }
+}
 
 module.exports = new InvoicesController();
