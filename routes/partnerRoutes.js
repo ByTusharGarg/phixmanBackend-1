@@ -2292,7 +2292,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount = orderData["OrderDetails"]["Gradtotal"] - (orderData["paidamount"] + orderData["codAmount"]);
+    const leftAmount = orderData["OrderDetails"]["Amount"] - (orderData["paidamount"] + orderData["codAmount"]);
 
     if (leftAmount === 0) {
       return res.status(400).json({ message: "payment already completed" });
