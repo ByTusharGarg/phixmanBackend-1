@@ -2407,26 +2407,11 @@ router.post("/verifylinkstatus", async (req, res) => {
       return handelValidationError(res, { message: "link_id is required" });
     }
     const resp = await Payment.verifyPaymentLinkCashFree(req.body.link_id);
-    // return handelSuccess(res, { data: resp });
     return res.status(200).json({ message: "payment succesfully completed" });
   } catch (error) {
     return res.status(500).json({ message: error?.message || "Error encountered." });
   }
 });
-
-// (async()=>{
-//   let paymentObj = {
-//     customerid: '638b131b22a255844e5c8c0d3a',
-//     email: 'arunaggarwal096@gmail.com',
-//     phone: '8510967005',
-//     linkId: 'dol455s5j5doidjk64oijdidj',
-//     ourorder_id:'638b131b22a2844e5c8c0d3a',
-//     amount: 100,
-//     orderId:'638b131b22a2844e5c8c0d3a'
-//   };
-//   let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
-//   console.log(cashfree)
-// })
 
 /**
  * @openapi
