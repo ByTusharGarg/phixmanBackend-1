@@ -988,7 +988,7 @@ router.get("/address", async (req, res) => {
  *    - bearerAuth: []
  */
 router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
-  const { OrderType, Items, PaymentMode, address, PickUpRequired, timeSlot, offerId } = sreq.body;
+  const { OrderType, Items, PaymentMode, address, PickUpRequired, timeSlot, offerId } = req.body;
   const OrderId = commonFunction.genrateID("ORD");
   let Amount = 0;
   let grandTotal = 0;
