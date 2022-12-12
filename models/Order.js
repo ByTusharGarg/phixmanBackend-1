@@ -57,6 +57,7 @@ const Order = mongoose.model(
           timestampLog: { type: Date },
         },
       ],
+      offerId: { type: Schema.Types.ObjectId, ref: "Coupon", default: null },
       refundStatus: { type: String, default: null },
       refundId: { type: Schema.Types.ObjectId, ref: "refund", default: null },
       PickUpRequired: { type: Boolean },
