@@ -1744,15 +1744,15 @@ router.get("/get/partner/:id", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.put("/partners/:id", async (req, res) => {
-  let query = {};
-  const { type, id } = req.params;
-
-  if (!id || !type) {
-    return res.status(400).json({ message: `id and type required` });
-  }
-
+router.put("/partners/:id/:type", async (req, res) => {
   try {
+    let query = {};
+    const { type, id } = req.params;
+
+    if (!id || !type) {
+      return res.status(400).json({ message: `id and type required` });
+    }
+
     if (type === "approve") {
       let isNotVerified = await Partner.findOne({
         _id: id,
@@ -1818,6 +1818,7 @@ router.put("/partners/:id", async (req, res) => {
       .json({ message: "operations successfully", data: partners });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 
