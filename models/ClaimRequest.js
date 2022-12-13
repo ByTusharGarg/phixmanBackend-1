@@ -3,6 +3,7 @@ const {
   claimTypesList,
   claimT,
   claimStatusList,
+  paymentClaimCycle
 } = require("../enums/claimTypes");
 const Schema = mongoose.Schema;
 
@@ -40,14 +41,13 @@ const ClaimRequest = mongoose.model("ClaimRequest", new Schema({
   },
   date: { type: String },
   time: { type: String },
-  travel: { type: Number, default: 0 },
-  inventory: { type: Number, default: 0 },
-  service: { type: Number, default: 0 },
+  travelCharge: { type: Number, default: 0 },
+  inventoryCharge: { type: Number, default: 0 },
+  serviceCharge: { type: Number, default: 0 },
   paymentStatus: {
     type: String,
-    enum: claimStatusList,
-    required: true,
-    default: claimStatusList[0],
+    enum: paymentClaimCycle,
+    default: null,
   },
   claimStatus: {
     type: String,

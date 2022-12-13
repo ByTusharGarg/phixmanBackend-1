@@ -1778,40 +1778,40 @@ router.put("/partners/:id/:type", async (req, res) => {
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
 
     // Add refferal credit to partner wallet
-    if (
-      partners &&
-      type === "approve" &&
-      query.isApproved &&
-      query.isVerified &&
-      partners.refferdCode
-    ) {
-      const referaledPerson = await Partner.findOne({
-        uniqueReferralCode: partners.refferdCode,
-      });
+    // if (
+    //   partners &&
+    //   type === "approve" &&
+    //   query.isApproved &&
+    //   query.isVerified &&
+    //   partners.refferdCode
+    // ) {
+    //   const referaledPerson = await Partner.findOne({
+    //     uniqueReferralCode: partners.refferdCode,
+    //   });
 
-      // check is refferal code is valid
-      if (referaledPerson) {
-        // credit into referaled
-        await makePartnerTranssaction(
-          "partner",
-          "successful",
-          partners?._id,
-          process.env.PARTNER_INVITATION_AMOUNT || 100,
-          "Invitation Referal bonus",
-          "credit"
-        );
+    //   // check is refferal code is valid
+    //   if (referaledPerson) {
+    //     // credit into referaled
+    //     await makePartnerTranssaction(
+    //       "partner",
+    //       "successful",
+    //       partners?._id,
+    //       process.env.PARTNER_INVITATION_AMOUNT || 0,
+    //       "Invitation Referal bonus",
+    //       "credit"
+    //     );
 
-        // credit into refferall
-        await makePartnerTranssaction(
-          "partner",
-          "successful",
-          referaledPerson?._id,
-          process.env.PARTNER_INVITATION_AMOUNT || 100,
-          "Invited Referal bonus",
-          "credit"
-        );
-      }
-    }
+    //     // credit into refferall
+    //     await makePartnerTranssaction(
+    //       "partner",
+    //       "successful",
+    //       referaledPerson?._id,
+    //       process.env.PARTNER_INVITATION_AMOUNT || 0,
+    //       "Invited Referal bonus",
+    //       "credit"
+    //     );
+    //   }
+    // }
 
     res
       .status(200)

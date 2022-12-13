@@ -42,6 +42,8 @@ const { generateRandomReferralCode } = require("../libs/commonFunction");
 const Payment = require("../libs/payments/Payment");
 const { encodeImage } = require("../libs/imageLib");
 const { randomImageName, uploadFile, uploadFileToS3 } = require("../services/s3-service");
+const { makeCustomerTranssaction } = require("../services/Wallet");
+
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -765,6 +767,8 @@ router.post("/address", async (req, res) => {
  *              properties:
  *                email:
  *                  type: string
+ *                refferdCode:
+ *                  type: string
  *                Name:
  *                  type: string
  *                Password:
@@ -813,17 +817,49 @@ router.patch("/updateprofile", async (req, res) => {
   if (req.body.phone) {
     return handelValidationError(res, { message: "phone not allowed" });
   }
+  const { refferdCode } = req.body;
 
   let updateQuery = req.body;
   try {
     const getUserProfile = await Customer.findById(cid);
+
     if (req?.files?.image) {
       console.log(req.files.image);
       updateQuery.image = encodeImage(req.files.image);
     }
+
+    // first time login user
     if (getUserProfile.isExistingUser === false) {
       updateQuery["isExistingUser"] = true;
+
+      // invitation credit referal bounes logic
+      if (refferdCode) {
+        const isRefferedFrom = await Customer.findOne({ refferdCode });
+
+        // referal from
+        if (isRefferedFrom) {
+          await makeCustomerTranssaction(
+            "consumer",
+            "successful",
+            isRefferedFrom?._id,
+            process.env.CUSTOMER_INVITATION_AMOUNT || 0,
+            "Invitation Referal bonus",
+            "credit"
+          );
+
+          // credit into refferal to
+          await makeCustomerTranssaction(
+            "consumer",
+            "successful",
+            cid,
+            process.env.CUSTOMER_INVITATION_AMOUNT || 0,
+            "Invited Referal bonus",
+            "credit"
+          );
+        }
+      }
     }
+
     await Customer.findByIdAndUpdate(cid, updateQuery);
     return handelSuccess(res, { message: "Profile updated successfully" });
   } catch (error) {
@@ -1079,7 +1115,7 @@ router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req
 
       resp.order = newOrder;
       resp.cashfree = cashfree;
-    }else{
+    } else {
       return handelValidationError(res, { message: "invalid payment mode" });
     }
 

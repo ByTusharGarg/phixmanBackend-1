@@ -13,17 +13,29 @@ const claimStatus = {
   delivered: "DELIVERED",
   rejected: "REJECTED",
 };
+
 const claimStatusList = [
   "REQUESTED",
   "APPROVED",
   "IN-PROGRESS",
   "DELIVERED",
-  "REJECTED",
+  "REJECTED"
 ];
+
+const paymentClaimCycle = [
+  "PAYMENT_REQUESTED",
+  "PAYMENT_APPROVED",
+  "PAYMENT_PENDING",
+  "PAYMENT_INNPROGRESS",
+  "PAYMENT_COMPLETED"
+];
+
+
 module.exports = {
   claimTypesList,
   claimTypes,
   claimStatus,
   claimStatusList,
   claimT,
+  paymentClaimCycle
 };
