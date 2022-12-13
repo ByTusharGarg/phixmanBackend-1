@@ -2,6 +2,7 @@ const { claimTypes } = require("../../enums/claimTypes");
 const { invoiceTypesList, invoiceTypes } = require("../../enums/invoiceTypes");
 const { Partner, ClaimRequest, Order, Customer, Vendor } = require("../../models");
 const Invoice = require("../../models/Invoice");
+const { v4: uuidv4 } = require("uuid");
 
 class InvoicesController {
   async createInvoice(
@@ -73,8 +74,9 @@ class InvoicesController {
         }
       }
 
-      return Invoice.create(ob);
+      return Invoice.create({ ...ob, invoiceId: uuidv4() });
     } catch (error) {
+      console.log(error);
       throw new Error("error creating and invoice");
     }
   }

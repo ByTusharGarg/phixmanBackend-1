@@ -7,6 +7,7 @@ const partnerModel = require('../../models/Partner');
 const { category } = require('../../models');
 
 const { payoutStatusTypesObject } = require('../../enums/types');
+const { invoiceTypes } = require('../../enums/invoiceTypes');
 
 let casrfreeUrlLinks =
     process.env.CASH_FREE_MODE === "Test"
@@ -211,6 +212,7 @@ class Payouts {
         if (companyComissionPercentage) {
             let amt = (totalAmount * (companyComissionPercentage / 100));
             totalDeduction += amt;
+            const invoicerespA = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_A, order._id, order.Customer, partnerId,["Order Part B"], 0, amt, 0);
             deduction.push({ title: "Phixmen Commision", value: amt, desc: "Phixmen Commision" })
         } else {
             throw new Error("no commission found");

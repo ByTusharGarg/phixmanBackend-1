@@ -1,605 +1,280 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
+​
 
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <meta charset="utf-8">
   <link
     href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&family=Nunito:wght@400;700&family=Open+Sans:wght@500&family=Poppins:wght@300;400;500;600;700;800&family=Red+Hat+Display:ital,wght@0,300;0,800;1,700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400;1,500;1,700&family=Titillium+Web:wght@600&display=swap"
-    rel="stylesheet" />
+    rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto';
+    }
+
+    .invoice-box {
+      max-width: 800px;
+      margin: auto;
+      padding: 30px;
+      border: 1px solid #eee;
+      box-shadow: 0 0 10px rgba(0, 0, 0, .15);
+      font-size: 16px;
+      line-height: 24px;
+      font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+      color: #555;
+    }
+
+    .invoice-box table {
+      width: 100%;
+      line-height: inherit;
+      text-align: left;
+    }
+
+    .invoice-box table td {
+      padding: 5px;
+      vertical-align: top;
+    }
+
+    .invoice-box table tr td:nth-child(2) {
+      text-align: right;
+    }
+
+    .invoice-box table tr.top table td {
+      padding-bottom: 20px;
+    }
+
+    .invoice-box table tr.top table td.title {
+      font-size: 45px;
+      line-height: 45px;
+      color: #333;
+    }
+
+    .invoice-box table tr.information table td {
+      padding-bottom: 40px;
+    }
+
+    .invoice-box table tr.heading td {
+      background: #eee;
+      border-bottom: 1px solid #ddd;
+      font-weight: bold;
+    }
+
+    .invoice-box table tr.details td {
+      padding-bottom: 20px;
+    }
+
+    .invoice-box table tr.item td {
+      border-bottom: 1px solid #eee;
+    }
+
+    .invoice-box table tr.item.last td {
+      border-bottom: none;
+    }
+
+    .invoice-box table tr.total td:nth-child(2) {
+      border-top: 2px solid #eee;
+      font-weight: bold;
+    }
+
+    .smalltext {
+      font-size: 15px;
+    }
+
+    @media only screen and (max-width: 600px) {
+      .invoice-box table tr.top table td {
+        width: 100%;
+        display: block;
+        text-align: center;
+      }
+
+      .invoice-box table tr.information table td {
+        width: 100%;
+        display: block;
+        text-align: center;
+      }
+    }
+
+    .mt10 {
+      margin-top: 10px;
+    }
+
+
+    /** RTL **/
+    .rtl {
+      direction: rtl;
+      font-family: Tahoma, 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+    }
+
+    .rtl table {
+      text-align: right;
+    }
+
+    .rtl table tr td:nth-child(2) {
+      text-align: left;
+    }
+
+    .value {
+      margin-left: 10px;
+      font-size: 15px
+    }
+
+    .liteText {
+      font-family: 'Roboto';
+      font-style: italic;
+      font-weight: 400;
+      font-size: 12px;
+      line-height: 16px;
+      /* identical to box height, or 133% */
+      /* Phixman Admin color/ Text/ Secondary */
+      color: #667171;
+    }
+
+    .flex {
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
 </head>
-<style>
-  body {
-    font-family: "Roboto";
-  }
-
-  .invoice-box {
-    max-width: 800px;
-    margin: auto;
-    padding: 30px;
-    border: 1px solid #eee;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-    font-size: 16px;
-    line-height: 24px;
-    font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
-    color: #555;
-  }
-
-  .invoice-box table tr.heading td {
-    background: #eee;
-    border-bottom: 1px solid #ddd;
-    font-weight: bold;
-  }
-
-  .flex {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .mainIntroBody {
-    display: flex;
-    flex: 1;
-  }
-
-  .mainIntroBody .bodyLeft {
-    width: 50%;
-    padding-inline-end: 50px;
-    border-right: 1px solid #667171;
-  }
-
-  .mainIntroBody .bodyright {
-    width: 50%;
-    padding-inline-start: 50px;
-  }
-
-  .invoice-box table {
-    width: 100%;
-    line-height: inherit;
-    text-align: left;
-  }
-
-  .invoice-box table td {
-    padding: 5px;
-    vertical-align: top;
-  }
-
-  .invoice-box table tr td:nth-child(2) {
-    text-align: right;
-  }
-
-  .invoice-box table tr.top table td {
-    padding-bottom: 20px;
-  }
-
-  .invoice-box table tr.top table td.title {
-    font-size: 45px;
-    line-height: 45px;
-    color: #333;
-  }
-
-  .invoice-box table tr.information table td {
-    padding-bottom: 40px;
-  }
-
-  .invoice-box table tr.heading td {
-    background: #eee;
-    border-bottom: 1px solid #ddd;
-    font-weight: bold;
-  }
-
-  .invoice-box table tr.details td {
-    padding-bottom: 20px;
-  }
-
-  .invoice-box table tr.item td {
-    border-bottom: 1px solid #eee;
-  }
-
-  .invoice-box table tr.item.last td {
-    border-bottom: none;
-  }
-
-  .invoice-box .mainIntroBody p.value {
-    /* width: 214px; */
-    /* Text/Body */
-    font-weight: bold !important;
-    font-family: "Roboto";
-    font-style: normal;
-    font-weight: 400;
-    font-size: 14px;
-    color: #001313;
-    line-height: 15px;
-    /* or 129% */
-  }
-
-  .invoice-box table tr.total td:nth-child(2) {
-    border-top: 2px solid #eee;
-    font-weight: bold;
-  }
-
-  td p {
-    display: inline-block;
-  }
-
-  .spanValue {
-    float: right;
-    margin-left: 80px;
-  }
-
-  .partner_detail_cardbox {
-    display: flex;
-    padding-top: 1rem;
-    width: 100%;
-    padding: 5px;
-    /* border: 2px solid green; */
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .partner_detail_labels {
-    flex: 1;
-    font-family: Roboto;
-    font-size: 0.9rem;
-    font-weight: 900;
-    /* border: 2px solid black; */
-    line-height: 1rem;
-    letter-spacing: 0.04em;
-    text-align: left;
-  }
-
-  .partner_details {
-    flex: 1;
-    font-family: Roboto;
-    font-size: 0.9rem;
-    /* border: 2px solid black; */
-    color: #667171;
-    font-weight: 400;
-    line-height: 1rem;
-    letter-spacing: 0em;
-    overflow-wrap: anywhere;
-    text-align: left;
-  }
-
-  .component_head {
-    margin-top: 1rem;
-    text-align: left;
-    height: 26px;
-    background-color: #b2b8b81a;
-    padding: 0.2rem;
-    padding-inline: 0.5rem;
-    font-size: 0.9rem;
-    margin-bottom: 0%;
-    font-weight: 700;
-  }
-
-  .NW_head {
-    display: flex;
-    border-bottom: 0.5px solid #667171;
-  }
-
-  .working_head {
-    flex: 1;
-    padding: 1rem;
-    padding-left: 3rem !important;
-    font-family: Roboto;
-    font-size: 0.9rem;
-    font-weight: 900;
-    /* border: 2px solid black; */
-    line-height: 1rem;
-    letter-spacing: 0.04em;
-  }
-
-  .working_Notworking_list {
-    display: flex;
-  }
-
-  .working_List {
-    flex: 1;
-    font-family: Roboto;
-    font-size: 0.9rem;
-    /* border: 2px solid black; */
-    color: #667171;
-    font-weight: 400;
-    line-height: 0.7rem;
-    letter-spacing: 0em;
-    border-right: 0.5px solid #667171;
-    overflow-wrap: anywhere;
-    padding-left: 3rem;
-  }
-
-  .working_List2 {
-    flex: 1;
-    font-family: Roboto;
-    font-size: 0.9rem;
-    /* border: 2px solid black; */
-    color: #667171;
-    font-weight: 400;
-    line-height: 0.7rem;
-    letter-spacing: 0em;
-    /* border-right: 0.5px solid #667171; */
-    overflow-wrap: anywhere;
-    padding-left: 3rem;
-  }
-
-  .infopara_below_detail {
-    font-family: Roboto;
-    font-size: 0.7rem;
-    font-weight: 400;
-    letter-spacing: 0em;
-    overflow-wrap: anywhere;
-  }
-
-  .billing_heads {
-    display: flex;
-    background-color: #b2b8b81a;
-    padding-inline: 1rem;
-  }
-
-  .billing_head {
-    flex: 1;
-    font-family: Roboto;
-    font-size: 0.9rem;
-    font-weight: 800;
-    letter-spacing: 0em;
-    overflow-wrap: anywhere;
-  }
-
-  .billing_data {
-    flex: 1;
-    padding-top: 0.8rem;
-  }
-
-  .security_head {
-    flex: 1;
-    font-family: Roboto;
-    font-size: 0.9rem;
-    font-weight: 900;
-    /* border: 2px solid black; */
-    line-height: 1rem;
-    letter-spacing: 0.04em;
-  }
-
-  .security_text {
-    font-family: Roboto;
-    font-size: 0.7rem;
-    /* border: 2px solid black; */
-    color: #667171;
-    font-weight: 400;
-    /* line-height:0.5rem ; */
-    letter-spacing: 0em;
-  }
-
-  .billing_price_data {
-    display: flex;
-    padding: 0.7rem;
-    border-bottom: 0.5px solid #667171;
-    flex-direction: column;
-  }
-
-  .billing_price_data_below {
-    display: flex;
-    padding: 0.7rem;
-    flex-direction: column;
-  }
-
-  .billing_price_label {
-    flex: 2;
-  }
-
-  .billing_prices {
-    flex: 1;
-  }
-
-  .price_label {
-    font-size: 0.8rem;
-    font-weight: 900;
-    /* border: 2px solid black; */
-    line-height: 1rem;
-    text-align: left;
-    letter-spacing: 0.04em;
-  }
-
-  .billing_price {
-    text-align: right;
-    font-size: 0.7rem;
-    font-weight: 400;
-  }
-
-  .label_italy {
-    font-family: Roboto;
-    font-size: 0.7rem;
-    /* border: 2px solid black; */
-    color: #667171;
-    font-weight: 400;
-    /* line-height:0.5rem ; */
-    letter-spacing: 0em;
-  }
-
-  .label_italy_right {
-    font-family: Roboto;
-    font-size: 0.7rem;
-    /* border: 2px solid black; */
-    color: #667171;
-    font-weight: 400;
-    /* line-height:0.5rem ; */
-    letter-spacing: 0em;
-    text-align: right;
-  }
-
-  .term_conditions {
-    font-size: 0.8rem;
-    font-weight: 700;
-    /* border: 2px solid black; */
-    line-height: 1rem;
-    text-align: right;
-    margin-top: 1rem;
-    letter-spacing: 0.04em;
-  }
-
-  .customer_Name_sign_box {
-    width: 50%;
-    /* justify-content: end; */
-    float: right;
-    margin-top: 1.5rem;
-    text-align: right;
-  }
-
-  .customer_Name {
-    color: #667171;
-    font-size: 0.8rem;
-    font-weight: 400;
-    font-family: Robooto;
-    margin-bottom: 0%;
-  }
-
-  .name_detail {
-    flex: 1;
-    font-size: 0.8rem;
-    font-weight: 700;
-    /* border: 2px solid black; */
-    line-height: 1rem;
-    /* text-align: right; */
-    margin-top: 1rem;
-    letter-spacing: 0.04em;
-  }
-
-  .terms_and_Conditions_Ul {
-    color: #667171;
-    font-size: 0.7rem;
-    font-weight: 400;
-    font-family: Robooto;
-    margin-bottom: 0%;
-    counter-reset: item;
-    padding: 0%;
-  }
-
-  .terms_and_conditions_li {
-    display: block;
-    /* color: #666666; */
-  }
-
-  .terms_and_conditions_li:before {
-    content: counters(item, ".") " ";
-    counter-increment: item;
-  }
-
-  .fullWidth {
-    width: 100%;
-  }
-
-  .terms_and_Conditions_container {
-    display: inline-block;
-  }
-
-  .hr {
-    border: 0.5px dashed #667171;
-  }
-
-  .mt10 {
-    margin-top: 10px;
-  }
-</style>
 
 <body>
   <div class="invoice-box">
-    <div class="header">
-      <hr />
-      <div class="flex">
-        <div class="lefIcon">
-          <img src="logo.png" style="width: 100%; max-width: 150px" />
-        </div>
-        <div class="rightHeading">
-          <h3>Original Tax Invoice</h3>
-        </div>
-      </div>
-      <hr />
-    </div>
-    <div class="mainIntroBody">
-      <div class="bodyLeft">
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Customer Name:</div>
-          <div class="partner_details">
-            <%= data.customer.name %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Customer GSTIN:</div>
-          <div class="partner_details">
-            <%= data.customer.gst %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Invoice Number:</div>
-          <div class="partner_details">
-            <%= data.customer.invoiceNum %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Delivery Address:</div>
-          <div class="partner_details">
-            <%= data.customer.address %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Invoice date:</div>
-          <div class="partner_details">
-            <%= data.customer.date %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">State Name & code:</div>
-          <div class="partner_details">
-            <%= data.customer.sNc %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Place of supply:</div>
-          <div class="partner_details">
-            <%= data.customer.placeOfSupply %>
-          </div>
-        </div>
-      </div>
-      <div class="bodyright">
-        <div>
-          <p class="component_head">DELIVERY SERVICE PROVIDER</p>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Business GSTIN:</div>
-          <div class="partner_details">
-            <%= data.partner.bGst %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Business Name:</div>
-          <div class="partner_details">
-            <%= data.partner.bName %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">Address:</div>
-          <div class="partner_details">
-            <%= data.partner.bAddress %>
-          </div>
-        </div>
-        <div class="partner_detail_cardbox">
-          <div class="partner_detail_labels">State Name & code:</div>
-          <div class="partner_details">
-            <%= data.partner.sNc %>
-          </div>
-        </div>
-      </div>
-    </div>
-    <p class="infopara_below_detail">
-      Any other physical damages existing on the device (or devices):
-    </p>
-    <div class="billing_box">
-      <div class="billing_heads">
-        <p class="billing_head">Services</p>
-        <p class="billing_head">Taxable Value</p>
-      </div>
-      <div class="flex">
-        <div class="billing_data">
+    <table cellpadding="0" cellspacing="0">
+      <tr class="top">
+        <td colspan="2">
+          <table>
+            <tr>
+              <td class="title">
+                <img src="https://phixman.com/images/phixman.png" style="width:100%; max-width:150px;">
+              </td>
+              ​
+              <td>
+                <h3>Original Tax Invoice</h3>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      ​
+      <tr class="information">
+        <td colspan="2">
+          <table>
+            <tr>
+              <td>
+                <b>Customer Name: </b> <span class="value">
+                  <%= data.customer.name %>
+                </span><br>
+                <b>Customer GSTIN: </b> <span class="value">
+                  <%= data.customer.gst %>
+                </span><br>
+                <b>Invoice Number: </b> <span class="value">
+                  <%= data.customer.invoiceNum %>
+                </span><br>
+                <b>Delivery Address: </b> <span class="value">
+                  <%= data.customer.address %>
+                </span><br>
+                <b>Invoice date: </b> <span class="value">
+                  <%= data.customer.date %>
+                </span><br>
+                <b>State Name & code: </b> <span class="value">
+                  <%= data.customer.sNc %>
+                </span><br>
+                <b>Place of supply: </b> <span class="value">
+                  <%= data.customer.placeOfSupply %>
+                </span><br>
+              </td>
+              ​
+              <td>
+                <span class="value" style="margin: 10px;"><b>DELIVERY SERVICE PROVIDER</b></span><br>
+                ​
+                <b>Business GSTIN: </b> <span class="value">
+                  <%= data.partner.bGst %>
+                </span><br>
+                <b>Business Name:</b> <span class="value">
+                  <%= data.partner.bName %>
+                </span><br>
+                <b>Address:</b> <span class="value">
+                  <%= data.partner.bAddress %>
+                </span><br>
+                <b>State Name & code: </b> <span class="value">
+                  <%= data.partner.sNc %>
+                </span><br>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      ​
+      ​
+      <tr class="heading">
+        <td>
+          Service
+        </td>
+        ​
+        <td style="text-align: start;">
+          Taxable Value
+        </td>
+      </tr>
+      ​
+      <tr class="item">
+        <td style="display: flex; flex-direction: column;">
           <% data.prodlist.forEach(prod=> {%>
             <div class="mt10">
-              <%= this.serviceName %>
+              <%= prod.serviceName %>
             </div>
             <% });%>
-        </div>
-        <div class="billing_data">
-          <div class="billing_price_data">
-            <div style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                ">
-              <p class="price_label">Booking Amount</p>
-              <p class="billing_price">Rs. <%= data.bAmt %>
-              </p>
-            </div>
-            <div style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                ">
-              <p class="price_label">Estimation Amount</p>
-              <p class="billing_price">Rs. <%= data.eAmt %>
-              </p>
-            </div>
-            <div style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                ">
-              <p class="price_label">Discount Amount</p>
-              <p class="billing_price">Rs. <%= data.disCount %>
-              </p>
-            </div>
-            <div style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                ">
-              <p class="label_italy"><i>Promocode applied</i></p>
-              <p class="billing_price">Rs. <%= data.promo %>
-              </p>
-            </div>
+        </td>
+        ​
+        <td style="width: 40%;">
+          <!-- <div class="flex">
+            <b class="smalltext">Booking Amount</b> <span class="value">&nbsp;&nbsp;&nbsp; Rs.
+              <%= data.bAmt %>
+            </span><br>
+          </div> -->
+          <div class="flex">
+            <b class="smalltext">Estimation Amount</b> <span class="value">Rs. <%= data.eAmt %></span><br>
           </div>
-          <div class="billing_price_data_below">
-            <div style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                ">
-              <p class="price_label">Tax:</p>
-              <p class="billing_price">Rs. <%= data.tax %>
-              </p>
-            </div>
-            <div style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                ">
-              <p class="label_italy"><i>CGST@9%</i></p>
-              <p class="label_italy_right"><i>Rs. <%= data.cgst %></i></p>
-            </div>
-            <div style="
-                  display: flex;
-                  flex-direction: row;
-                  justify-content: space-between;
-                  align-items: center;
-                ">
-              <p class="label_italy"><i>SGST@9%</i></p>
-              <p class="label_italy_right"><i>Rs. <%= data.sgst %></i></p>
-            </div>
+          <div class="flex">
+            <b class="smalltext">Discount</b> <span
+              class="value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              Rs. <%= data.disCount %></span><br>
           </div>
-        </div>
-      </div>
-      <div class="billing_heads">
-        <p class="billing_head">Total amount</p>
-        <p class="billing_price">Rs: <%= data.totalAmt %>
-        </p>
-      </div>
-      <div class="customer_Name_sign_box">
-        <p class="name_detail">
-          Signature of supplier/authorized representative
-        </p>
-      </div>
-    </div>
-    <div style="margin-top: 100px">
-      <p class="label_italy">
-        <i>*Reverse charge machenism not applicable</i>
-      </p>
-    </div>
+          <hr>
+          ​
+          <div class="flex">
+            <b class="smalltext">Tax: </b>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+              class="value">
+              Rs. <%= data.tax %></span><br>
+          </div>
+          ​
+          <div class="flex">
+            <b class="smalltext liteText">CGST@9% : </b>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+              class="value liteText">
+              Rs. <%= data.cgst %></span><br>
+          </div>
+          ​
+          <div class="flex">
+            <b class="smalltext liteText">SGST@9% : </b>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
+              class="value liteText">
+              Rs. <%= data.sgst %></span><br>
+          </div>
+        </td>
+      </tr>
+      ​
+      <tr class="heading" style="margin-top: 100px;">
+        <td>
+          Total Amount
+        </td>
+        ​
+        <td>
+          Rs. <%= data.totalAmt %>
+        </td>
+      </tr>
+    </table>
   </div>
 </body>
+​
 
 </html>

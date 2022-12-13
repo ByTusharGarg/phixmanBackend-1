@@ -13,7 +13,6 @@ const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
-const { v4: uuidv4 } = require("uuid");
 const payout = require("../libs/payments/payouts.js");
 const { makePartnerTranssaction } = require("../services/Wallet");
 
@@ -35,6 +34,8 @@ const {
   getAllWallletTranssactionForUser,
 } = require("../services/Wallet");
 const emailDatamapping = require("../common/emailcontent");
+const invoicesController = require('../libs/controllers/invoices.controller');
+const { invoiceTypes } = require('../enums/invoiceTypes');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -1239,6 +1240,12 @@ router.post("/order/acceptorder", async (req, res) => {
         .json({ message: "unable to accept LeadExpense not found" });
     }
 
+    if (order.Status !== "Requested") {
+      return res
+        .status(200)
+        .json({ message: "order already Accepted or further processing" });
+    }
+
     await makePartnerTranssaction(
       "partner",
       "",
@@ -1248,11 +1255,8 @@ router.post("/order/acceptorder", async (req, res) => {
       "debit"
     );
 
-    if (order.Status !== "Requested") {
-      return res
-        .status(200)
-        .json({ message: "order already Accepted or further processing" });
-    }
+    // create invoice
+    const invoiceresp = await invoicesController.createInvoice(invoiceTypes.LEAD_BOUGHT_INVOICE, order._id, order.Customer, partnerId, ["Lead bought Invoice"], 0, LeadExpense, 0);
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
@@ -1264,6 +1268,7 @@ router.post("/order/acceptorder", async (req, res) => {
             status: orderStatusTypesObj.Accepted,
             timestampLog: new Date(),
           },
+          invoiceId: invoiceresp._id
         },
       },
       { new: true }
@@ -1508,6 +1513,8 @@ router.post("/order/changestatus", async (req, res) => {
   const partnerId = req.partner._id;
   let emailData = null;
   const query = {};
+  let invoicerespB = null;
+  let invoicerespA = null;
 
   if (!status || !orderId) {
     return res
@@ -1531,7 +1538,15 @@ router.post("/order/changestatus", async (req, res) => {
     const order = await Order.findOne({
       Partner: partnerId,
       OrderId: orderId,
-    }).populate("Customer", "email Name");
+    })
+      .populate("Customer", "email Name")
+      .populate("OrderDetails.Items.ServiceId");
+
+    let array = [];
+    order.OrderDetails.Items.map((ele) => {
+      array.push(ele.ServiceId.serviceName);
+    });
+
     let first_name = order.Customer.Name ? order.Customer.Name : "Dear";
 
     if (!order) {
@@ -1565,15 +1580,35 @@ router.post("/order/changestatus", async (req, res) => {
         email: order.Customer.email || null,
       };
     } else if (status === "completed") {
-      if (order["paidamount"] !== order["OrderDetails"]["Amount"]) {
+      // console.log(order["paidamount"]+order["codAmount"]);
+      if ((order["paidamount"] + order["codAmount"]) !== order["OrderDetails"]["Amount"]) {
         return res
           .status(400)
           .json({ message: "Whole payment not recived yet" });
       }
 
-      // generate invoice id
-      query["invoiceId"] = uuidv4();
+      // per category commission
+      const orderCatId = order.OrderDetails.Items[0].CategoryId;
 
+      const categoryData = await category.findById(orderCatId);
+      let companyComissionPercentage = parseInt(categoryData.companyComissionPercentage);
+
+      if (companyComissionPercentage) {
+        let amt = (order.OrderDetails.Amount * (companyComissionPercentage / 100));
+        invoicerespA = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_A, order._id, order.Customer, partnerId, ["Categoty commission"], 0, amt, 0);
+      } else {
+        return res.status(400).json({ message: "no commission found" });
+      }
+
+      invoicerespB = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_B, order._id, order.Customer, partnerId, array, 0, order.OrderDetails['Gradtotal'], (order.OrderDetails['Gradtotal'] - order.OrderDetails['Amount']));
+
+      await Order.findOneAndUpdate(
+        { OrderId: orderId },
+        {
+          $push: { invoiceId: [invoicerespA._id, invoicerespB._id] },
+        },
+        { new: true }
+      );
 
       // create payout here
       if (order.PaymentMode === 'online') {
