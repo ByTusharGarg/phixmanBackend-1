@@ -13,6 +13,12 @@ class common {
         return id
     }
 
+    genrateOTP = () => {
+        var time = new Date().getTime();
+        let id = Math.floor(Math.random() * time).toString().slice(1, 5);
+        return id;
+    }    
+
 }
 
 module.exports = new common();

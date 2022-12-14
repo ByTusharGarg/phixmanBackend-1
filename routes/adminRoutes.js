@@ -26,7 +26,7 @@ const {
   Vendor,
 } = require("../models");
 
-const { claimTypes } = require("../enums/claimTypes");
+const { claimTypes, claimStatusList } = require("../enums/claimTypes");
 
 const PenalitySchema = require("../models/penality");
 const {
@@ -4683,14 +4683,15 @@ router.post("/create/claim", async (req, res) => {
         customerId,
         name,
         phoneNumber,
+        
       },
     } = req;
 
     const claimId = commonFunction.genrateID("CLAIM");
-
-    // const customerId = req.Customer._id;
+    const OTP = commonFunction.genrateOTP()
 
     const claimObj = {
+      claimStatus:claimStatusList[1],
       customerId,
       claimType,
       claim,
@@ -4705,6 +4706,7 @@ router.post("/create/claim", async (req, res) => {
         phoneNumber,
       },
       partnerId,
+      OTP
     };
 
     const newClaim = await ClaimRequest.create(claimObj);
@@ -4998,5 +5000,11 @@ router.post("/claim/update-partner", async (req, res) => {
     });
   }
 });
+
+//partner --
+
+//start claim -- claimID, OTP
+//end claim
+//otp,claim
 
 module.exports = router;

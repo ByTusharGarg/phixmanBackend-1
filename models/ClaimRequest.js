@@ -9,6 +9,7 @@ const Schema = mongoose.Schema;
 const ClaimRequest = mongoose.model(
   "ClaimRequest",
   new Schema({
+    OTP:{type: String},
     claimId: { required: true, type: String },
     claimType: {
       type: String,

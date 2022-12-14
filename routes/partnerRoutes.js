@@ -8,6 +8,7 @@ const {
   Order,
   orderMetaData,
   category,
+  ClaimRequest,
 } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
@@ -16,6 +17,7 @@ const validateTempToken = require("../middleware/tempTokenVerification");
 const { v4: uuidv4 } = require("uuid");
 const payout = require("../libs/payments/payouts.js");
 const { makePartnerTranssaction } = require("../services/Wallet");
+const { claimTypes, claimStatusList } = require("../enums/claimTypes");
 
 const {
   base64_encode,
@@ -2606,5 +2608,56 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
     return res.status(500).json({ message: "Error encountered." });
   }
 });
+
+/**
+ * @openapi
+ * /partner/start-claim:
+ *  post:
+ *    summary: used to start a claim
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                claimId:
+ *                  type: string
+ *                otp:
+ *                  type: string
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/start-claim", async (req, res) => {
+  try {
+    const {
+      body: { claimId, otp }
+    } = req
+
+    const foundOtp = await ClaimRequest.findOne({claimId,OTP:otp})
+    if(!foundOtp) return res.status(400).json({message:"Otp/claimId is invalid"})
+
+    foundOtp.claimStatus = claimStatusList[2]
+    await foundOtp.save();
+    return res.status(200).json({message:"Claim status updated successfully", foundOtp})
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+})
 
 module.exports = router;
