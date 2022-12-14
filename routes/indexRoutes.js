@@ -789,7 +789,7 @@ router.get("/settings", async (req, res) => {
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
  */
-router.get("/generateinvoice/:orderid", checkTokenOnly, async (req, res, next) => {
+router.get("/generateinvoice/:orderid", async (req, res, next) => {
   const { orderid } = req.params;
 
   if (!orderid) {
@@ -797,7 +797,6 @@ router.get("/generateinvoice/:orderid", checkTokenOnly, async (req, res, next) =
   }
 
   let orderData = null;
-
 
   try {
     orderData = await Order.findById(orderid)

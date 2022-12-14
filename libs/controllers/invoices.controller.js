@@ -1,83 +1,82 @@
+const { claimTypes } = require("../../enums/claimTypes");
 const { invoiceTypesList, invoiceTypes } = require("../../enums/invoiceTypes");
+const { Partner, ClaimRequest, Order, Customer, Vendor } = require("../../models");
 const Invoice = require("../../models/Invoice");
+const { v4: uuidv4 } = require("uuid");
 
 class InvoicesController {
   async createInvoice(
-    date,
-    taxPayer,
-    type,
-    claim,
-    order,
+    invoiveType,
+    claimOrOrderId,
     customer,
     partner,
-    vendor,
     items,
     bookingAmt,
     estAmt,
     discount,
-    promo,
-    tax
+    tax,
+    vendor,
+    promo
   ) {
     try {
-      if (!invoiceTypesList.includes(type)) {
+      if (!invoiceTypesList.includes(invoiveType)) {
         throw new Error("invalid invoice type");
       }
-      let ob;
+      const isPartner = await Partner.findById(partner);
+      if (!isPartner) {
+        throw new Error("partner not found");
+      }
+      const isCustomer = await Customer.findById(customer);
+      if (!isCustomer) {
+        throw new Error("customer not found");
+      }
+      let ob = {
+        type: invoiveType,
+        customer,
+        partner,
+        bookingAmt,
+        estAmt,
+        tax,
+      };
+      if (isPartner.gstCertificate && isPartner.gstCertificateNo) {
+        ob.taxPayer = partner;
+        ob.isGstPaid = true;
+      }
       if (
-        type === invoiceTypes.ORDER_PART_A ||
-        type === invoiceTypes.ORDER_PART_B
+        invoiveType === invoiceTypes.ORDER_PART_A ||
+        invoiveType === invoiceTypes.ORDER_PART_B ||
+        invoiveType === invoiceTypes.LEAD_BOUGHT_INVOICE
       ) {
-        ob = {
-          date,
-          taxPayer,
-          order,
-          type,
-          customer,
-          partner,
-          items,
-          bookingAmt,
-          estAmt,
-          discount,
-          promo,
-          tax,
-        };
+        const isOrder = await Order.findById(claimOrOrderId);
+        if (!isOrder) {
+          throw new Error("order not found");
+        }
+        ob.order = claimOrOrderId;
+        ob.items = items;
+        ob.promo = promo;
+        ob.discount = discount;
+        ob.date = isOrder?.createdAt;
       }
 
-      if (type === invoiceTypes.CLAIM_INVOICE) {
-        ob = {
-          date,
-          taxPayer,
-          claim,
-          type,
-          customer,
-          partner,
-          vendor,
-          items,
-          bookingAmt,
-          estAmt,
-          discount,
-          promo,
-          tax,
-        };
+      if (invoiveType === invoiceTypes.CLAIM_INVOICE) {
+        const isClaim = await ClaimRequest.findById(claimOrOrderId);
+        if (!isClaim) {
+          throw new Error("claim not found");
+        }
+        ob.claim = claimOrOrderId;
+        ob.date = isClaim?.createdAt;
+        if (isClaim.claimType === claimTypes.VENDOR) {
+          const isVendor = await Vendor.findById(vendor);
+          if (!isVendor) {
+            throw new Error("vendor not found");
+          }
+          ob.vendor = vendor;
+        }
       }
-      if (type === invoiceTypes.LEAD_BOUGHT_INVOICE) {
-        ob = {
-          date,
-          taxPayer,
-          order,
-          type,
-          partner,
-          items,
-          bookingAmt,
-          estAmt,
-          discount,
-          promo,
-          tax,
-        };
-      }
-      let invoice = await Invoice.create(ob);
-      return invoice;
+
+      return Invoice.create({ ...ob, invoiceId: uuidv4() });
     } catch (error) {
+      console.log(error);
       throw new Error("error creating and invoice");
     }
   }

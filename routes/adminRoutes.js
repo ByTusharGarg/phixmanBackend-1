@@ -1744,15 +1744,15 @@ router.get("/get/partner/:id", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.put("/partners/:id", async (req, res) => {
-  let query = {};
-  const { type, id } = req.params;
-
-  if (!id || !type) {
-    return res.status(400).json({ message: `id and type required` });
-  }
-
+router.put("/partners/:id/:type", async (req, res) => {
   try {
+    let query = {};
+    const { type, id } = req.params;
+
+    if (!id || !type) {
+      return res.status(400).json({ message: `id and type required` });
+    }
+
     if (type === "approve") {
       let isNotVerified = await Partner.findOne({
         _id: id,
@@ -1778,46 +1778,47 @@ router.put("/partners/:id", async (req, res) => {
     let partners = await Partner.findByIdAndUpdate(id, query, { new: true });
 
     // Add refferal credit to partner wallet
-    if (
-      partners &&
-      type === "approve" &&
-      query.isApproved &&
-      query.isVerified &&
-      partners.refferdCode
-    ) {
-      const referaledPerson = await Partner.findOne({
-        uniqueReferralCode: partners.refferdCode,
-      });
+    // if (
+    //   partners &&
+    //   type === "approve" &&
+    //   query.isApproved &&
+    //   query.isVerified &&
+    //   partners.refferdCode
+    // ) {
+    //   const referaledPerson = await Partner.findOne({
+    //     uniqueReferralCode: partners.refferdCode,
+    //   });
 
-      // check is refferal code is valid
-      if (referaledPerson) {
-        // credit into referaled
-        await makePartnerTranssaction(
-          "partner",
-          "successful",
-          partners?._id,
-          process.env.PARTNER_INVITATION_AMOUNT || 100,
-          "Invitation Referal bonus",
-          "credit"
-        );
+    //   // check is refferal code is valid
+    //   if (referaledPerson) {
+    //     // credit into referaled
+    //     await makePartnerTranssaction(
+    //       "partner",
+    //       "successful",
+    //       partners?._id,
+    //       process.env.PARTNER_INVITATION_AMOUNT || 0,
+    //       "Invitation Referal bonus",
+    //       "credit"
+    //     );
 
-        // credit into refferall
-        await makePartnerTranssaction(
-          "partner",
-          "successful",
-          referaledPerson?._id,
-          process.env.PARTNER_INVITATION_AMOUNT || 100,
-          "Invited Referal bonus",
-          "credit"
-        );
-      }
-    }
+    //     // credit into refferall
+    //     await makePartnerTranssaction(
+    //       "partner",
+    //       "successful",
+    //       referaledPerson?._id,
+    //       process.env.PARTNER_INVITATION_AMOUNT || 0,
+    //       "Invited Referal bonus",
+    //       "credit"
+    //     );
+    //   }
+    // }
 
     res
       .status(200)
       .json({ message: "operations successfully", data: partners });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
   }
 });
 
@@ -4343,6 +4344,8 @@ router.get("/invoice/all", async (req, res) => {
     });
   }
 });
+
+
 
 /**
  * @openapi

@@ -42,6 +42,8 @@ const { generateRandomReferralCode } = require("../libs/commonFunction");
 const Payment = require("../libs/payments/Payment");
 const { encodeImage } = require("../libs/imageLib");
 const { randomImageName, uploadFile, uploadFileToS3 } = require("../services/s3-service");
+const { makeCustomerTranssaction } = require("../services/Wallet");
+
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -765,6 +767,8 @@ router.post("/address", async (req, res) => {
  *              properties:
  *                email:
  *                  type: string
+ *                refferdCode:
+ *                  type: string
  *                Name:
  *                  type: string
  *                Password:
@@ -813,17 +817,49 @@ router.patch("/updateprofile", async (req, res) => {
   if (req.body.phone) {
     return handelValidationError(res, { message: "phone not allowed" });
   }
+  const { refferdCode } = req.body;
 
   let updateQuery = req.body;
   try {
     const getUserProfile = await Customer.findById(cid);
+
     if (req?.files?.image) {
       console.log(req.files.image);
       updateQuery.image = encodeImage(req.files.image);
     }
+
+    // first time login user
     if (getUserProfile.isExistingUser === false) {
       updateQuery["isExistingUser"] = true;
+
+      // invitation credit referal bounes logic
+      if (refferdCode) {
+        const isRefferedFrom = await Customer.findOne({ refferdCode });
+
+        // referal from
+        if (isRefferedFrom) {
+          await makeCustomerTranssaction(
+            "consumer",
+            "successful",
+            isRefferedFrom?._id,
+            process.env.CUSTOMER_INVITATION_AMOUNT || 0,
+            "Invitation Referal bonus",
+            "credit"
+          );
+
+          // credit into refferal to
+          await makeCustomerTranssaction(
+            "consumer",
+            "successful",
+            cid,
+            process.env.CUSTOMER_INVITATION_AMOUNT || 0,
+            "Invited Referal bonus",
+            "credit"
+          );
+        }
+      }
     }
+
     await Customer.findByIdAndUpdate(cid, updateQuery);
     return handelSuccess(res, { message: "Profile updated successfully" });
   } catch (error) {
@@ -987,78 +1023,111 @@ router.get("/address", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post(
-  "/create/order",
-  verifyOrderValidator,
-  rejectBadRequests,
-  async (req, res) => {
-    const { OrderType, Items, PaymentMode, address, PickUpRequired, timeSlot } =
-      req.body;
-    const OrderId = commonFunction.genrateID("ORD");
-    let Amount = 0;
-    let grandTotal = 0;
+router.post("/create/order", verifyOrderValidator, rejectBadRequests, async (req, res) => {
+  const { OrderType, Items, PaymentMode, address, PickUpRequired, timeSlot, offerId } = req.body;
+  const OrderId = commonFunction.genrateID("ORD");
+  let Amount = 0;
+  let grandTotal = 0;
+  let offerAmount = 0;
 
-    Items.map((element) => (Amount += element?.Cost));
-    grandTotal = Amount;
+  Items.map((element) => (Amount += element?.Cost));
+  grandTotal = Amount;
 
-    try {
-      let resp = { message: "Orders created successfully." };
-      if (PaymentMode === "cod") {
-        const newOrder = await Order.create({
-          Customer: req.Customer._id,
-          OrderId,
-          OrderType,
-          Status: orderStatusTypesObj.Requested,
-          PendingAmount: Amount,
-          PaymentStatus: paymentStatus[1],
-          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
-          PaymentMode,
-          address,
-          PickUpRequired,
-          timeSlot,
-        });
-        resp.order = newOrder;
-        // deduct commission from partner
-      } else if (PaymentMode === "online") {
-        const customer = await Customer.findById(req.Customer._id);
-        // initiate payments process   
-      
-        const newOrder = await Order.create({
-          Customer: req.Customer._id,
-          OrderId,
-          OrderType,
-          Status: orderStatusTypesObj.Initial,
-          PendingAmount: Amount,
-          PaymentStatus: paymentStatus[1],
-          OrderDetails: { Amount, Gradtotal: grandTotal, Items },
-          PaymentMode,
-          address,
-          PickUpRequired,
-          timeSlot,
-        });
+  // applying coupen
+  if (offerId) {
+    const today = moment().format('YYYY-MM-DD');
+    const currentTime = moment().format();
+    let isCoupenExist = await Coupon.findById({ _id: offerId, startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
 
-        let cashfree = await Payment.createCustomerOrder({
-          ourorder_id: newOrder._id,
-          customerid: customer._id,
-          email: customer.email,
-          phone: customer.phone,
-          OrderId,
-          Amount,
-        });
+    if (!isCoupenExist) {
+      return handelValidationError(res, { message: "invalid promocode or expire" });
+    }
 
-        resp.order = newOrder;
-        resp.cashfree = cashfree;
+    if (isCoupenExist['minCartValue'] && Amount < isCoupenExist['minCartValue']) {
+      return handelValidationError(res, { message: `Cart value should be ${isCoupenExist['minCartValue']}` });
+    }
+
+    if (isCoupenExist['promoType'] === 'flat') {
+      offerAmount = isCoupenExist['offerAmount'];
+    }
+
+    if (isCoupenExist['promoType'] === 'upto') {
+      let maxDis = isCoupenExist['maxDisc'];
+
+      offerAmount = (Amount * (isCoupenExist['percentageOff'] / 100));
+      if (offerAmount > maxDis) {
+        offerAmount = maxDis;
       }
-
-      // send notifications to all partners
-      return handelSuccess(res, resp);
-    } catch (error) {
-      // console.log(error.message);
-      return handelServerError(res, {
-        message: error?.message || "Error encountered",
-      });
     }
   }
+
+  if (offerAmount >= Amount) {
+    Amount = 0;
+  } else {
+    Amount -= offerAmount
+  }
+
+  try {
+    let resp = { message: "Orders created successfully." };
+    if (PaymentMode === "cod") {
+      const newOrder = await Order.create({
+        Customer: req.Customer._id,
+        OrderId,
+        OrderType,
+        Status: orderStatusTypesObj.Requested,
+        PendingAmount: Amount,
+        PaymentStatus: paymentStatus[1],
+        OrderDetails: { Amount, Gradtotal: grandTotal, Items },
+        PaymentMode,
+        address,
+        PickUpRequired,
+        timeSlot,
+        offerId
+      });
+      resp.order = newOrder;
+      // deduct commission from partner
+    } else if (PaymentMode === "online") {
+      const customer = await Customer.findById(req.Customer._id);
+      // initiate payments process
+      const newOrder = await Order.create({
+        Customer: req.Customer._id,
+        OrderId,
+        OrderType,
+        Status: orderStatusTypesObj.Initial,
+        PendingAmount: Amount,
+        PaymentStatus: paymentStatus[1],
+        OrderDetails: { Amount, Gradtotal: grandTotal, Items },
+        PaymentMode,
+        address,
+        PickUpRequired,
+        timeSlot,
+        offerId
+      });
+
+      let cashfree = await Payment.createCustomerOrder({
+        ourorder_id: newOrder._id,
+        customerid: customer._id,
+        email: customer.email,
+        phone: customer.phone,
+        OrderId,
+        Amount,
+      });
+
+      resp.order = newOrder;
+      resp.cashfree = cashfree;
+    } else {
+      return handelValidationError(res, { message: "invalid payment mode" });
+    }
+
+    // send notifications to all partners
+    return handelSuccess(res, resp);
+  } catch (error) {
+    // console.log(error.message);
+    return handelServerError(res, {
+      message: error?.message || "Error encountered",
+    });
+  }
+}
 );
 
 /**
@@ -1434,9 +1503,9 @@ router.get("/active-offers", async (req, res) => {
 
     let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
 
-    if (foundActiveOffer.length === 0) return handelNoteFoundError(res,{ message: 'No active offers found' })
+    if (foundActiveOffer.length === 0) return handelNoteFoundError(res, { message: 'No active offers found' })
 
-    return handelSuccess(res,{ message: "active offers found", data: foundActiveOffer })
+    return handelSuccess(res, { message: "active offers found", data: foundActiveOffer })
   } catch (err) {
     return handelServerError(res, { message: "An error occured" });
   }
@@ -1513,27 +1582,27 @@ router.post("/create/claim", async (req, res) => {
       }
     } = req
 
-    let imageMedia = [],fileName=[];
-     let audioMedia = []
+    let imageMedia = [], fileName = [];
+    let audioMedia = []
 
 
     //console.log(req.files,req.files.images.length);
 
-    if (req.files?.audio){
-      audioMedia.push({...req.files?.audio, fileName:randomImageName()});
-      let audioURL = await uploadFileToS3(audioMedia[0]?.data,audioMedia[0]?.name,audioMedia[0]?.mimetype )
-      console.log('Audio URL',audioURL);
+    if (req.files?.audio) {
+      audioMedia.push({ ...req.files?.audio, fileName: randomImageName() });
+      let audioURL = await uploadFileToS3(audioMedia[0]?.data, audioMedia[0]?.name, audioMedia[0]?.mimetype)
+      console.log('Audio URL', audioURL);
     }
 
-    if(req.files?.images?.length > 0){
+    if (req.files?.images?.length > 0) {
 
-      req.files?.images?.forEach((pic)=>{
-        imageMedia.push({...pic, fileName:randomImageName()})
+      req.files?.images?.forEach((pic) => {
+        imageMedia.push({ ...pic, fileName: randomImageName() })
       })
-    } else{
-      imageMedia.push({...req.files?.images, fileName:randomImageName()})
-    }  
-    console.log("****",imageMedia)
+    } else {
+      imageMedia.push({ ...req.files?.images, fileName: randomImageName() })
+    }
+    console.log("****", imageMedia)
     await Promise.all(
       imageMedia.map((file, i) => {
         if (file) {
@@ -1562,14 +1631,14 @@ router.post("/create/claim", async (req, res) => {
     }
 
     const newClaim = await ClaimRequest.create(claimObj)
-    if(!newClaim) return handelNoteFoundError(res,{message:"Unable to create claim"})
+    if (!newClaim) return handelNoteFoundError(res, { message: "Unable to create claim" })
 
-    return handelSuccess(res,{message:"New claim created", data:newClaim})
+    return handelSuccess(res, { message: "New claim created", data: newClaim })
 
 
   } catch (error) {
-    console.log('$$$$$$$$$',error);
-    return handelServerError(res,{
+    console.log('$$$$$$$$$', error);
+    return handelServerError(res, {
       message: "Error encountered while trying to create claim.",
     });
   }
@@ -1599,30 +1668,30 @@ router.post("/create/claim", async (req, res) => {
  *    - bearerAuth: []
  */
 
-router.delete("/delete-account", async(req,res)=>{
-  try{
+router.delete("/delete-account", async (req, res) => {
+  try {
     const Customer1 = req.Customer._id;
 
-  const deleteUser = await Customer.findOneAndUpdate(
-    {_id:Customer1},
-    {
-      $set:{
-      Name:'Anonymous User',
-      email:'anonymous email',
-      address:null,
-      phone:""    
-    }
-  }
-  )
+    const deleteUser = await Customer.findOneAndUpdate(
+      { _id: Customer1 },
+      {
+        $set: {
+          Name: 'Anonymous User',
+          email: 'anonymous email',
+          address: null,
+          phone: ""
+        }
+      }
+    )
 
-  if(!deleteUser) return handelNoteFoundError(res,{message:"Unable to delete user"})
-  return handelSuccess(res, { message: "User deleted successfully" })
-}catch (error) {
-  console.log('$$$$$$$$$',error);
-  return handelServerError(res,{
-    message: "Error encountered while trying to create claim.",
-  });
-}
+    if (!deleteUser) return handelNoteFoundError(res, { message: "Unable to delete user" })
+    return handelSuccess(res, { message: "User deleted successfully" })
+  } catch (error) {
+    console.log('$$$$$$$$$', error);
+    return handelServerError(res, {
+      message: "Error encountered while trying to create claim.",
+    });
+  }
 })
 
 /**
@@ -1658,17 +1727,17 @@ router.delete("/delete-account", async(req,res)=>{
  *    security:
  *     - bearerAuth: []
  */
- router.get("/get-all-claims", async(req,res)=>{
-  try{
-  const Customer = req.Customer._id;
+router.get("/get-all-claims", async (req, res) => {
+  try {
+    const Customer = req.Customer._id;
 
- const foundClaim = await ClaimRequest.find({customerId:Customer}).lean().populate("orderId", "OrderId -_id")
- if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
+    const foundClaim = await ClaimRequest.find({ customerId: Customer }).lean().populate("orderId", "OrderId -_id")
+    if (!foundClaim) return handelNoteFoundError(res, { message: 'No claims found' })
 
-return handelSuccess(res,{message:'Claims found', data: foundClaim})
-  }catch (error) {
-    console.log('$$$$$$$$$',error);
-    return handelServerError(res,{
+    return handelSuccess(res, { message: 'Claims found', data: foundClaim })
+  } catch (error) {
+    console.log('$$$$$$$$$', error);
+    return handelServerError(res, {
       message: "Error encountered while trying to create claim.",
     });
   }
@@ -1715,21 +1784,21 @@ return handelSuccess(res,{message:'Claims found', data: foundClaim})
  *    - bearerAuth: []
  */
 
-router.get("/get-claim-by-id", async(req,res)=>{
-  try{
-    const{
-      query:{claimId}
-    }=req;
+router.get("/get-claim-by-id", async (req, res) => {
+  try {
+    const {
+      query: { claimId }
+    } = req;
 
-    const foundClaim = await ClaimRequest.findOne({claimId})
-    .populate("orderId","OrderId -_id")
-    .populate("customerId")
-    .populate("partnerId")
-    if(!foundClaim) return handelNoteFoundError(res,{message: 'No claims found'})
-    return handelSuccess(res,{message:'Claims found', data: foundClaim})
-  }catch (error) {
-    console.log('$$$$$$$$$',error);
-    return handelServerError(res,{
+    const foundClaim = await ClaimRequest.findOne({ claimId })
+      .populate("orderId", "OrderId -_id")
+      .populate("customerId")
+      .populate("partnerId")
+    if (!foundClaim) return handelNoteFoundError(res, { message: 'No claims found' })
+    return handelSuccess(res, { message: 'Claims found', data: foundClaim })
+  } catch (error) {
+    console.log('$$$$$$$$$', error);
+    return handelServerError(res, {
       message: "Error encountered while trying to fetch claim.",
     });
   }

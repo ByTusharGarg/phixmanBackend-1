@@ -14,7 +14,6 @@ const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
 const tokenService = require("../services/token-service");
 const validateTempToken = require("../middleware/tempTokenVerification");
-const { v4: uuidv4 } = require("uuid");
 const payout = require("../libs/payments/payouts.js");
 const { makePartnerTranssaction } = require("../services/Wallet");
 const { claimTypes, claimStatusList } = require("../enums/claimTypes");
@@ -37,6 +36,8 @@ const {
   getAllWallletTranssactionForUser,
 } = require("../services/Wallet");
 const emailDatamapping = require("../common/emailcontent");
+const invoicesController = require('../libs/controllers/invoices.controller');
+const { invoiceTypes } = require('../enums/invoiceTypes');
 
 const sendOtpBodyValidator = [
   body("phone")
@@ -1241,6 +1242,12 @@ router.post("/order/acceptorder", async (req, res) => {
         .json({ message: "unable to accept LeadExpense not found" });
     }
 
+    if (order.Status !== "Requested") {
+      return res
+        .status(200)
+        .json({ message: "order already Accepted or further processing" });
+    }
+
     await makePartnerTranssaction(
       "partner",
       "",
@@ -1250,11 +1257,8 @@ router.post("/order/acceptorder", async (req, res) => {
       "debit"
     );
 
-    if (order.Status !== "Requested") {
-      return res
-        .status(200)
-        .json({ message: "order already Accepted or further processing" });
-    }
+    // create invoice
+    const invoiceresp = await invoicesController.createInvoice(invoiceTypes.LEAD_BOUGHT_INVOICE, order._id, order.Customer, partnerId, ["Lead bought Invoice"], 0, LeadExpense, 0);
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
@@ -1266,6 +1270,7 @@ router.post("/order/acceptorder", async (req, res) => {
             status: orderStatusTypesObj.Accepted,
             timestampLog: new Date(),
           },
+          invoiceId: invoiceresp._id
         },
       },
       { new: true }
@@ -1510,6 +1515,8 @@ router.post("/order/changestatus", async (req, res) => {
   const partnerId = req.partner._id;
   let emailData = null;
   const query = {};
+  let invoicerespB = null;
+  let invoicerespA = null;
 
   if (!status || !orderId) {
     return res
@@ -1533,7 +1540,15 @@ router.post("/order/changestatus", async (req, res) => {
     const order = await Order.findOne({
       Partner: partnerId,
       OrderId: orderId,
-    }).populate("Customer", "email Name");
+    })
+      .populate("Customer", "email Name")
+      .populate("OrderDetails.Items.ServiceId");
+
+    let array = [];
+    order.OrderDetails.Items.map((ele) => {
+      array.push(ele.ServiceId.serviceName);
+    });
+
     let first_name = order.Customer.Name ? order.Customer.Name : "Dear";
 
     if (!order) {
@@ -1567,15 +1582,35 @@ router.post("/order/changestatus", async (req, res) => {
         email: order.Customer.email || null,
       };
     } else if (status === "completed") {
-      if (order["paidamount"] !== order["OrderDetails"]["Amount"]) {
+      // console.log(order["paidamount"]+order["codAmount"]);
+      if ((order["paidamount"] + order["codAmount"]) !== order["OrderDetails"]["Amount"]) {
         return res
           .status(400)
           .json({ message: "Whole payment not recived yet" });
       }
 
-      // generate invoice id
-      query["invoiceId"] = uuidv4();
+      // per category commission
+      const orderCatId = order.OrderDetails.Items[0].CategoryId;
 
+      const categoryData = await category.findById(orderCatId);
+      let companyComissionPercentage = parseInt(categoryData.companyComissionPercentage);
+
+      if (companyComissionPercentage) {
+        let amt = (order.OrderDetails.Amount * (companyComissionPercentage / 100));
+        invoicerespA = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_A, order._id, order.Customer, partnerId, ["Categoty commission"], 0, amt, 0);
+      } else {
+        return res.status(400).json({ message: "no commission found" });
+      }
+
+      invoicerespB = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_B, order._id, order.Customer, partnerId, array, 0, order.OrderDetails['Gradtotal'], (order.OrderDetails['Gradtotal'] - order.OrderDetails['Amount']));
+
+      await Order.findOneAndUpdate(
+        { OrderId: orderId },
+        {
+          $push: { invoiceId: [invoicerespA._id, invoicerespB._id] },
+        },
+        { new: true }
+      );
 
       // create payout here
       if (order.PaymentMode === 'online') {
@@ -2294,7 +2329,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount = orderData["OrderDetails"]["Gradtotal"] - (orderData["paidamount"] + orderData["codAmount"]);
+    const leftAmount = orderData["OrderDetails"]["Amount"] - (orderData["paidamount"] + orderData["codAmount"]);
 
     if (leftAmount === 0) {
       return res.status(400).json({ message: "payment already completed" });
@@ -2409,26 +2444,11 @@ router.post("/verifylinkstatus", async (req, res) => {
       return handelValidationError(res, { message: "link_id is required" });
     }
     const resp = await Payment.verifyPaymentLinkCashFree(req.body.link_id);
-    // return handelSuccess(res, { data: resp });
     return res.status(200).json({ message: "payment succesfully completed" });
   } catch (error) {
     return res.status(500).json({ message: error?.message || "Error encountered." });
   }
 });
-
-// (async()=>{
-//   let paymentObj = {
-//     customerid: '638b131b22a255844e5c8c0d3a',
-//     email: 'arunaggarwal096@gmail.com',
-//     phone: '8510967005',
-//     linkId: 'dol455s5j5doidjk64oijdidj',
-//     ourorder_id:'638b131b22a2844e5c8c0d3a',
-//     amount: 100,
-//     orderId:'638b131b22a2844e5c8c0d3a'
-//   };
-//   let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
-//   console.log(cashfree)
-// })
 
 /**
  * @openapi
