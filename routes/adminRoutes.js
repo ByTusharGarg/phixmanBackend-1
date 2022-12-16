@@ -3431,11 +3431,10 @@ router.post("/create-subcategory", async (req, res) => {
  *  get:
  *    summary: using this route user can get subcategories
  *    tags:
- *    - Customer Routes
+ *    - Admin Routes
  *    parameters:
  *      - in: query
  *        name: categoryId
- *        required: true
  *        schema:
  *           type: string
  *
@@ -3451,6 +3450,8 @@ router.post("/create-subcategory", async (req, res) => {
  *                    type: string
  *                    description: a human-readable message describing the response
  *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
  */
 
 router.get("/subcategory", async (req, res) => {
@@ -3459,7 +3460,12 @@ router.get("/subcategory", async (req, res) => {
       query: { categoryId },
     } = req;
 
-    const foundSubcategory = await SubCategory.find({ category: categoryId });
+    let ob = {};
+    if (!categoryId) {
+      ob.category = categoryId;
+    }
+
+    const foundSubcategory = await SubCategory.find(ob);
     if (!foundSubcategory) {
       return res.status(404).send("No subcategories found");
     }
@@ -4345,8 +4351,6 @@ router.get("/invoice/all", async (req, res) => {
   }
 });
 
-
-
 /**
  * @openapi
  * /admin/invoice/phixman/tax:
@@ -4686,15 +4690,14 @@ router.post("/create/claim", async (req, res) => {
         customerId,
         name,
         phoneNumber,
-        
       },
     } = req;
 
     const claimId = commonFunction.genrateID("CLAIM");
-    const OTP = commonFunction.genrateOTP()
+    const OTP = commonFunction.genrateOTP();
 
     const claimObj = {
-      claimStatus:claimStatusList[1],
+      claimStatus: claimStatusList[1],
       customerId,
       claimType,
       claim,
@@ -4709,7 +4712,7 @@ router.post("/create/claim", async (req, res) => {
         phoneNumber,
       },
       partnerId,
-      OTP
+      OTP,
     };
 
     const newClaim = await ClaimRequest.create(claimObj);
