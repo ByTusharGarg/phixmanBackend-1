@@ -3400,11 +3400,11 @@ router.patch("/Zone/:id", async (req, res) => {
 router.post("/create-subcategory", async (req, res) => {
   try {
     let {
-      body: { categoryId, name, description },
+      body: { category, name, description },
     } = req;
 
     let subcategoryObj = {
-      category: categoryId,
+      category,
       name,
       description,
     };
@@ -3461,7 +3461,7 @@ router.get("/subcategory", async (req, res) => {
     } = req;
 
     let ob = {};
-    if (!categoryId) {
+    if (categoryId) {
       ob.category = categoryId;
     }
 
