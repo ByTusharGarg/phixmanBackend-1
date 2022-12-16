@@ -1258,7 +1258,7 @@ router.post("/order/acceptorder", async (req, res) => {
     );
 
     // create invoice
-    const invoiceresp = await invoicesController.createInvoice(invoiceTypes.LEAD_BOUGHT_INVOICE, order._id, order.Customer, partnerId, ["Lead bought Invoice"], 0, LeadExpense, 0);
+    const invoiceresp = await invoicesController.createInvoice(invoiceTypes.LEAD_BOUGHT_INVOICE, order._id, order.Customer, partnerId, [{ serviceName: "Lead bought Invoice" }], 0, LeadExpense, 0);
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
@@ -1546,7 +1546,7 @@ router.post("/order/changestatus", async (req, res) => {
 
     let array = [];
     order.OrderDetails.Items.map((ele) => {
-      array.push(ele.ServiceId.serviceName);
+      array.push({ serviceName: ele.ServiceId.serviceName });
     });
 
     let first_name = order.Customer.Name ? order.Customer.Name : "Dear";
@@ -1589,29 +1589,6 @@ router.post("/order/changestatus", async (req, res) => {
           .json({ message: "Whole payment not recived yet" });
       }
 
-      // per category commission
-      const orderCatId = order.OrderDetails.Items[0].CategoryId;
-
-      const categoryData = await category.findById(orderCatId);
-      let companyComissionPercentage = parseInt(categoryData.companyComissionPercentage);
-
-      if (companyComissionPercentage) {
-        let amt = (order.OrderDetails.Amount * (companyComissionPercentage / 100));
-        invoicerespA = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_A, order._id, order.Customer, partnerId, ["Categoty commission"], 0, amt, 0);
-      } else {
-        return res.status(400).json({ message: "no commission found" });
-      }
-
-      invoicerespB = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_B, order._id, order.Customer, partnerId, array, 0, order.OrderDetails['Gradtotal'], (order.OrderDetails['Gradtotal'] - order.OrderDetails['Amount']));
-
-      await Order.findOneAndUpdate(
-        { OrderId: orderId },
-        {
-          $push: { invoiceId: [invoicerespA._id, invoicerespB._id] },
-        },
-        { new: true }
-      );
-
       // create payout here
       if (order.PaymentMode === 'online') {
         await payout.createPayoutOnDbOnline(
@@ -1626,6 +1603,32 @@ router.post("/order/changestatus", async (req, res) => {
       } else {
         await payout.createPayoutOnDbCod({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
       }
+
+
+      // per category commission & genrate invoice
+      const orderCatId = order.OrderDetails.Items[0].CategoryId;
+
+      const categoryData = await category.findById(orderCatId);
+      let companyComissionPercentage = parseInt(categoryData.companyComissionPercentage);
+
+      if (companyComissionPercentage) {
+        let amt = (order.OrderDetails.Amount * (companyComissionPercentage / 100));
+        invoicerespA = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_A, order._id, order.Customer, partnerId, [{ serviceName: "Categoty commission" }], 0, amt, 0);
+      } else {
+        return res.status(400).json({ message: "no commission found" });
+      }
+
+      invoicerespB = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_B, order._id, order.Customer, partnerId, array, 0, order.OrderDetails['Gradtotal'], (order.OrderDetails['Gradtotal'] - order.OrderDetails['Amount']));
+
+      await Order.findOneAndUpdate(
+        { OrderId: orderId },
+        {
+          $push: { invoiceId: [invoicerespA._id, invoicerespB._id] },
+        },
+        { new: true }
+      );
+
+
     } else if (status === "delivered") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
@@ -2667,12 +2670,12 @@ router.post("/start-claim", async (req, res) => {
       body: { claimId, otp }
     } = req
 
-    const foundOtp = await ClaimRequest.findOne({claimId,OTP:otp})
-    if(!foundOtp) return res.status(400).json({message:"Otp/claimId is invalid"})
+    const foundOtp = await ClaimRequest.findOne({ claimId, OTP: otp })
+    if (!foundOtp) return res.status(400).json({ message: "Otp/claimId is invalid" })
 
     foundOtp.claimStatus = claimStatusList[2]
     await foundOtp.save();
-    return res.status(200).json({message:"Claim status updated successfully", foundOtp})
+    return res.status(200).json({ message: "Claim status updated successfully", foundOtp })
 
   } catch (error) {
     console.log(error);

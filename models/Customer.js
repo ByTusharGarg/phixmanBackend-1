@@ -39,7 +39,7 @@ const Customer = mongoose.model(
         },
       },
     ],
-    refferdCode: { type: String, default: null },
+    refferdFromCode: { type: String, default: null },
     uniqueReferralCode: {
       type: String,
       unique: true,

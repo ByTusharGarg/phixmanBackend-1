@@ -39,8 +39,6 @@ class Generatepdf {
                     });
                 }
             });
-
-
         } catch (error) {
             console.log(error);
             return res
