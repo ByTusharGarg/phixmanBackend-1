@@ -18,7 +18,7 @@ const Invoice = mongoose.model(
     partner: { type: Schema.Types.ObjectId, ref: "Partner" },
     vendor: { type: Schema.Types.ObjectId, ref: "Vendor" },
     isPaid: { type: Boolean, default: true },
-    items: [String],
+    items: [Object],
     bookingAmt: Number,
     estAmt: Number,
     discount: Number,

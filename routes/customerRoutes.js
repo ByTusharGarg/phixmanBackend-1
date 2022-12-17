@@ -834,12 +834,13 @@ router.patch("/updateprofile", async (req, res) => {
 
       // invitation credit referal bounes logic
       if (refferdCode) {
-        const isRefferedFrom = await Customer.findOne({ refferdCode });
+        const isRefferedFrom = await Customer.findOne({ uniqueReferralCode: refferdCode });
 
         // referal from
         if (isRefferedFrom) {
+          updateQuery["refferdFromCode"] = isRefferedFrom;
           await makeCustomerTranssaction(
-            "consumer",
+            "customer",
             "successful",
             isRefferedFrom?._id,
             process.env.CUSTOMER_INVITATION_AMOUNT || 0,
@@ -849,11 +850,11 @@ router.patch("/updateprofile", async (req, res) => {
 
           // credit into refferal to
           await makeCustomerTranssaction(
-            "consumer",
+            "customer",
             "successful",
             cid,
             process.env.CUSTOMER_INVITATION_AMOUNT || 0,
-            "Invited Referal bonus",
+            "Invited Referal bon  us",
             "credit"
           );
         }

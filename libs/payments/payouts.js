@@ -14,7 +14,6 @@ let casrfreeUrlLinks =
         ? process.env.CASHFREE_PAYOUT_DEV_URL
         : process.env.CASHFREE_PAYOUT_PROD_URL;
 
-
 class Payouts {
     constructor() {
         this.APPID = process.env.PAYOUT_CLIENT_KEY;
@@ -196,7 +195,7 @@ class Payouts {
         // ----- deduction cases -----
 
         // gst deduction
-        const partnerDataRe = await isPartnerGstExists(data.partnerId)
+        const partnerDataRe = await this.isPartnerGstExists(data.partnerId)
         if (!partnerDataRe) {
             let amt = (totalAmount * (18 / 100));
             totalDeduction += amt;
@@ -212,7 +211,6 @@ class Payouts {
         if (companyComissionPercentage) {
             let amt = (totalAmount * (companyComissionPercentage / 100));
             totalDeduction += amt;
-            const invoicerespA = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_A, order._id, order.Customer, partnerId,["Order Part B"], 0, amt, 0);
             deduction.push({ title: "Phixmen Commision", value: amt, desc: "Phixmen Commision" })
         } else {
             throw new Error("no commission found");

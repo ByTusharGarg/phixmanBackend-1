@@ -123,11 +123,9 @@ const createWalletTransaction = async (
 const getWalletTransactions = async () => {
   try {
     let transactions = await WalletTransaction.find();
-    console.log(transactions);
     let wallet;
     const populateUserdata = async (transaction) => {
       try {
-        console.log(transaction, transaction?.walletId);
         if (transaction?.transsactionUser === "partner") {
           let obj = {
             tranId: transaction.tranId,
@@ -141,7 +139,6 @@ const getWalletTransactions = async () => {
           };
           wallet = await PartnerWallet.findById(transaction?.walletId);
           obj.user = await Partner.findById(wallet?.partnerId);
-          console.log(wallet, transaction.user?.phone);
           return obj;
         }
         return obj;
@@ -152,7 +149,6 @@ const getWalletTransactions = async () => {
         return populateUserdata(item);
       })
     );
-    console.log(trans);
     return trans;
   } catch (error) {
     throw new Error("Error fetching wallet transactions");
@@ -203,12 +199,11 @@ const updateCustomerWallet = async (
 
   try {
     // update wallet
-    const wallet = await CustomerWallet.findOneAndUpdate(
-      { userId },
+    return await CustomerWallet.findOneAndUpdate(
+      { customerId:userId },
       { $inc: { balance: finalAmount } },
       { new: true }
     );
-    return wallet;
   } catch (error) {
     throw new Error("Error accure unable to make transaction");
   }
@@ -315,7 +310,6 @@ const makeCustomerTranssaction = async (
       wallet
     );
     // create wallet transaction
-
     if (resp) {
       await createWalletTransaction(
         userId,
