@@ -4316,33 +4316,33 @@ router.get("/invoice/all", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({})
       .lean()
-      .populate("customer")
-      .populate("partner")
-      .populate("order")
-      .populate("claim")
-      .populate("vendor");
+      .populate("customer","Sno Name")
+      .populate("partner","Sno Name")
+      .populate("order","OrderId")
+      .populate("claim","claimId")
+      .populate("vendor","Sno name");
 
     if (foundInvoice.length === 0)
       return res.status(400).json({ message: "Invoice not found" });
 
-    let returnObj = [];
-    foundInvoice.forEach((invoice) => {
-      let obj = {
-        invoiceId: invoice.invoiceId,
-        invoice_type: invoice.type,
-        invoice_dt: invoice.date,
-        invoice_status: invoice.status,
-        order_id: invoice.order?.OrderId,
-        claim_id: invoice.claim?.claimId,
-        customer_code: invoice.customer?.Sno,
-        customer_name: invoice.customer?.Name,
-        partner_code: invoice.partner?.Sno,
-        partner_name: invoice.partner?.Name,
-        vendor_code: invoice.vendor?.Sno,
-        vendor_name: invoice.vendor?.name,
-      };
-      returnObj.push(obj);
-    });
+    // let returnObj = [];
+    // foundInvoice.forEach((invoice) => {
+    //   let obj = {
+    //     invoiceId: invoice.invoiceId,
+    //     invoice_type: invoice.type,
+    //     invoice_dt: invoice.date,
+    //     invoice_status: invoice.status,
+    //     order_id: invoice.order?.OrderId,
+    //     claim_id: invoice.claim?.claimId,
+    //     customer_code: invoice.custome r?.Sno,
+    //     customer_name: invoice.customer?.Name,
+    //     partner_code: invoice.partner?.Sno,
+    //     partner_name: invoice.partner?.Name,
+    //     vendor_code: invoice.vendor?.Sno,
+    //     vendor_name: invoice.vendor?.name,
+    //   };
+    //   returnObj.push(obj);
+    //});
 
     return res
       .status(200)
