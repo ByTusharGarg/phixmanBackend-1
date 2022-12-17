@@ -4346,11 +4346,11 @@ router.get("/invoice/all", async (req, res) => {
 
     return res
       .status(200)
-      .json({ message: "Successfully fetched Invoice", data: returnObj });
+      .json({ message: "Successfully fetched Invoice", data: foundInvoice });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
-      message: "Error encountered while trying to order transaction.",
+      message: "Error encountered while trying to fetch invoices.",
     });
   }
 });
