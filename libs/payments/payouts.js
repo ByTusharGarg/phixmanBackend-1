@@ -142,7 +142,7 @@ class Payouts {
             if (!payoutData) {
                 throw new Error("invalid payout or not exists");
             }
-            console.log(payoutData.status);
+
             if (payoutData.status !== payoutStatusTypesObject.WITHDRAW && payoutData.status !== payoutStatusTypesObject.FAILED) {
                 throw new Error("this payment is not allowed to be initiate");
             }

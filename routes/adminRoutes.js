@@ -4342,9 +4342,7 @@ router.get("/invoice/all", async (req, res) => {
       returnObj.push(obj);
     });
 
-    return res
-      .status(200)
-      .json({ message: "Successfully fetched Invoice", data: returnObj });
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
