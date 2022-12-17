@@ -1500,10 +1500,10 @@ router.get("/order", async (req, res) => {
 router.get("/active-offers", async (req, res) => {
   try {
     const today = moment().format('YYYY-MM-DD');
-    const currentTime = moment().format();
+    const currentTime = moment().format('HH:MM');
 
     let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
-
+console.log("active offfffer", today, currentTime);
     if (foundActiveOffer.length === 0) return handelNoteFoundError(res, { message: 'No active offers found' })
 
     return handelSuccess(res, { message: "active offers found", data: foundActiveOffer })

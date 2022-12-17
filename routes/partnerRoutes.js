@@ -587,7 +587,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     });
   }
 });
-
+ 
 router.use(checkPartner);
 
 /**
@@ -2634,6 +2634,54 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
 
 /**
  * @openapi
+ * /partner/get-claim:
+ *  get:
+ *    summary: using this route partner can get claim.
+ *    tags:
+ *    - partner Routes
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch claims.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: All claims fetched successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.get("/get-claim", async(req,res)=>{
+  try {
+    const partnerId = req.partner._id;
+    const foundClaims = await ClaimRequest.find({partnerId});
+    if (foundClaims.length === 0)
+      return res.status(400).json({ message: "no claims found" });
+    return handelSuccess(res, { message: "Claims found", data: foundClaims });
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
+      message: "Error encountered while trying to fetch claim.",
+    });
+  }
+})
+
+/**
+ * @openapi
  * /partner/start-claim:
  *  post:
  *    summary: used to start a claim
@@ -2669,15 +2717,77 @@ router.post("/start-claim", async (req, res) => {
     const {
       body: { claimId, otp }
     } = req
-
-    const foundOtp = await ClaimRequest.findOne({ claimId, OTP: otp })
-    if (!foundOtp) return res.status(400).json({ message: "Otp/claimId is invalid" })
+    const partnerId = req.partner._id;
+    const foundOtp = await ClaimRequest.findOne({claimId,partnerId,OTP:otp})
+    if(!foundOtp) return res.status(400).json({message:"Otp/claimId is invalid"})
 
     foundOtp.claimStatus = claimStatusList[2]
     await foundOtp.save();
     return res.status(200).json({ message: "Claim status updated successfully", foundOtp })
 
   } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+})
+
+/**
+ * @openapi
+ * /partner/end-claim:
+ *  post:
+ *    summary: used to end a claim
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                claimId:
+ *                  type: string
+ *                travelCharge:
+ *                  type: string
+ *                inventoryCharge:
+ *                  type: string
+ *                serviceCharge:
+ *                  type: string 
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/end-claim", async(req,res)=>{
+  try{
+  const {
+    body:{claimId,travelCharge,inventoryCharge,serviceCharge}
+  } = req;
+  const partnerId = req.partner._id;
+  const endClaim = await ClaimRequest.findOneAndUpdate(
+    {claimId, partnerId},
+    {$set:{
+      travelCharge,
+      inventoryCharge,
+      serviceCharge,
+      claimStatus:claimStatusList[3],
+      paymentStatus:paymentClaimCycle[0]
+    }},
+    {new:true}
+  )
+
+  if(!endClaim) return res.status(400).json({message:"Unable to end claim"})
+  return res.status(200).json({message:"Claim ended"})
+  }catch(error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }

@@ -3717,8 +3717,10 @@ router.get("/wallet/customer", checkAdmin, async (req, res) => {
  *                  type: string
  *                startValidity:
  *                  type: string
+ *                  example: 11:30
  *                endValidity:
  *                  type: string
+ *                  example: 18:00
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -4314,11 +4316,11 @@ router.get("/invoice/all", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({})
       .lean()
-      .populate("customer")
-      .populate("partner")
-      .populate("order")
-      .populate("claim")
-      .populate("vendor");
+      .populate("customer", "Sno Name")
+      .populate("partner", "Sno Name")
+      .populate("order", "OrderId")
+      .populate("claim", "claimId")
+      .populate("vendor", "Sno name");
 
     if (foundInvoice.length === 0)
       return res.status(400).json({ message: "Invoice not found" });
@@ -4327,6 +4329,7 @@ router.get("/invoice/all", async (req, res) => {
     foundInvoice.forEach((invoice) => {
       let obj = {
         invoiceId: invoice.invoiceId,
+        _id: invoice._id,
         invoice_type: invoice.type,
         invoice_dt: invoice.date,
         invoice_status: invoice.status,
@@ -4346,7 +4349,7 @@ router.get("/invoice/all", async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({
-      message: "Error encountered while trying to order transaction.",
+      message: "Error encountered while trying to fetch invoices.",
     });
   }
 });
@@ -5104,10 +5107,89 @@ router.post("/claim/update-partner", async (req, res) => {
   }
 });
 
-//partner --
+/**
+ * @openapi
+ * /admin/claim/approve-payment:
+ *  post:
+ *    summary: used to approve payment.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                claimId:
+ *                  type: string
+ *                travelCharge:
+ *                  type: string
+ *                inventoryCharge:
+ *                  type: string
+ *                serviceCharge:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if claim's partner is updated successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: claim partner updated successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/claim/approve-payment", async (req, res) => {
+  try {
+    const {
+      body: {
+        claimId,
+        travelCharge = '',
+        inventoryCharge = '',
+        serviceCharge = ''
+      }
+    } = req;
+    let Obj = { paymentStatus: paymentClaimCycle[1] }
+    if (travelCharge != '') {
+      Obj = { ...Obj, travelCharge }
+    }
+    if (inventoryCharge != '') {
+      Obj = { ...Obj, inventoryCharge }
+    }
+    if (serviceCharge != '') {
+      Obj = { ...Obj, serviceCharge }
+    }
+    const approvePayment = await ClaimRequest.findOneAndUpdate(
+      { claimId },
+      { $set: Obj },
+      { new: true }
+    )
 
-//start claim -- claimID, OTP
-//end claim
-//otp,claim
+    if (!approvePayment) return res.status(400).json({ message: "Unable to approve payment" })
+    return res.status(200).json({ message: "Payment approved" })
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
+      message: "Error encountered while approve payment",
+    });
+  }
+})
+
 
 module.exports = router;
