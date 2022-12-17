@@ -2632,6 +2632,21 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
   }
 });
 
+router.get("/get-claim", async(req,res)=>{
+  try {
+    const partnerId = req.partner._id;
+    const foundClaims = await ClaimRequest.find({partnerId});
+    if (foundClaims.length === 0)
+      return res.status(400).json({ message: "no claims found" });
+    return handelSuccess(res, { message: "Claims found", data: foundClaims });
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
+      message: "Error encountered while trying to fetch claim.",
+    });
+  }
+})
+
 /**
  * @openapi
  * /partner/start-claim:
