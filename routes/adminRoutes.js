@@ -5108,6 +5108,54 @@ router.post("/claim/update-partner", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /admin/claim/approve-payment:
+ *  post:
+ *    summary: used to approve payment.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                claimId:
+ *                  type: string
+ *                travelCharge:
+ *                  type: string
+ *                inventoryCharge:
+ *                  type: string
+ *                serviceCharge:
+ *                  type: string
+ *    responses:
+ *      200:
+ *          description: if claim's partner is updated successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: claim partner updated successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *
+ *    security:
+ *    - bearerAuth: []
+ */
 router.post("/claim/approve-payment", async(req,res)=>{
   try{const{
     body:{

@@ -2632,6 +2632,39 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /partner/get-claim:
+ *  get:
+ *    summary: using this route partner can get claim.
+ *    tags:
+ *    - partner Routes
+ *    responses:
+ *      200:
+ *          description: if we are able to fetch claims.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: All claims fetched successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
 router.get("/get-claim", async(req,res)=>{
   try {
     const partnerId = req.partner._id;
