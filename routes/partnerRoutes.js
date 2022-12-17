@@ -2683,6 +2683,42 @@ router.post("/start-claim", async (req, res) => {
   }
 })
 
+/**
+ * @openapi
+ * /partner/end-claim:
+ *  post:
+ *    summary: used to end a claim
+ *    tags:
+ *    - partner Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                claimId:
+ *                  type: string
+ *                travelCharge:
+ *                  type: string
+ *                inventoryCharge:
+ *                  type: string
+ *                serviceCharge:
+ *                  type: string 
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
 router.post("/end-claim", async(req,res)=>{
   try{
   const {
