@@ -3709,8 +3709,10 @@ router.get("/wallet/customer", checkAdmin, async (req, res) => {
  *                  type: string
  *                startValidity:
  *                  type: string
+ *                  example: 11:30
  *                endValidity:
  *                  type: string
+ *                  example: 18:00
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -5004,10 +5006,40 @@ router.post("/claim/update-partner", async (req, res) => {
   }
 });
 
-//partner --
+router.post("/claim/approve-payment", async(req,res)=>{
+  try{const{
+    body:{
+      claimId,
+      travelCharge='',
+      inventoryCharge='',
+      serviceCharge=''
+    }
+  }=req;
+  let Obj = {paymentStatus:paymentClaimCycle[1]}
+  if(travelCharge!=''){
+    Obj = {...Obj,travelCharge}
+  }
+  if(inventoryCharge!=''){
+    Obj = {...Obj,inventoryCharge}
+  }
+  if(serviceCharge!=''){
+    Obj = {...Obj,serviceCharge}
+  }  
+  const approvePayment = await ClaimRequest.findOneAndUpdate(
+    {claimId},
+    {$set:Obj}, 
+    {new:true}
+    )
 
-//start claim -- claimID, OTP
-//end claim
-//otp,claim
+  if(!approvePayment) return res.status(400).json({message:"Unable to approve payment"})
+  return res.status(200).json({message:"Payment approved"})
+  }catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
+      message: "Error encountered while approve payment",
+    });
+  }
+})
+
 
 module.exports = router;

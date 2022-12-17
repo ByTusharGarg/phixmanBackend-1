@@ -587,7 +587,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     });
   }
 });
-
+ 
 router.use(checkPartner);
 
 /**
@@ -2666,8 +2666,8 @@ router.post("/start-claim", async (req, res) => {
     const {
       body: { claimId, otp }
     } = req
-
-    const foundOtp = await ClaimRequest.findOne({claimId,OTP:otp})
+    const partnerId = req.partner._id;
+    const foundOtp = await ClaimRequest.findOne({claimId,partnerId,OTP:otp})
     if(!foundOtp) return res.status(400).json({message:"Otp/claimId is invalid"})
 
     foundOtp.claimStatus = claimStatusList[2]
@@ -2675,6 +2675,32 @@ router.post("/start-claim", async (req, res) => {
     return res.status(200).json({message:"Claim status updated successfully", foundOtp})
 
   } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error encountered." });
+  }
+})
+
+router.post("/end-claim", async(req,res)=>{
+  try{
+  const {
+    body:{claimId,travelCharge,inventoryCharge,serviceCharge}
+  } = req;
+  const partnerId = req.partner._id;
+  const endClaim = await ClaimRequest.findOneAndUpdate(
+    {claimId, partnerId},
+    {$set:{
+      travelCharge,
+      inventoryCharge,
+      serviceCharge,
+      claimStatus:claimStatusList[3],
+      paymentStatus:paymentClaimCycle[0]
+    }},
+    {new:true}
+  )
+
+  if(!endClaim) return res.status(400).json({message:"Unable to end claim"})
+  return res.status(200).json({message:"Claim ended"})
+  }catch(error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
