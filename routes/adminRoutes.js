@@ -4556,6 +4556,7 @@ router.get("/invoice/partner", async (req, res) => {
     foundInvoice.forEach((invoice) => {
       let obj = {
         invoiceId: invoice.invoiceId,
+        _id: invoice._id,
         invoice_type: invoice.type,
         invoice_dt: invoice.date,
         invoice_status: invoice.status,
@@ -4625,6 +4626,7 @@ router.get("/invoice/partner/tax", async (req, res) => {
     foundInvoice.forEach((invoice) => {
       let obj = {
         invoiceId: invoice.invoiceId,
+        _id: invoice._id,
         invoice_type: invoice.type,
         invoice_dt: invoice.date,
         invoice_status: invoice.status,
