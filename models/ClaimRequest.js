@@ -19,7 +19,7 @@ const ClaimRequest = mongoose.model("ClaimRequest", new Schema({
   claim: {
     type: String,
     enum: claimT,
-    required: true,
+    //required: true,
   },
   orderId: { type: Schema.Types.ObjectId, ref: "Order" },
   customerId: {
