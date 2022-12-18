@@ -4316,37 +4316,36 @@ router.get("/invoice/all", async (req, res) => {
   try {
     const foundInvoice = await Invoice.find({})
       .lean()
-      .populate("customer","Sno Name")
-      .populate("partner","Sno Name")
-      .populate("order","OrderId")
-      .populate("claim","claimId")
-      .populate("vendor","Sno name");
+      .populate("customer", "Sno Name")
+      .populate("partner", "Sno Name")
+      .populate("order", "OrderId")
+      .populate("claim", "claimId")
+      .populate("vendor", "Sno name");
 
     if (foundInvoice.length === 0)
       return res.status(400).json({ message: "Invoice not found" });
 
-    // let returnObj = [];
-    // foundInvoice.forEach((invoice) => {
-    //   let obj = {
-    //     invoiceId: invoice.invoiceId,
-    //     invoice_type: invoice.type,
-    //     invoice_dt: invoice.date,
-    //     invoice_status: invoice.status,
-    //     order_id: invoice.order?.OrderId,
-    //     claim_id: invoice.claim?.claimId,
-    //     customer_code: invoice.custome r?.Sno,
-    //     customer_name: invoice.customer?.Name,
-    //     partner_code: invoice.partner?.Sno,
-    //     partner_name: invoice.partner?.Name,
-    //     vendor_code: invoice.vendor?.Sno,
-    //     vendor_name: invoice.vendor?.name,
-    //   };
-    //   returnObj.push(obj);
-    //});
+    let returnObj = [];
+    foundInvoice.forEach((invoice) => {
+      let obj = {
+        invoiceId: invoice.invoiceId,
+        _id: invoice._id,
+        invoice_type: invoice.type,
+        invoice_dt: invoice.date,
+        invoice_status: invoice.status,
+        order_id: invoice.order?.OrderId,
+        claim_id: invoice.claim?.claimId,
+        customer_code: invoice.customer?.Sno,
+        customer_name: invoice.customer?.Name,
+        partner_code: invoice.partner?.Sno,
+        partner_name: invoice.partner?.Name,
+        vendor_code: invoice.vendor?.Sno,
+        vendor_name: invoice.vendor?.name,
+      };
+      returnObj.push(obj);
+    });
 
-    return res
-      .status(200)
-      .json({ message: "Successfully fetched Invoice", data: foundInvoice });
+    return res.status(200).json({ message: "Successfully fetched Invoice", data: returnObj });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -5156,34 +5155,35 @@ router.post("/claim/update-partner", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/claim/approve-payment", async(req,res)=>{
-  try{const{
-    body:{
-      claimId,
-      travelCharge='',
-      inventoryCharge='',
-      serviceCharge=''
+router.post("/claim/approve-payment", async (req, res) => {
+  try {
+    const {
+      body: {
+        claimId,
+        travelCharge = '',
+        inventoryCharge = '',
+        serviceCharge = ''
+      }
+    } = req;
+    let Obj = { paymentStatus: paymentClaimCycle[1] }
+    if (travelCharge != '') {
+      Obj = { ...Obj, travelCharge }
     }
-  }=req;
-  let Obj = {paymentStatus:paymentClaimCycle[1]}
-  if(travelCharge!=''){
-    Obj = {...Obj,travelCharge}
-  }
-  if(inventoryCharge!=''){
-    Obj = {...Obj,inventoryCharge}
-  }
-  if(serviceCharge!=''){
-    Obj = {...Obj,serviceCharge}
-  }  
-  const approvePayment = await ClaimRequest.findOneAndUpdate(
-    {claimId},
-    {$set:Obj}, 
-    {new:true}
+    if (inventoryCharge != '') {
+      Obj = { ...Obj, inventoryCharge }
+    }
+    if (serviceCharge != '') {
+      Obj = { ...Obj, serviceCharge }
+    }
+    const approvePayment = await ClaimRequest.findOneAndUpdate(
+      { claimId },
+      { $set: Obj },
+      { new: true }
     )
 
-  if(!approvePayment) return res.status(400).json({message:"Unable to approve payment"})
-  return res.status(200).json({message:"Payment approved"})
-  }catch (error) {
+    if (!approvePayment) return res.status(400).json({ message: "Unable to approve payment" })
+    return res.status(200).json({ message: "Payment approved" })
+  } catch (error) {
     console.log("$$$$$$$$$", error);
     return handelServerError(res, {
       message: "Error encountered while approve payment",
