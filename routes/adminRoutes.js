@@ -4752,6 +4752,10 @@ router.delete("/service/delete", async (req, res) => {
  *                    type: string
  *                phoneNumber:
  *                    type: string
+ *                date:
+ *                    type: string
+ *                time:
+ *                    type: string
  *    responses:
  *      200:
  *          description: if claim created successfully
@@ -4793,6 +4797,8 @@ router.post("/create/claim", async (req, res) => {
         customerId,
         name,
         phoneNumber,
+        date,
+        time
       },
     } = req;
 
@@ -4816,6 +4822,8 @@ router.post("/create/claim", async (req, res) => {
       },
       partnerId,
       OTP,
+      date,
+      time
     };
 
     const newClaim = await ClaimRequest.create(claimObj);

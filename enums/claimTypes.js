@@ -27,7 +27,8 @@ const paymentClaimCycle = [
   "PAYMENT_APPROVED",
   "PAYMENT_PENDING",
   "PAYMENT_INNPROGRESS",
-  "PAYMENT_COMPLETED"
+  "PAYMENT_COMPLETED",
+  "null"
 ];
 
 

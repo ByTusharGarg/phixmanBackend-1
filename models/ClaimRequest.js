@@ -40,15 +40,15 @@ const ClaimRequest = mongoose.model("ClaimRequest", new Schema({
     name: { type: String },
     phoneNumber: { type: String },
   },
-  date: { type: String },
-  time: { type: String },
+  date: { type: String, default:'' },
+  time: { type: String,default:'' },
   travelCharge: { type: Number, default: 0 },
   inventoryCharge: { type: Number, default: 0 },
   serviceCharge: { type: Number, default: 0 },
   paymentStatus: {
     type: String,
     enum: paymentClaimCycle,
-    default: null,
+    default: paymentClaimCycle[5],
   },
   claimStatus: {
     type: String,
