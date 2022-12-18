@@ -2646,17 +2646,6 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
  *    tags:
  *    - partner Routes
  *    responses:
- *      200:
- *          description: if we are able to fetch claims.
- *          content:
- *            application/json:
- *             schema:
- *               type: object
- *               properties:
- *                  message:
- *                    type: string
- *                    description: a human-readable message describing the response
- *                    example: All claims fetched successfully.
  *      500:
  *          description: if internal server error occured while performing request.
  *          content:
