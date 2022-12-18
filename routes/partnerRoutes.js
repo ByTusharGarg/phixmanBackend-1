@@ -22,6 +22,12 @@ const {
   base64_encode,
   generateRandomReferralCode,
 } = require("../libs/commonFunction");
+const {
+  handelSuccess,
+  handelValidationError,
+  handelServerError,
+  handelNoteFoundError,
+} = require("../libs/response-handler/handlers");
 const path = require("path");
 const fs = require("fs");
 const {
@@ -2793,4 +2799,67 @@ router.post("/end-claim", async(req,res)=>{
   }
 })
 
+// /**
+//  * @openapi
+//  * /partner/get-claim-by-id:
+//  *  get:
+//  *    summary: using this route user can get a specific claim by id.
+//  *    tags:
+//  *    - Partner Routes
+//  *    parameters:
+//  *      - in: query
+//  *        name: claimId
+//  *        required: true
+//  *        schema:
+//  *           type: string
+//  *
+//  *    responses:
+//  *      200:
+//  *          description: if we are able to fetch claim by id.
+//  *          content:
+//  *            application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    description: a human-readable message describing the response
+//  *                    example: All claims fetched successfully.
+//  *      500:
+//  *          description: if internal server error occured while performing request.
+//  *          content:
+//  *            application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    description: a human-readable message describing the response
+//  *                    example: Error encountered.
+//  *    security:
+//  *    - bearerAuth: []
+//  */
+
+// router.get("/get-claim-by-id", async (req, res) => {
+//   try {
+//     const {
+//       query: { claimId },
+//     } = req;
+
+//     const foundClaim = await ClaimRequest.findOne({ claimId })
+//       .populate("orderId", "OrderId -_id")
+//       .populate("customerId")
+//       .populate("partnerId");
+//       console.log('found', foundClaim);
+//     if (!foundClaim)
+//       return handelNoteFoundError(res, { message: "No claims found" });
+
+//     return handelSuccess(res, { message: "Claims found", data: foundClaim });
+//   } catch (error) {
+//     console.log("$$$$$$$$$", error);
+//     return handelServerError(res, {
+//       message: "Error encountered while trying to fetch claim.",
+//     });
+//   }
+// });
 module.exports = router;
