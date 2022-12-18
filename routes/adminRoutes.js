@@ -4479,7 +4479,7 @@ router.get("/generateinvoicebyInvoiceId/:invoiceId", async (req, res, next) => {
 
   let totalAmount = orderData.estAmt;
   let gstnineP = (totalAmount * 9) / 100;
-
+  // console.log(orderData);
   const obj = {
     prodlist: array,
     bAmt: 10,
@@ -4493,16 +4493,16 @@ router.get("/generateinvoicebyInvoiceId/:invoiceId", async (req, res, next) => {
       name: orderData?.Customer?.Name || "N/A",
       gst: "N/A",
       invoiceNum: orderData.invoiceId,
-      address: `${orderData.order.address.street} ${orderData.order.address.city} ${orderData.order.address.state} ${orderData.order.address.country} ${orderData.order.address.pin}`,
-      date: orderData.order.Date,
-      sNc: `${orderData.order.address.state} & ${orderData.order.address.pin}`,
-      placeOfSupply: orderData.order.address.country || "N/A",
+      address: `${orderData?.order?.address?.street} ${orderData?.order?.address?.city} ${orderData?.order?.address?.state} ${orderData.order?.address?.country} ${orderData?.order?.address?.pin}`,
+      date: orderData?.order?.Date,
+      sNc: `${orderData?.order?.address?.state} & ${orderData?.order?.address?.pin}`,
+      placeOfSupply: orderData?.order?.address?.country || "N/A",
     },
     partner: {
       bName: orderData.Partner?.Name || "N/A",
       bGst: "N/A",
-      bAddress: `${orderData?.partner.address.street} ${orderData?.partner.address.city} ${orderData.partner.address.state} ${orderData.partner.address.country} ${orderData.partner.address.pin}`,
-      sNc: `${orderData.partner.address.state} ${orderData.partner.address.country} & ${orderData.partner.address.pin}`,
+      bAddress: `${orderData?.partner?.address?.street} ${orderData?.partner.address.city} ${orderData.partner.address.state} ${orderData.partner.address.country} ${orderData.partner.address.pin}`,
+      sNc: `${orderData?.partner?.address?.state} ${orderData?.partner?.address?.country} & ${orderData.partner.address.pin}`,
     },
   };
 
