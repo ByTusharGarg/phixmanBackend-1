@@ -43,6 +43,11 @@ const payoutStatusTypes = [
   "NOT_ALLOWED"
 ];
 
+const payoutTypes = [
+  "CLAIM",
+  "ORDER"
+];
+
 
 const payoutStatusTypesObject = {
   WITHDRAW: "WITHDRAW",
@@ -101,5 +106,6 @@ module.exports = {
   payoutPaymentStatus,
   payoutStatusTypes,
   payoutStatusTypesObject,
-  invoiceStatusTypes
+  invoiceStatusTypes,
+  payoutTypes
 };

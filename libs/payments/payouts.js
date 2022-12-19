@@ -153,7 +153,6 @@ class Payouts {
         try {
             // create payout on cashfree
             const payoutResp = await this.initiateCashfreePayout(partnerAccountDetails.beneId, payoutData.payableAmount, payoutData.transferId, "order payment");
-            console.log(payoutResp.data);
             if (payoutResp.data.status === 'ACCEPTED') {
                 // create on our db
                 await payoutModel.findByIdAndUpdate(payoutData._id, { metaData: payoutResp.data.data, status: payoutStatusTypesObject.INPROGRESS });
@@ -249,6 +248,20 @@ class Payouts {
             const newwithDraw = new payoutModel({ ...data, transferId, logs: [{ status: payoutStatusTypesObject.WITHDRAW, timestampLog: new Date() }], totalDeduction, payableAmount, deduction, status });
             const rep = await newwithDraw.save();
             return rep;
+        } catch (error) {
+            throw new Error(error.message || "something went wrong");
+        }
+    }
+
+    async createClaimPayoutOnDbOnline(claimId, data) {
+        const { totalAmount, transferId } = data;
+        try {
+            const isExist = await payoutModel.findOne({ claimId });
+            if (isExist) {
+                throw new Error("allready initialized or completed");
+            }
+            const newwithDraw = new payoutModel({ totalAmount, totalDeduction: 0, claimId, payableAmount: totalAmount, paymentMode: "online", transferId, logs: [{ status: payoutStatusTypesObject.WITHDRAW, timestampLog: new Date() }] });
+            return newwithDraw.save();
         } catch (error) {
             throw new Error(error.message || "something went wrong");
         }

@@ -41,7 +41,7 @@ const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
 const Payment = require("../libs/payments/Payment");
 const { encodeImage } = require("../libs/imageLib");
-const { randomImageName, uploadFile, uploadFileToS3 } = require("../services/s3-service");
+const { randomImageName, uploadFile, uploadFileToS3, getObjectSignedUrl } = require("../services/s3-service");
 const { makeCustomerTranssaction } = require("../services/Wallet");
 
 
@@ -1454,6 +1454,10 @@ router.get("/order", async (req, res) => {
       .populate("OrderDetails.Items.CategoryId")
       .populate("OrderDetails.Items.ModelId");
 
+    if (foundOrder.Partner['profilePic']) {
+      foundOrder.Partner['profilePic'] = await getObjectSignedUrl(foundOrder.Partner['profilePic']);
+    }
+
     if (!foundOrder) {
       return handelNoteFoundError(res, { message: "No orders found" });
     }
@@ -1503,7 +1507,7 @@ router.get("/active-offers", async (req, res) => {
     const currentTime = moment().format('HH:MM');
 
     let foundActiveOffer = await Coupon.find({ startDate: { $lte: today }, endDate: { $gte: today }, isActive: true, startTime: { $lte: currentTime }, endTime: { $gte: currentTime } }).lean();
-console.log("active offfffer", today, currentTime);
+    console.log("active offfffer", today, currentTime);
     if (foundActiveOffer.length === 0) return handelNoteFoundError(res, { message: 'No active offers found' })
 
     return handelSuccess(res, { message: "active offers found", data: foundActiveOffer })
@@ -1795,10 +1799,18 @@ router.get("/get-claim-by-id", async (req, res) => {
       .populate("orderId", "OrderId -_id")
       .populate("customerId")
       .populate("partnerId")
-    if (!foundClaim) return handelNoteFoundError(res, { message: 'No claims found' })
-    return handelSuccess(res, { message: 'Claims found', data: foundClaim })
+    if (!foundClaim) return handelNoteFoundError(res, { message: 'No claims found' });
+
+    if (foundClaim?.customerId['image']) {
+      foundOrder.customerId['image'] = await getObjectSignedUrl(foundOrder.customerId['image']);
+    }
+
+    if (foundClaim?.partnerId['profilePic']) {
+      foundOrder.Partner['profilePic'] = await getObjectSignedUrl(foundOrder.Partner['profilePic']);
+    }
+
+    return handelSuccess(res, { message: 'Claims found', data: foundClaim });
   } catch (error) {
-    console.log('$$$$$$$$$', error);
     return handelServerError(res, {
       message: "Error encountered while trying to fetch claim.",
     });
