@@ -11,7 +11,7 @@ const {
   ClaimRequest,
   Product_Service,
   Model,
-  Brand
+  Brand,
 } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
@@ -45,8 +45,8 @@ const {
   getAllWallletTranssactionForUser,
 } = require("../services/Wallet");
 const emailDatamapping = require("../common/emailcontent");
-const invoicesController = require('../libs/controllers/invoices.controller');
-const { invoiceTypes } = require('../enums/invoiceTypes');
+const invoicesController = require("../libs/controllers/invoices.controller");
+const { invoiceTypes } = require("../enums/invoiceTypes");
 const { paymentClaimCycle } = require("../enums/claimTypes");
 
 const sendOtpBodyValidator = [
@@ -597,7 +597,7 @@ router.post("/completeProfile", validateTempToken, async (req, res) => {
     });
   }
 });
- 
+
 router.use(checkPartner);
 
 /**
@@ -1268,7 +1268,16 @@ router.post("/order/acceptorder", async (req, res) => {
     );
 
     // create invoice
-    const invoiceresp = await invoicesController.createInvoice(invoiceTypes.LEAD_BOUGHT_INVOICE, order._id, order.Customer, partnerId, [{ serviceName: "Lead bought Invoice" }], 0, LeadExpense, 0);
+    const invoiceresp = await invoicesController.createInvoice(
+      invoiceTypes.LEAD_BOUGHT_INVOICE,
+      order._id,
+      order.Customer,
+      partnerId,
+      [{ serviceName: "Lead bought Invoice" }],
+      0,
+      LeadExpense,
+      0
+    );
 
     await Order.findOneAndUpdate(
       { OrderId: orderId },
@@ -1280,7 +1289,7 @@ router.post("/order/acceptorder", async (req, res) => {
             status: orderStatusTypesObj.Accepted,
             timestampLog: new Date(),
           },
-          invoiceId: invoiceresp._id
+          invoiceId: invoiceresp._id,
         },
       },
       { new: true }
@@ -1593,14 +1602,17 @@ router.post("/order/changestatus", async (req, res) => {
       };
     } else if (status === "completed") {
       // console.log(order["paidamount"]+order["codAmount"]);
-      if ((order["paidamount"] + order["codAmount"]) !== order["OrderDetails"]["Amount"]) {
+      if (
+        order["paidamount"] + order["codAmount"] !==
+        order["OrderDetails"]["Amount"]
+      ) {
         return res
           .status(400)
           .json({ message: "Whole payment not recived yet" });
       }
 
       // create payout here
-      if (order.PaymentMode === 'online') {
+      if (order.PaymentMode === "online") {
         await payout.createPayoutOnDbOnline(
           {
             partnerId,
@@ -1609,26 +1621,56 @@ router.post("/order/changestatus", async (req, res) => {
             paymentMode: order.PaymentMode,
             codAmount: order.codAmount,
           },
-          order.OrderDetails.Items[0].CategoryId);
+          order.OrderDetails.Items[0].CategoryId
+        );
       } else {
-        await payout.createPayoutOnDbCod({ partnerId, orderId: order._id, totalAmount: order.OrderDetails.Amount, paymentMode: order.PaymentMode, codAmount: order.codAmount }, order.OrderDetails.Items[0].CategoryId);
+        await payout.createPayoutOnDbCod(
+          {
+            partnerId,
+            orderId: order._id,
+            totalAmount: order.OrderDetails.Amount,
+            paymentMode: order.PaymentMode,
+            codAmount: order.codAmount,
+          },
+          order.OrderDetails.Items[0].CategoryId
+        );
       }
-
 
       // per category commission & genrate invoice
       const orderCatId = order.OrderDetails.Items[0].CategoryId;
 
       const categoryData = await category.findById(orderCatId);
-      let companyComissionPercentage = parseInt(categoryData.companyComissionPercentage);
+      let companyComissionPercentage = parseInt(
+        categoryData.companyComissionPercentage
+      );
 
       if (companyComissionPercentage) {
-        let amt = (order.OrderDetails.Amount * (companyComissionPercentage / 100));
-        invoicerespA = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_A, order._id, order.Customer, partnerId, [{ serviceName: "Categoty commission" }], 0, amt, 0);
+        let amt =
+          order.OrderDetails.Amount * (companyComissionPercentage / 100);
+        invoicerespA = await invoicesController.createInvoice(
+          invoiceTypes.ORDER_PART_A,
+          order._id,
+          order.Customer,
+          partnerId,
+          [{ serviceName: "Categoty commission" }],
+          0,
+          amt,
+          0
+        );
       } else {
         return res.status(400).json({ message: "no commission found" });
       }
 
-      invoicerespB = await invoicesController.createInvoice(invoiceTypes.ORDER_PART_B, order._id, order.Customer, partnerId, array, 0, order.OrderDetails['Gradtotal'], (order.OrderDetails['Gradtotal'] - order.OrderDetails['Amount']));
+      invoicerespB = await invoicesController.createInvoice(
+        invoiceTypes.ORDER_PART_B,
+        order._id,
+        order.Customer,
+        partnerId,
+        array,
+        0,
+        order.OrderDetails["Gradtotal"],
+        order.OrderDetails["Gradtotal"] - order.OrderDetails["Amount"]
+      );
 
       await Order.findOneAndUpdate(
         { OrderId: orderId },
@@ -1637,8 +1679,6 @@ router.post("/order/changestatus", async (req, res) => {
         },
         { new: true }
       );
-
-
     } else if (status === "delivered") {
       emailData = {
         Subject: "[Phixman] Order status E-mail",
@@ -1954,20 +1994,20 @@ router.delete("/deleteSubProvider/:sid", async (req, response) => {
  *    - bearerAuth: []
  */
 router.post("/createhelper", async (req, response) => {
-  const partnerID = req?.partner?._id;
-  const { name, email } = req.body;
-  const { avtar } = req.files;
-
-  if (!email || !name || !avtar) {
-    return response.status(404).json({
-      message: "missing required fields",
-    });
-  }
-
-  let imageName = randomImageName();
-  await uploadFile(avtar.data, imageName, avtar.mimetype);
-
   try {
+    console.log(req.body, req.files);
+    const partnerID = req?.partner?._id;
+    if (!req?.body?.email || !req?.body?.name || !req?.files?.avtar) {
+      return response.status(404).json({
+        message: "missing required fields",
+      });
+    }
+    const { name, email } = req.body;
+    const { avtar } = req?.files;
+
+    let imageName = randomImageName();
+    await uploadFile(avtar.data, imageName, avtar.mimetype);
+
     await Partner.findByIdAndUpdate(
       partnerID,
       { $push: { helpers: { name, email, avtar: imageName } } },
@@ -2342,7 +2382,9 @@ router.post("/initiateRecivePayment", async (req, res) => {
       return res.status(400).json({ message: "invalid Order data not foound" });
     }
 
-    const leftAmount = orderData["OrderDetails"]["Amount"] - (orderData["paidamount"] + orderData["codAmount"]);
+    const leftAmount =
+      orderData["OrderDetails"]["Amount"] -
+      (orderData["paidamount"] + orderData["codAmount"]);
 
     if (leftAmount === 0) {
       return res.status(400).json({ message: "payment already completed" });
@@ -2350,14 +2392,19 @@ router.post("/initiateRecivePayment", async (req, res) => {
 
     if (paymentType === "self") {
       await Order.findByIdAndUpdate(orderData._id, {
-        codAmount: leftAmount, PaymentStatus: paymentStatusObject.SUCCESS,
+        codAmount: leftAmount,
+        PaymentStatus: paymentStatusObject.SUCCESS,
         $inc: { paidamount: leftAmount },
       });
-      return res.status(200).json({ message: "Order payment on cash successfull", amount: leftAmount });
-    }
-    else if (paymentType === "link") {
+      return res.status(200).json({
+        message: "Order payment on cash successfull",
+        amount: leftAmount,
+      });
+    } else if (paymentType === "link") {
       if (!notifyTo) {
-        return res.status(400).json({ message: "notifyMethod object required" });
+        return res
+          .status(400)
+          .json({ message: "notifyMethod object required" });
       }
 
       let paymentObj = {
@@ -2366,7 +2413,7 @@ router.post("/initiateRecivePayment", async (req, res) => {
         phone: notifyMethod.phone || orderData.Customer.phone,
         linkId: generatedLinkId,
         amount: leftAmount,
-        orderId: orderData.OrderId
+        orderId: orderData.OrderId,
       };
 
       let cashfree = await Payment.createPaymentLinkCashFree(paymentObj);
@@ -2459,7 +2506,9 @@ router.post("/verifylinkstatus", async (req, res) => {
     const resp = await Payment.verifyPaymentLinkCashFree(req.body.link_id);
     return res.status(200).json({ message: "payment succesfully completed" });
   } catch (error) {
-    return res.status(500).json({ message: error?.message || "Error encountered." });
+    return res
+      .status(500)
+      .json({ message: error?.message || "Error encountered." });
   }
 });
 
@@ -2664,10 +2713,10 @@ router.post("/reestimate", rejectBadRequests, async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.get("/get-claim", async(req,res)=>{
+router.get("/get-claim", async (req, res) => {
   try {
     const partnerId = req.partner._id;
-    const foundClaims = await ClaimRequest.find({partnerId});
+    const foundClaims = await ClaimRequest.find({ partnerId });
     if (foundClaims.length === 0)
       return res.status(400).json({ message: "no claims found" });
     return handelSuccess(res, { message: "Claims found", data: foundClaims });
@@ -2677,7 +2726,7 @@ router.get("/get-claim", async(req,res)=>{
       message: "Error encountered while trying to fetch claim.",
     });
   }
-})
+});
 
 /**
  * @openapi
@@ -2714,21 +2763,27 @@ router.get("/get-claim", async(req,res)=>{
 router.post("/start-claim", async (req, res) => {
   try {
     const {
-      body: { claimId, otp }
-    } = req
+      body: { claimId, otp },
+    } = req;
     const partnerId = req.partner._id;
-    const foundOtp = await ClaimRequest.findOne({claimId,partnerId,OTP:otp})
-    if(!foundOtp) return res.status(400).json({message:"Otp/claimId is invalid"})
+    const foundOtp = await ClaimRequest.findOne({
+      claimId,
+      partnerId,
+      OTP: otp,
+    });
+    if (!foundOtp)
+      return res.status(400).json({ message: "Otp/claimId is invalid" });
 
-    foundOtp.claimStatus = claimStatusList[2]
+    foundOtp.claimStatus = claimStatusList[2];
     await foundOtp.save();
-    return res.status(200).json({ message: "Claim status updated successfully", foundOtp })
-
+    return res
+      .status(200)
+      .json({ message: "Claim status updated successfully", foundOtp });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
-})
+});
 
 /**
  * @openapi
@@ -2750,7 +2805,7 @@ router.post("/start-claim", async (req, res) => {
  *                inventoryCharge:
  *                  type: string
  *                serviceCharge:
- *                  type: string 
+ *                  type: string
  *    responses:
  *      500:
  *          description: if internal server error occured while performing request.
@@ -2766,31 +2821,34 @@ router.post("/start-claim", async (req, res) => {
  *    security:
  *    - bearerAuth: []
  */
-router.post("/end-claim", async(req,res)=>{
-  try{
-  const {
-    body:{claimId,travelCharge,inventoryCharge,serviceCharge}
-  } = req;
-  const partnerId = req.partner._id;
-  const endClaim = await ClaimRequest.findOneAndUpdate(
-    {claimId, partnerId},
-    {$set:{
-      travelCharge,
-      inventoryCharge,
-      serviceCharge,
-      claimStatus:claimStatusList[3],
-      paymentStatus:paymentClaimCycle[0]
-    }},
-    {new:true}
-  )
+router.post("/end-claim", async (req, res) => {
+  try {
+    const {
+      body: { claimId, travelCharge, inventoryCharge, serviceCharge },
+    } = req;
+    const partnerId = req.partner._id;
+    const endClaim = await ClaimRequest.findOneAndUpdate(
+      { claimId, partnerId },
+      {
+        $set: {
+          travelCharge,
+          inventoryCharge,
+          serviceCharge,
+          claimStatus: claimStatusList[3],
+          paymentStatus: paymentClaimCycle[0],
+        },
+      },
+      { new: true }
+    );
 
-  if(!endClaim) return res.status(400).json({message:"Unable to end claim"})
-  return res.status(200).json({message:"Claim ended"})
-  }catch(error) {
+    if (!endClaim)
+      return res.status(400).json({ message: "Unable to end claim" });
+    return res.status(200).json({ message: "Claim ended" });
+  } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error encountered." });
   }
-})
+});
 
 /**
  * @openapi
@@ -2838,35 +2896,35 @@ router.get("/get-claim-by-id", async (req, res) => {
     const {
       query: { claimId },
     } = req;
-console.log();
+    console.log();
     const foundClaim = await ClaimRequest.findOne({ claimId })
       // .populate("orderId", "OrderId OrderDetails Items.ServiceId")
       .populate("customerId")
       // .populate("partnerId");
       .populate([
         {
-          path:"orderId",
+          path: "orderId",
           model: Order,
           select: "-_id",
-          populate:{
-            path:"OrderDetails.Items.ServiceId",
-            model: Product_Service
-          }
+          populate: {
+            path: "OrderDetails.Items.ServiceId",
+            model: Product_Service,
+          },
         },
         {
-          path:"orderId",
+          path: "orderId",
           model: Order,
           select: "-_id",
-          populate:{
-            path:"OrderDetails.Items.ModelId",
+          populate: {
+            path: "OrderDetails.Items.ModelId",
             model: Model,
-            populate:{
-              path:"brandId",
-              model: Brand
-            }
-          }
-        }
-      ])
+            populate: {
+              path: "brandId",
+              model: Brand,
+            },
+          },
+        },
+      ]);
     if (!foundClaim)
       return handelNoteFoundError(res, { message: "No claims found" });
 
