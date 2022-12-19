@@ -44,6 +44,7 @@ const {
 const emailDatamapping = require("../common/emailcontent");
 const invoicesController = require('../libs/controllers/invoices.controller');
 const { invoiceTypes } = require('../enums/invoiceTypes');
+const { paymentClaimCycle } = require("../enums/claimTypes");
 
 const sendOtpBodyValidator = [
   body("phone")
