@@ -2839,7 +2839,6 @@ console.log();
       .populate("orderId", "OrderId -_id")
       .populate("customerId")
       .populate("partnerId");
-      //console.log('found', foundClaim);
     if (!foundClaim)
       return handelNoteFoundError(res, { message: "No claims found" });
 

@@ -1,4 +1,7 @@
 const mongoose = require("mongoose");
+const {
+  claimT
+} = require("../enums/claimTypes");
 
 const Schema = mongoose.Schema;
 
@@ -21,6 +24,14 @@ const Vendor = mongoose.model(
         enum: ["active", "inactive"],
       },
     },
+    pincode:[{
+      type: String,
+    }],
+    claim: [{
+      type: String,
+      enum: claimT,
+    }],
+    companyGSTNumber:{ type: String },
     address: {
       street: { type: String, default: "" },
       city: { type: String, default: "" },
