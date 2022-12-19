@@ -4752,6 +4752,10 @@ router.delete("/service/delete", async (req, res) => {
  *                    type: string
  *                phoneNumber:
  *                    type: string
+ *                date:
+ *                    type: string
+ *                time:
+ *                    type: string
  *    responses:
  *      200:
  *          description: if claim created successfully
@@ -4793,6 +4797,8 @@ router.post("/create/claim", async (req, res) => {
         customerId,
         name,
         phoneNumber,
+        date,
+        time
       },
     } = req;
 
@@ -4816,6 +4822,8 @@ router.post("/create/claim", async (req, res) => {
       },
       partnerId,
       OTP,
+      date,
+      time
     };
 
     const newClaim = await ClaimRequest.create(claimObj);
@@ -5194,5 +5202,188 @@ router.post("/claim/approve-payment", async (req, res) => {
   }
 })
 
+/**
+ * @openapi
+ * /admin/vendor/create:
+ *  post:
+ *    summary: request server to add a new vendor.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                email:
+ *                  type: string
+ *                  example: example@phixman.in
+ *                name:
+ *                  type: string
+ *                  example: Test User
+ *                companyGSTNumber:
+ *                  type: string
+ *                category:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                pincode:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                claim:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                    enum: ["complaint", "warranty", "installation", "repair", "delivery"]
+ *                address:
+ *                  type: object
+ *                  properties:
+ *                   street:
+ *                    type: string
+ *                    example: vikaspuri
+ *                   city:
+ *                    type: string
+ *                    example: New Delhi
+ *                   pin:
+ *                    type: string
+ *                    example: 110018
+ *                   state:
+ *                    type: string
+ *                    example: Delhi
+ *                   country:
+ *                    type: string
+ *                    example: India
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      400:
+ *         description: if the parameters given were invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               required:
+ *               - errors
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   description: a list of validation errors
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       value:
+ *                         type: object
+ *                         description: the value received for the parameter
+ *                       msg:
+ *                         type: string
+ *                         description: a message describing the validation error
+ *                       param:
+ *                         type: string
+ *                         description: the parameter for which the validation error occurred
+ *                       location:
+ *                         type: string
+ *                         description: the location at which the validation error occurred (e.g. query, body)
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/vendor/create", async (req, res) => {
+  try {
+    const {
+      body: {
+        email,
+        name,
+        address,
+        companyGSTNumber,
+        category,
+        pincode,
+        claim
+      }
+    } = req;
+
+    const foundVendor = await Vendor.findOne({email})
+    if(foundVendor) return res.status(400).json({message:"Vendor already exists"})
+
+    const vendorObj={
+      email,
+      name,
+      address,
+      companyGSTNumber,
+      category,
+      pincode,
+      claim
+    }
+
+    const newVendor = await Vendor.create(vendorObj);
+    if(!newVendor) return res.status(400).json({message:"Unable to create vendor"})
+
+    return res.status(200).json({message:"Vendor created successfully",newVendor})
+    
+  } catch (error) {
+    console.log("$$$$$$$$$", error);
+    return handelServerError(res, {
+      message: "Error encountered while approve payment",
+    });
+  }
+})
+
+/**
+ * @openapi
+ * /admin/vendor/all:
+ *  get:
+ *    summary: used to fetch all vendors
+ *    tags:
+ *    - Admin Routes
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+
+router.get("/vendor/all", async(req,res)=>{
+  try {
+    const foundVendor = await Vendor.find({})
+      .populate("category","name _id");
+    if (foundVendor.length === 0)
+      return res.status(400).json({ message: "No Vendor found" });
+
+    return res.status(200).json({ message: "Vendor found", foundVendor });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch vendor.",
+    });
+  }
+})
 
 module.exports = router;
