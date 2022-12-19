@@ -2836,7 +2836,7 @@ router.get("/get-claim-by-id", async (req, res) => {
     } = req;
 console.log();
     const foundClaim = await ClaimRequest.findOne({ claimId })
-      .populate("orderId", "OrderId -_id")
+      .populate("orderId", "OrderId OrderDetails Items.ServiceId")
       .populate("customerId")
       .populate("partnerId");
     if (!foundClaim)
