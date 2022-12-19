@@ -845,7 +845,7 @@ router.patch("/changeprofile", rejectBadRequests, async (req, res) => {
   let docs = {};
 
   if (req.body.Product_Service) {
-    req.body.Product_Service = JSON.stringify(req.body.Product_Service);
+    req.body.Product_Service = JSON.parse(req.body.Product_Service);
   }
   if (req?.body?.phone) {
     return res.status(400).json({ message: "phone number not allowed" });
