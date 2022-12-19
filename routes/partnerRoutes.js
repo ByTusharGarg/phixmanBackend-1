@@ -9,6 +9,9 @@ const {
   orderMetaData,
   category,
   ClaimRequest,
+  Product_Service,
+  Model,
+  Brand
 } = require("../models");
 const checkPartner = require("../middleware/AuthPartner");
 const { orderStatusTypesObj, paymentStatusObject } = require("../enums/types");
@@ -2837,9 +2840,33 @@ router.get("/get-claim-by-id", async (req, res) => {
     } = req;
 console.log();
     const foundClaim = await ClaimRequest.findOne({ claimId })
-      .populate("orderId", "OrderId OrderDetails Items.ServiceId")
+      // .populate("orderId", "OrderId OrderDetails Items.ServiceId")
       .populate("customerId")
-      .populate("partnerId");
+      // .populate("partnerId");
+      .populate([
+        {
+          path:"orderId",
+          model: Order,
+          select: "-_id",
+          populate:{
+            path:"OrderDetails.Items.ServiceId",
+            model: Product_Service
+          }
+        },
+        {
+          path:"orderId",
+          model: Order,
+          select: "-_id",
+          populate:{
+            path:"OrderDetails.Items.ModelId",
+            model: Model,
+            populate:{
+              path:"brandId",
+              model: Brand
+            }
+          }
+        }
+      ])
     if (!foundClaim)
       return handelNoteFoundError(res, { message: "No claims found" });
 
