@@ -26,7 +26,7 @@ const {
   Vendor,
 } = require("../models");
 
-const { claimTypes, claimStatusList,paymentClaimCycle } = require("../enums/claimTypes");
+const { claimTypes, claimStatusList, paymentClaimCycle } = require("../enums/claimTypes");
 
 const PenalitySchema = require("../models/penality");
 const {
@@ -68,6 +68,7 @@ const { adminTypeArray } = require("../enums/adminTypes");
 const { getWalletTransactions } = require("../services/Wallet");
 const Payouts = require("../libs/payments/payouts");
 const pdfGenerator = require('../libs/pdfgenrator');
+const payout = require('../libs/payments/payouts');
 
 
 const verifyOrderValidator = [
@@ -2046,6 +2047,7 @@ router.post("/categories", async (req, res) => {
     } else {
       images.push(encodeImage(req?.files?.images));
     }
+
     if (Array.isArray(req?.files?.detailImages)) {
       for (let i = 0; i < req?.files?.detailImages.length; i++) {
         req.body.details[i].image = encodeImage(req?.files?.detailImages[i]);
@@ -2053,7 +2055,6 @@ router.post("/categories", async (req, res) => {
     } else {
       req.body.details[0].image = encodeImage(req?.files?.detailImages);
     }
-    req.body.icon = encodeImage(req.files.icon);
     req.body.images = images;
     const newCategory = new category(req.body);
     await newCategory.save();
@@ -5176,21 +5177,30 @@ router.post("/claim/approve-payment", async (req, res) => {
         serviceCharge = ''
       }
     } = req;
+
+    let totalAmount = 0;
     let Obj = { paymentStatus: paymentClaimCycle[1] }
     if (travelCharge != '') {
       Obj = { ...Obj, travelCharge }
+      totalAmount += parseInt(travelCharge)
     }
     if (inventoryCharge != '') {
       Obj = { ...Obj, inventoryCharge }
+      totalAmount += parseInt(travelCharge)
     }
     if (serviceCharge != '') {
       Obj = { ...Obj, serviceCharge }
+      totalAmount += parseInt(travelCharge)
     }
     const approvePayment = await ClaimRequest.findOneAndUpdate(
       { claimId },
       { $set: Obj },
       { new: true }
-    )
+    );
+
+    if (totalAmount > 0) {
+      await payout.createClaimPayoutOnDbOnline(claimId, { totalAmount: totalAmount });
+    }
 
     if (!approvePayment) return res.status(400).json({ message: "Unable to approve payment" })
     return res.status(200).json({ message: "Payment approved" })
@@ -5321,10 +5331,10 @@ router.post("/vendor/create", async (req, res) => {
       }
     } = req;
 
-    const foundVendor = await Vendor.findOne({email})
-    if(foundVendor) return res.status(400).json({message:"Vendor already exists"})
+    const foundVendor = await Vendor.findOne({ email })
+    if (foundVendor) return res.status(400).json({ message: "Vendor already exists" })
 
-    const vendorObj={
+    const vendorObj = {
       email,
       name,
       address,
@@ -5335,10 +5345,10 @@ router.post("/vendor/create", async (req, res) => {
     }
 
     const newVendor = await Vendor.create(vendorObj);
-    if(!newVendor) return res.status(400).json({message:"Unable to create vendor"})
+    if (!newVendor) return res.status(400).json({ message: "Unable to create vendor" })
 
-    return res.status(200).json({message:"Vendor created successfully",newVendor})
-    
+    return res.status(200).json({ message: "Vendor created successfully", newVendor })
+
   } catch (error) {
     console.log("$$$$$$$$$", error);
     return handelServerError(res, {
@@ -5370,10 +5380,10 @@ router.post("/vendor/create", async (req, res) => {
  *    - bearerAuth: []
  */
 
-router.get("/vendor/all", async(req,res)=>{
+router.get("/vendor/all", async (req, res) => {
   try {
     const foundVendor = await Vendor.find({})
-      .populate("category","name _id");
+      .populate("category", "name _id");
     if (foundVendor.length === 0)
       return res.status(400).json({ message: "No Vendor found" });
 
@@ -5429,29 +5439,30 @@ router.get("/vendor/all", async(req,res)=>{
  *    security:
  *    - bearerAuth: []
  */
-router.post("/vendor/status",async(req,res)=>{
-  try{
+router.post("/vendor/status", async (req, res) => {
+  try {
     const {
-      body:{
+      body: {
         vendorId,
         status
       }
-    }=req;
-    if(!["active", "inactive"].includes(status)){return res.status(400).json({message:"Invalid status"})}
+    } = req;
+    if (!["active", "inactive"].includes(status)) { return res.status(400).json({ message: "Invalid status" }) }
 
     const statusUpdate = await Vendor.findOneAndUpdate(
-      {_id:vendorId},
-      {$set:{
-        isActive:status==='active'? true : false
-      }
-    },
-    {new:true}
+      { _id: vendorId },
+      {
+        $set: {
+          isActive: status === 'active' ? true : false
+        }
+      },
+      { new: true }
     )
 
-    if(!statusUpdate) return res.status(400).json({message:"unable to update status"})
-    return res.status(200).json({message:"Status updated",statusUpdate})
+    if (!statusUpdate) return res.status(400).json({ message: "unable to update status" })
+    return res.status(200).json({ message: "Status updated", statusUpdate })
 
-  }catch (error) {
+  } catch (error) {
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to fetch vendor status.",

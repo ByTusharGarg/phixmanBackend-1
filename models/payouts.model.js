@@ -4,7 +4,7 @@ const { payoutStatusTypes, payoutStatusTypesObject, payoutTypes } = require('../
 const payoutsSchema = mongoose.Schema({
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true },
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", unique: true },
-    claimId: { type: mongoose.Schema.Types.ObjectId, ref: "ClaimRequest", required: true, default:null },
+    claimId: { type: mongoose.Schema.Types.ObjectId, ref: "ClaimRequest", required: true, default: null },
     transferId: {
         type: String,
         required: true,

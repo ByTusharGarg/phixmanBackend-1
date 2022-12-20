@@ -254,7 +254,9 @@ class Payouts {
     }
 
     async createClaimPayoutOnDbOnline(claimId, data) {
-        const { totalAmount, transferId } = data;
+        const { totalAmount } = data;
+        const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 100)}`;
+
         try {
             const isExist = await payoutModel.findOne({ claimId });
             if (isExist) {

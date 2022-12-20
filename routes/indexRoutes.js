@@ -1063,5 +1063,41 @@ router.get("/jobcard/:orderId", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /getImageUrl/{key}:
+ *  get:
+ *    summary: used to fetch a file url by signed key
+ *    tags:
+ *    - Index Routes
+ *    parameters:
+ *      - in: path
+ *        name: key
+ *        required: true
+ *    responses:
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ */
+router.get("/getImageUrl/:key", checkTokenOnly, async (req, res) => {
+  const key = req.params.key;
+  try {
+    const url = await getObjectSignedUrl(key, 3600 * 2);
+    if (url) {
+      return res.status(200).json({ message: "unsigned url", url });
+    }
+    return res.status(404).json({ message: "not found" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error encountered." });
+  }
+});
 
 module.exports = router;

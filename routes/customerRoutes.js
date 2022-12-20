@@ -40,7 +40,6 @@ const {
 const commonFunction = require("../utils/commonFunction");
 const { generateRandomReferralCode } = require("../libs/commonFunction");
 const Payment = require("../libs/payments/Payment");
-const { encodeImage } = require("../libs/imageLib");
 const { randomImageName, uploadFile, uploadFileToS3, getObjectSignedUrl } = require("../services/s3-service");
 const { makeCustomerTranssaction } = require("../services/Wallet");
 
@@ -585,13 +584,11 @@ router.use(checkCustomer);
  *    security:
  *    - bearerAuth: []
  */
-router.patch(
-  "/",
-  ...updateUserValidator,
-  rejectBadRequests,
+router.patch("/", rejectBadRequests,
   async (req, res) => {
     try {
       let update = req?.body;
+
       if (req?.body?.email && req?.body?.email === "") {
         update.email = req?.body?.email.toLowerCase();
       }
@@ -604,8 +601,9 @@ router.patch(
         update.Password = hashpassword(req?.body?.Password);
       }
       if (req?.files?.image) {
-        console.log(req.files.image);
-        update.image = encodeImage(req.files.image);
+        let fileName = req.files.image.name;
+        await uploadFile(req.files.image.data, fileName, req.files.image.mimetype);
+        update.image = fileName;
       }
       const customer = await Customer.findByIdAndUpdate(
         req.Customer._id,
@@ -824,8 +822,9 @@ router.patch("/updateprofile", async (req, res) => {
     const getUserProfile = await Customer.findById(cid);
 
     if (req?.files?.image) {
-      console.log(req.files.image);
-      updateQuery.image = encodeImage(req.files.image);
+      let fileName = req.files.image.name;
+      await uploadFile(req.files.image.data, fileName, req.files.image.mimetype);
+      updateQuery.image = fileName;
     }
 
     // first time login user
@@ -1612,7 +1611,6 @@ router.post("/create/claim", async (req, res) => {
       imageMedia.map((file, i) => {
         if (file) {
           fileName.push(file.fileName)
-          console.log(file)
           return uploadFile(file.data, file.fileName, file.mimetype);
         } else {
           return;
