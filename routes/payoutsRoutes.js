@@ -278,18 +278,23 @@ router.post("/withdrawPayout", checkPartner, async (req, res) => {
 
 router.post("/webhook", async (req, res) => {
   try {
-    console.log(req.body);
+    console.log(req.body, process.env.PAYOUT_CLIENT_SECRET);
     const { signature } = req.body;
 
     let obj = req.body;
-    const resp = await Cashfree.Payouts.VerifySignature(
-      obj,
-      signature,
-      process.env.PAYOUT_CLIENT_SECRET
+    // delete obj.signature;
+    let Payouts = Cashfree.Payouts;
+    Payouts.Init({
+      "ENV": process.env.CASH_FREE_MODE,
+      "ClientID": process.env.PAYOUT_CLIENT_KEY,
+      "ClientSecret": process.env.PAYOUT_CLIENT_SECRET
+    });
+    const resp = await Payouts.VerifySignature(
+      obj
     );
     console.log(resp);
     // await Payouts.initiatePayout(partnerId, orderId, payoutId);
-    if (resp) {
+    if (!resp) {
       return res.status(401).json({ message: "Bad Request" });
     }
     //{
