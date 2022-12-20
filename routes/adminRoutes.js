@@ -26,7 +26,7 @@ const {
   Vendor,
 } = require("../models");
 
-const { claimTypes, claimStatusList } = require("../enums/claimTypes");
+const { claimTypes, claimStatusList,paymentClaimCycle } = require("../enums/claimTypes");
 
 const PenalitySchema = require("../models/penality");
 const {
@@ -5382,6 +5382,79 @@ router.get("/vendor/all", async(req,res)=>{
     console.log(error);
     return res.status(500).json({
       message: "Error encountered while trying to fetch vendor.",
+    });
+  }
+})
+/**
+ * @openapi
+ * /admin/vendor/status:
+ *  post:
+ *    summary: request server to add a new vendor.
+ *    tags:
+ *    - Admin Routes
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *              type: object
+ *              properties:
+ *                vendorId:
+ *                  type: string
+ *                status:
+ *                  type: string
+ *                  enum: ["active", "inactive"]
+ *    responses:
+ *      200:
+ *          description: if otp is sent successfully
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: OTP has been sent successfully.
+ *      500:
+ *          description: if internal server error occured while performing request.
+ *          content:
+ *            application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    description: a human-readable message describing the response
+ *                    example: Error encountered.
+ *    security:
+ *    - bearerAuth: []
+ */
+router.post("/vendor/status",async(req,res)=>{
+  try{
+    const {
+      body:{
+        vendorId,
+        status
+      }
+    }=req;
+    if(!["active", "inactive"].includes(status)){return res.status(400).json({message:"Invalid status"})}
+
+    const statusUpdate = await Vendor.findOneAndUpdate(
+      {_id:vendorId},
+      {$set:{
+        isActive:status==='active'? true : false
+      }
+    },
+    {new:true}
+    )
+
+    if(!statusUpdate) return res.status(400).json({message:"unable to update status"})
+    return res.status(200).json({message:"Status updated",statusUpdate})
+
+  }catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error encountered while trying to fetch vendor status.",
     });
   }
 })
