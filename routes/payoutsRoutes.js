@@ -239,18 +239,28 @@ router.get("/mybankdetails", checkPartner, async (req, res) => {
  *    - bearerAuth: []
  */
 router.post("/withdrawPayout", checkPartner, async (req, res) => {
-  const { payoutId, orderId } = req.body;
+  const { paymentArray } = req.body;
   const partnerId = req.partner._id;
 
-  if (!payoutId || !orderId) {
+  if (!Array.isArray(paymentArray) || paymentArray.length <= 0) {
+    return res.status(400).json({ message: "paymentArray are  required" });
+  }
+
+  if (paymentArray.length === 1 && !paymentArray[0].payoutId || !paymentArray[0].orderId) {
     return res
       .status(400)
       .json({ message: "payoutId or orderId are required" });
   }
 
   try {
-    await Payouts.initiatePayout(partnerId, orderId, payoutId);
-    return res.status(200).json({ message: "payouts initiates" });
+    if (paymentArray.length > 1) {
+      await Payouts.initiatebulkPayout(partnerId, paymentArray);
+      return res.status(200).json({ message: "payouts initiates" });
+    } else {
+      await Payouts.initiateSinglePayout(partnerId, paymentArray[0].orderId, paymentArray[0].payoutId);
+      return res.status(200).json({ message: "payouts initiates" });
+    }
+    return res.status(400).json({ message: "something wrong happend" });
   } catch (error) {
     console.log(error);
     return res

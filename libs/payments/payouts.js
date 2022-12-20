@@ -4,6 +4,7 @@ const partnerBankDetailsModel = require("../../models/partnerbankDetails");
 const payoutModel = require("../../models/payouts.model");
 const orderModel = require("../../models/Order");
 const partnerModel = require("../../models/Partner");
+const partnerTranssactionModel = require("../../models/payoutTranssactions");
 const { category } = require("../../models");
 
 const { payoutStatusTypesObject } = require("../../enums/types");
@@ -141,7 +142,7 @@ class Payouts {
     return axios.request(options);
   }
 
-  async initiatePayout(partnerId, orderId, payoutId) {
+  async initiateSinglePayout(partnerId, orderId, payoutId) {
     let partnerAccountDetails = null;
     let orderDetails = null;
     let payoutData = null;
@@ -183,6 +184,82 @@ class Payouts {
     }
 
     try {
+      const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 100)}`;
+      // create payoutTranssactions
+      const transsaction = new partnerTranssactionModel({ partnerId, transsactionId: transferId, payoutType: "single", payoutsIds: [payoutId], payableAmount: payoutData.payableAmount });
+      // create payout on cashfree
+      const payoutResp = await this.initiateCashfreePayout(
+        partnerAccountDetails.beneId,
+        payoutData.payableAmount,
+        transferId,
+        "order payment"
+      );
+
+      if (payoutResp.data.status === "ACCEPTED") {
+        transsaction.metaData = payoutResp.data.data;
+
+        // create on our db
+        await payoutModel.findByIdAndUpdate(payoutData._id, {
+          status: payoutStatusTypesObject.INPROGRESS,
+        });
+        await orderModel.findByIdAndUpdate(orderDetails._id, {
+          payoutId: payoutData._id,
+        });
+
+        return transsaction.save();
+      }
+      throw new Error("Unable to initiate payout");
+      // update on order
+    } catch (error) {
+      throw new Error(error.message || "something went wrong");
+    }
+  }
+
+  async initiatebulkPayout(partnerId, arrayPayouts) {
+    let partnerAccountDetails = null;
+    let orderDetails = null;
+    let payoutData = null;
+
+    try {
+      partnerAccountDetails = await partnerBankDetailsModel.findOne({
+        partnerId: partnerId,
+      });
+
+      if (!partnerAccountDetails) {
+        throw new Error("partner bank details not found");
+      }
+
+      if (!partnerAccountDetails.beneId) {
+        throw new Error("please update account details");
+      }
+
+      orderDetails = await orderModel.findOne({
+        Partner: partnerId,
+        _id: orderId,
+      });
+      if (!orderDetails) {
+        throw new Error("no order details found");
+      }
+
+      payoutData = await payoutModel.findById(payoutId);
+      if (!payoutData) {
+        throw new Error("invalid payout or not exists");
+      }
+
+      if (
+        payoutData.status !== payoutStatusTypesObject.WITHDRAW &&
+        payoutData.status !== payoutStatusTypesObject.FAILED
+      ) {
+        throw new Error("this payment is not allowed to be initiate");
+      }
+    } catch (error) {
+      throw new Error(error.message || "something is missing");
+    }
+
+    try {
+      // create payoutTranssactions
+      await partnerTranssactionModel.create({ partnerId });
+
       // create payout on cashfree
       const payoutResp = await this.initiateCashfreePayout(
         partnerAccountDetails.beneId,
@@ -190,12 +267,14 @@ class Payouts {
         payoutData.transferId,
         "order payment"
       );
+
       if (payoutResp.data.status === "ACCEPTED") {
         // create on our db
         await payoutModel.findByIdAndUpdate(payoutData._id, {
           metaData: payoutResp.data.data,
           status: payoutStatusTypesObject.INPROGRESS,
         });
+
         return orderModel.findByIdAndUpdate(orderDetails._id, {
           payoutId: payoutData._id,
         });
@@ -214,7 +293,7 @@ class Payouts {
         return partner;
       }
       return false;
-    } catch (error) {}
+    } catch (error) { }
   }
 
   howMuchCanDeduct(currentAmount, toBeTaken) {
@@ -338,7 +417,7 @@ class Payouts {
 
   async createClaimPayoutOnDbOnline(claimId, data) {
     const { totalAmount } = data;
-        const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 100)}`;
+    const transferId = `PAY_${Math.floor(Date.now() * Math.random() * 100)}`;
 
     try {
       const isExist = await payoutModel.findOne({ claimId });

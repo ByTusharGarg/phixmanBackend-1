@@ -3,12 +3,18 @@ const mongoose = require("mongoose");
 
 const payoutstranssactionSchema = mongoose.Schema({
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", required: true },
-    transferId: {
+    transsactionId: {
         type: String,
         required: true,
         unique: true
     },
-    payoutsIds: [{ type: Schema.Types.ObjectId, ref: "payouts" }],
+    payoutType: {
+        type: String,
+        required: true,
+        ennum: ['single', 'bulk'],
+        default: 'single'
+    },
+    payoutsIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "payouts" }],
     payableAmount: {
         type: Number
     },
