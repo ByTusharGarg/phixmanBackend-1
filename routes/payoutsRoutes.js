@@ -246,7 +246,10 @@ router.post("/withdrawPayout", checkPartner, async (req, res) => {
     return res.status(400).json({ message: "paymentArray are  required" });
   }
 
-  if (paymentArray.length === 1 && !paymentArray[0].payoutId || !paymentArray[0].orderId) {
+  if (
+    (paymentArray.length === 1 && !paymentArray[0].payoutId) ||
+    !paymentArray[0].orderId
+  ) {
     return res
       .status(400)
       .json({ message: "payoutId or orderId are required" });
@@ -257,7 +260,11 @@ router.post("/withdrawPayout", checkPartner, async (req, res) => {
       await Payouts.initiatebulkPayout(partnerId, paymentArray);
       return res.status(200).json({ message: "payouts initiates" });
     } else {
-      await Payouts.initiateSinglePayout(partnerId, paymentArray[0].orderId, paymentArray[0].payoutId);
+      await Payouts.initiateSinglePayout(
+        partnerId,
+        paymentArray[0].orderId,
+        paymentArray[0].payoutId
+      );
       return res.status(200).json({ message: "payouts initiates" });
     }
     return res.status(400).json({ message: "something wrong happend" });
@@ -270,49 +277,28 @@ router.post("/withdrawPayout", checkPartner, async (req, res) => {
 });
 
 router.post("/webhook", async (req, res) => {
-  const { signature } = req.body;
-  delete req.body.signature;
-
-  let obj = req.body;
-
-  const sortedKeys = Object.keys(obj)
-    .sort()
-    .reduce((accumulator, key) => {
-      accumulator[key] = obj[key];
-      return accumulator;
-    }, {});
-
-  const arrayData = [];
-
-  for (const key in sortedKeys) {
-    let obj = {};
-    obj[key] = req.body[key];
-    arrayData.push(obj);
-  }
-
-  let postData = "";
-
-  let valuesArray = Object.values(sortedKeys);
-
-  // console.log(arrayData);
-  // console.log(valuesArray);
-
-  valuesArray.map((ele) => {
-    postData += ele;
-  });
-
-  const encoded = Buffer.from(postData, "utf8").toString("base64");
-
   try {
     console.log(req.body);
+    const { signature } = req.body;
+
+    let obj = req.body;
     const resp = await Cashfree.Payouts.VerifySignature(
-      req.body,
+      obj,
       signature,
       process.env.PAYOUT_CLIENT_SECRET
     );
     console.log(resp);
     // await Payouts.initiatePayout(partnerId, orderId, payoutId);
-    // return res.status(200).json({ message: "payouts initiates" });
+    if (resp) {
+      return res.status(401).json({ message: "Bad Request" });
+    }
+    //{
+    // event: 'LOW_BALANCE_ALERT',
+    // currentBalance: '100.00',
+    // alertTime: '2022-12-20 22:06:14',
+    // signature: 'G5/QKP6EkyCv8mK4YcN35AaYDcv8wb1wCnpw4UYP8Gs='}
+    // above is sample body below goes code for updating transactions
+    return res.status(200).json({ message: "signature verified" });
   } catch (error) {
     console.log(error);
     return res
